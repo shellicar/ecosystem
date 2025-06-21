@@ -10,7 +10,11 @@ Everything related to the @shellicar packages.
 
 - [`@shellicar/core-config`](https://github.com/shellicar/core-config) - A library for securely handling sensitive configuration values like connection strings, URLs, and secrets.
 - [`@shellicar/core-di`](https://github.com/shellicar/core-di) - A basic dependency injection library.
-- [`@shellicar/core-foundation`](https://github.com/shellicar/core-foundation) - A comprehensive starter repository.
+
+### Reference Architectures
+
+- [`@shellicar/reference-foundation`](https://github.com/shellicar/reference-foundation) - A comprehensive starter repository. Illustrates individual concepts.
+- [`@shellicar/reference-enterprise`](https://github.com/shellicar/reference-enterprise) - A comprehensive starter repository. Can be used as the basis for creating a new Azure application workload.
 
 ### Build Tools
 
