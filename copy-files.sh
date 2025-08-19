@@ -4,10 +4,12 @@ set -eu
 
 PACKAGES="build-graphql
 build-version
+build-clean
 core-config
 core-di
 reference-foundation
 reference-enterprise
+winston-azure-application-insights
 svelte-adapter-azure-functions"
 
 cd files/
