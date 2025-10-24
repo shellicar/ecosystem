@@ -154,6 +154,43 @@ test_check_version_links() {
         echo "✗ check_version_links should fail with missing link"
     fi
     TESTS_RUN=$((TESTS_RUN + 1))
+    
+    local headers_more_than_links="# Changelog
+
+## [2.0.0] - 2025-10-24
+### Added
+- New feature
+
+## [1.0.0] - 2025-10-20
+### Fixed
+- Bug fix
+
+[1.0.0]: https://github.com/shellicar/test-package/releases/tag/1.0.0"
+    
+    if ! check_version_links "$headers_more_than_links" "test-package" 2>/dev/null; then
+        echo "✓ check_version_links fails when headers have more versions than links"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo "✗ check_version_links should fail when headers have more versions than links"
+    fi
+    TESTS_RUN=$((TESTS_RUN + 1))
+    
+    local links_more_than_headers="# Changelog
+
+## [1.0.0] - 2025-10-24
+### Added
+- New feature
+
+[2.0.0]: https://github.com/shellicar/test-package/releases/tag/2.0.0
+[1.0.0]: https://github.com/shellicar/test-package/releases/tag/1.0.0"
+    
+    if ! check_version_links "$links_more_than_headers" "test-package" 2>/dev/null; then
+        echo "✓ check_version_links fails when links have more versions than headers"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo "✗ check_version_links should fail when links have more versions than headers"
+    fi
+    TESTS_RUN=$((TESTS_RUN + 1))
 }
 
 test_package_version_must_be_first() {
