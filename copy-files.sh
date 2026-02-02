@@ -8,11 +8,13 @@ readonly BLUE='\033[0;34m'
 readonly RED='\033[0;31m'
 readonly RESET='\033[0m'
 
-PACKAGES="build-graphql
+PACKAGES="build-azure-local-settings
+build-graphql
 build-version
 build-clean
 core-config
 core-di
+ui-shadcn
 cosmos-query-builder
 winston-azure-application-insights
 svelte-adapter-azure-functions"
@@ -134,6 +136,8 @@ for j in $PACKAGES; do
           fi
         else
           echo "  NEW: $file"
+          mkdir -p "$(dirname "$target_file")"
+          cp "$file" "$target_file"
         fi
       fi
     done

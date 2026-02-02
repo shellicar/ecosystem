@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
 
-. ./verify-version-functions.sh
+SCRIPT_DIR=`dirname "$0"`
+. "$SCRIPT_DIR/verify-version-functions.sh"
 
 main() {
     local package_name=$(get_package_name) || exit $?
