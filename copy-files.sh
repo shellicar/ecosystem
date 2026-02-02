@@ -2,22 +2,9 @@
 
 set -eu
 
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly RED='\033[0;31m'
-readonly RESET='\033[0m'
-
-PACKAGES="build-azure-local-settings
-build-graphql
-build-version
-build-clean
-core-config
-core-di
-ui-shadcn
-cosmos-query-builder
-winston-azure-application-insights
-svelte-adapter-azure-functions"
+# Source common definitions
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/scripts/common.sh"
 
 # Files that should always be synced (overwrite if different)
 SYNC_FILES=".markdownlint.json LICENSE .github/workflows scripts GitVersion.yml"
@@ -32,12 +19,12 @@ EXCLUDE_CONDITIONAL="reference-foundation reference-enterprise"
 EXPECTED_DIFF_FILES=".syncpackrc turbo.json pnpm-workspace.yaml biome.json"
 
 cd files/
-for j in $PACKAGES; do
+for j in $LIBRARY_REPOS; do
   target_dir="../../$j"
-  
+
   if [ -d "$target_dir" ]; then
     printf "${GREEN}Checking${RESET} %s...\n" "$j"
-    
+
     # Sync files - copy if different
     for file in $SYNC_FILES; do
       if [ -d "$file" ]; then
@@ -67,7 +54,7 @@ for j in $PACKAGES; do
         fi
       fi
     done
-    
+
     # Handle conditional sync files
     for file in $CONDITIONAL_SYNC_FILES; do
       # Check if this package should be excluded
@@ -78,7 +65,7 @@ for j in $PACKAGES; do
           break
         fi
       done
-      
+
       if [ "$exclude" = false ]; then
         if [ -f "$file" ] && [ -f "$target_dir/$file" ]; then
           if ! diff -q "$file" "$target_dir/$file" >/dev/null 2>&1; then
@@ -91,12 +78,12 @@ for j in $PACKAGES; do
         fi
       fi
     done
-    
+
     # Report other differences
     find . -type f | while read -r file; do
       target_file="$target_dir/$file"
       file_basename=$(basename "$file")
-      
+
       # Skip sync files (already handled)
       skip=false
       for sync_file in $SYNC_FILES; do
@@ -105,7 +92,7 @@ for j in $PACKAGES; do
           break
         fi
       done
-      
+
       # Skip conditional sync files (already handled)
       if [ "$skip" = false ]; then
         for sync_file in $CONDITIONAL_SYNC_FILES; do
@@ -115,7 +102,7 @@ for j in $PACKAGES; do
           fi
         done
       fi
-      
+
       if [ "$skip" = false ]; then
         if [ -f "$target_file" ]; then
           if ! diff -q "$file" "$target_file" >/dev/null 2>&1; then
@@ -127,7 +114,7 @@ for j in $PACKAGES; do
                 break
               fi
             done
-            
+
             if [ "$expected" = true ]; then
               printf "${BLUE}  DIFF (expected):${RESET} %s\n" "$file"
             else
