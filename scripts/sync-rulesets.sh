@@ -18,6 +18,9 @@ DRY_RUN=true
 # Note: 'update' rule removed - it blocks PR merges when no bypass actors are configured
 EXPECTED_RULES='["code_scanning","creation","deletion","non_fast_forward","pull_request","required_status_checks"]'
 
+# Simplified rules for config repos
+SIMPLE_EXPECTED_RULES='["creation","deletion","non_fast_forward","pull_request"]'
+
 # Standard ruleset configuration
 RULESET_JSON='{
   "name": "main",
@@ -39,6 +42,52 @@ RULESET_JSON='{
     {"type": "required_status_checks", "parameters": {"strict_required_status_checks_policy": true, "do_not_enforce_on_create": true, "required_status_checks": [{"context": "build (22.x)", "integration_id": 15368}]}}
   ]
 }'
+
+# Simplified ruleset for config repos (no code_scanning or build checks)
+SIMPLE_RULESET_JSON='{
+  "name": "main",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": ["~DEFAULT_BRANCH"]
+    }
+  },
+  "rules": [
+    {"type": "creation"},
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request", "parameters": {"required_approving_review_count": 0, "dismiss_stale_reviews_on_push": false, "required_reviewers": [], "require_code_owner_review": false, "require_last_push_approval": false, "required_review_thread_resolution": false, "allowed_merge_methods": ["squash"]}}
+  ]
+}'
+
+# Check if repo is a config repo
+is_config_repo() {
+  repo="$1"
+  echo "$CONFIG_REPOS" | grep -qw "$repo"
+}
+
+# Get the appropriate ruleset JSON for a repo
+get_ruleset_json() {
+  repo="$1"
+  if is_config_repo "$repo"; then
+    echo "$SIMPLE_RULESET_JSON"
+  else
+    echo "$RULESET_JSON"
+  fi
+}
+
+# Get the expected rules for a repo
+get_expected_rules() {
+  repo="$1"
+  if is_config_repo "$repo"; then
+    echo "$SIMPLE_EXPECTED_RULES"
+  else
+    echo "$EXPECTED_RULES"
+  fi
+}
 
 # List all rulesets for a repo
 # Usage: list_rulesets <repo>
@@ -62,10 +111,11 @@ get_ruleset() {
 # Outputs status message
 create_ruleset() {
   repo="$1"
+  ruleset_json=$(get_ruleset_json "$repo")
   if [ "$DRY_RUN" = true ]; then
     printf "${GREEN}Would create${NC}\n"
   else
-    result=$(echo "$RULESET_JSON" | gh api "repos/$OWNER/$repo/rulesets" -X POST --input - 2>&1)
+    result=$(echo "$ruleset_json" | gh api "repos/$OWNER/$repo/rulesets" -X POST --input - 2>&1)
     if [ $? -eq 0 ]; then
       printf "${GREEN}Created${NC}\n"
     else
@@ -82,11 +132,12 @@ update_ruleset() {
   repo="$1"
   ruleset_id="$2"
   current_rules="$3"
+  ruleset_json=$(get_ruleset_json "$repo")
   if [ "$DRY_RUN" = true ]; then
     printf "${YELLOW}Would update${NC} (ID: %s)\n" "$ruleset_id"
     echo "  Current: $current_rules"
   else
-    result=$(echo "$RULESET_JSON" | gh api "repos/$OWNER/$repo/rulesets/$ruleset_id" -X PUT --input - 2>&1)
+    result=$(echo "$ruleset_json" | gh api "repos/$OWNER/$repo/rulesets/$ruleset_id" -X PUT --input - 2>&1)
     if [ $? -eq 0 ]; then
       printf "${YELLOW}Updated${NC} (ID: %s)\n" "$ruleset_id"
       echo "  Was: $current_rules"
@@ -152,8 +203,9 @@ for repo in $ALL_REPOS; do
     if [ -n "$ruleset_id" ]; then
       details=$(get_ruleset "$repo" "$ruleset_id")
       current_rules=$(parse_rule_types "$details")
+      expected_rules=$(get_expected_rules "$repo")
 
-      if [ "$current_rules" = "$EXPECTED_RULES" ]; then
+      if [ "$current_rules" = "$expected_rules" ]; then
         printf "${BLUE}Up to date${NC} (ID: %s)\n" "$ruleset_id"
       else
         update_ruleset "$repo" "$ruleset_id" "$current_rules"

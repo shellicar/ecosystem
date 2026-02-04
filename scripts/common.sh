@@ -35,6 +35,9 @@ svelte-adapter-azure-functions
 ui-shadcn
 winston-azure-application-insights"
 
+# Config/meta repos (no npm package, simplified ruleset)
+CONFIG_REPOS="ecosystem"
+
 # GitHub owner
 GITHUB_OWNER="shellicar"
 
