@@ -15,7 +15,8 @@ OWNER="$GITHUB_OWNER"
 DRY_RUN=true
 
 # Standard rules (sorted for comparison)
-EXPECTED_RULES='["code_scanning","creation","deletion","non_fast_forward","pull_request","update"]'
+# Note: 'update' rule removed - it blocks PR merges when no bypass actors are configured
+EXPECTED_RULES='["code_scanning","creation","deletion","non_fast_forward","pull_request","required_status_checks"]'
 
 # Standard ruleset configuration
 RULESET_JSON='{
@@ -33,9 +34,9 @@ RULESET_JSON='{
     {"type": "creation"},
     {"type": "deletion"},
     {"type": "non_fast_forward"},
-    {"type": "update"},
     {"type": "code_scanning", "parameters": {"code_scanning_tools": [{"tool": "CodeQL", "security_alerts_threshold": "high_or_higher", "alerts_threshold": "errors"}]}},
-    {"type": "pull_request", "parameters": {"required_approving_review_count": 0, "dismiss_stale_reviews_on_push": false, "required_reviewers": [], "require_code_owner_review": false, "require_last_push_approval": false, "required_review_thread_resolution": false, "allowed_merge_methods": ["squash"]}}
+    {"type": "pull_request", "parameters": {"required_approving_review_count": 0, "dismiss_stale_reviews_on_push": false, "required_reviewers": [], "require_code_owner_review": false, "require_last_push_approval": false, "required_review_thread_resolution": false, "allowed_merge_methods": ["squash"]}},
+    {"type": "required_status_checks", "parameters": {"strict_required_status_checks_policy": true, "do_not_enforce_on_create": true, "required_status_checks": [{"context": "build (22.x)", "integration_id": 15368}]}}
   ]
 }'
 

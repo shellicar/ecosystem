@@ -6,8 +6,16 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/scripts/common.sh"
 
+# Parse arguments
+DESTRUCTIVE=false
+for arg in "$@"; do
+  case "$arg" in
+    -d|--destructive) DESTRUCTIVE=true ;;
+  esac
+done
+
 # Files that should always be synced (overwrite if different)
-SYNC_FILES=".markdownlint.json LICENSE .github/workflows scripts GitVersion.yml"
+SYNC_FILES=".markdownlint.json LICENSE .github/workflows scripts .lefthook GitVersion.yml"
 
 # Files that are synced but excluded for certain packages
 CONDITIONAL_SYNC_FILES="lefthook.yml"
@@ -28,17 +36,30 @@ for j in $LIBRARY_REPOS; do
     # Sync files - copy if different
     for file in $SYNC_FILES; do
       if [ -d "$file" ]; then
-        # Handle directories - check if content differs
-        if [ -d "$target_dir/$file" ]; then
-          if ! diff -rq "$file" "$target_dir/$file" >/dev/null 2>&1; then
-            printf "${YELLOW}  SYNCING DIR:${RESET} %s\n" "$file"
-            rm -rf "$target_dir/$file"
-            cp -r "$file" "$target_dir/$file"
-          fi
+        # Handle directories with rsync
+        mkdir -p "$target_dir/$file"
+        if [ "$DESTRUCTIVE" = true ]; then
+          # Destructive mode: sync and delete orphaned files
+          changes=$(rsync --archive --verbose --delete "$file/" "$target_dir/$file/" 2>/dev/null | tail -n +2 | head -n -3)
+          # Show what was deleted
+          echo "$changes" | grep "^deleting " | while read -r line; do
+            deleted_file=$(echo "$line" | sed 's/^deleting //')
+            printf "${RED}  DELETED:${RESET} %s/%s\n" "$file" "$deleted_file"
+          done
         else
-          printf "${BLUE}  NEW SYNC DIR:${RESET} %s\n" "$file"
-          mkdir -p "$(dirname "$target_dir/$file")"
-          cp -r "$file" "$target_dir/$file"
+          # Non-destructive: first show what would be deleted (warning only)
+          would_delete=$(rsync --archive --verbose --dry-run --delete "$file/" "$target_dir/$file/" 2>/dev/null | grep "^deleting " || true)
+          if [ -n "$would_delete" ]; then
+            echo "$would_delete" | while read -r line; do
+              deleted_file=$(echo "$line" | sed 's/^deleting //')
+              printf "${RED}  ORPHANED:${RESET} %s/%s (use -d to delete)\n" "$file" "$deleted_file"
+            done
+          fi
+          # Then actually sync without deletions
+          changes=$(rsync --archive --verbose "$file/" "$target_dir/$file/" 2>/dev/null | tail -n +2 | head -n -3)
+        fi
+        if [ -n "$changes" ]; then
+          printf "${YELLOW}  SYNCING DIR:${RESET} %s\n" "$file"
         fi
       elif [ -f "$file" ]; then
         # Handle regular files
