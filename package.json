@@ -1,15 +1,20 @@
 {
- "private": true,
- "scripts": {
-  "format": "docker run --rm -u \"$(id -u):$(id -g)\" -v \"$(pwd):/mnt\" mvdan/shfmt -i 2 -w /mnt",
-  "update-readmes": "./update-readmes.sh",
-  "copy-files": "./copy-files.sh",
-  "check-biome": "./scripts/check-biome.sh",
-  "check-tooling": "./scripts/check-tooling.sh",
-  "check-wip": "./scripts/check-wip.sh",
-  "list-issues": "./scripts/list-issues.sh",
-  "list-prs": "./scripts/list-prs.sh",
-  "sync-rulesets": "./scripts/sync-rulesets.sh"
- },
- "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264"
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "format": "docker run --rm -u \"$(id -u):$(id -g)\" -v \"$(pwd):/mnt\" mvdan/shfmt -i 2 -w /mnt",
+    "update-readmes": "./update-readmes.sh",
+    "copy-files": "./copy-files.sh",
+    "check-biome": "./scripts/check-biome.sh",
+    "check-tooling": "./scripts/check-tooling.sh",
+    "check-wip": "./scripts/check-wip.sh",
+    "list-issues": "./scripts/list-issues.sh",
+    "list-prs": "./scripts/list-prs.sh",
+    "sync-rulesets": "./scripts/sync-rulesets.sh"
+  },
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017",
+  "dependencies": {
+    "semver": "^7.7.4",
+    "yaml": "^2.8.2"
+  }
 }
