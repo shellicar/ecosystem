@@ -3,7 +3,7 @@ set -eu
 
 # Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/scripts/common.sh"
+. "$SCRIPT_DIR/common.sh"
 
 # Parse arguments
 DESTRUCTIVE=false

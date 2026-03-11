@@ -21,7 +21,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/scripts/common.sh"
+. "$SCRIPT_DIR/common.sh"
 
 TOTAL_ERRORS=0
 TOTAL_WARNINGS=0
