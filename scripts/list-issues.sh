@@ -1,26 +1,36 @@
 #!/bin/sh
+# List open GitHub issues across @shellicar repositories.
+# Outputs JSON.
+#
+# Usage:
+#   list-issues.sh
+
 set -eu
 
-# Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/common.sh"
 
-printf "${BLUE}Fetching issues across @shellicar repositories...${RESET}\n\n"
-
+REPOS_JSON=""
+FIRST_REPO=1
 total=0
-for repo in $ALL_REPOS; do
-  issues=$(gh issue list --repo "shellicar/$repo" --json number,state,title,author --template '{{range .}}#{{.number}}	{{.state}}	@{{.author.login}}	{{.title}}{{"\n"}}{{end}}' 2>/dev/null || printf "")
 
-  if [ -n "$issues" ]; then
-    printf "${BLUE}═══ %s ═══${RESET} https://github.com/shellicar/%s/issues\n" "$repo" "$repo"
-    printf "%s\n\n" "$issues"
-    count=$(printf '%s\n' "$issues" | wc -l)
-    total=$((total + count))
+for repo in $ALL_REPOS; do
+  issues=$(gh issue list --repo "shellicar/$repo" --json number,state,title,author 2>/dev/null || printf "[]")
+  if [ -z "$issues" ]; then
+    issues="[]"
+  fi
+
+  count=$(printf '%s' "$issues" | grep -c '"number"' || true)
+  total=$((total + count))
+
+  entry=$(printf '{"repo":"%s","count":%d,"issues":%s}' "$repo" "$count" "$issues")
+
+  if [ "$FIRST_REPO" = "1" ]; then
+    REPOS_JSON="$entry"
+    FIRST_REPO=0
+  else
+    REPOS_JSON="${REPOS_JSON},${entry}"
   fi
 done
 
-if [ "$total" -eq 0 ]; then
-  printf "${GREEN}No open issues found.${RESET}\n"
-else
-  printf "${YELLOW}Total: %d issue(s)${RESET}\n" "$total"
-fi
+printf '{"repos":[%s],"total":%d}\n' "$REPOS_JSON" "$total"

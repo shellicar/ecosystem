@@ -1,156 +1,119 @@
 #!/bin/sh
+# Check for work-in-progress across all repos.
+# Outputs JSON.
+#
+# Usage:
+#   check-wip.sh
 
-# Check for work-in-progress across all repos
-# Shows repos with commits NEWER than origin/main (by date, handles squash merges)
-# Shows additions/removals for both committed and uncommitted changes
+set -eu
 
-# Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/common.sh"
 
-echo "Checking for work-in-progress in @shellicar repos..."
-echo ""
+json_str() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g' | tr '\n' ' '
+}
 
-# Collect results
-active_wip=""
-security_wip=""
-uncommitted_only=""
-stale_branches=""
+REPOS_JSON=""
+FIRST_REPO=1
 
 for dir in "$WORKSPACE_DIR"/*/; do
-  # Skip if not a git repo
   if [ ! -d "$dir/.git" ]; then
     continue
   fi
 
   repo_name=$(basename "$dir")
+  cd "$dir"
 
-  cd "$dir" || continue
-
-  # Fetch quietly
   git fetch origin --quiet 2>/dev/null
 
-  # Determine default branch (main or master)
+  # Determine default branch
   default_branch="main"
   if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
     if git rev-parse --verify origin/master >/dev/null 2>&1; then
       default_branch="master"
     else
-      printf "${YELLOW}%s${NC}: No origin/main or origin/master found\n" "$repo_name"
       continue
     fi
   fi
 
   current_branch=$(git branch --show-current)
 
-  # Check for uncommitted changes and get stats
-  uncommitted_files=$(git status --porcelain 2>/dev/null)
-  has_uncommitted=""
-  uncommitted_stats=""
+  # Uncommitted changes
+  uncommitted=$(git status --porcelain 2>/dev/null)
+  has_uncommitted="false"
+  unstaged_stats=""
   staged_stats=""
-  if [ -n "$uncommitted_files" ]; then
-    has_uncommitted=" ${RED}(uncommitted)${NC}"
-    # Get additions/deletions for uncommitted changes
-    uncommitted_stats=$(git diff --shortstat 2>/dev/null)
-    staged_stats=$(git diff --cached --shortstat 2>/dev/null)
+  if [ -n "$uncommitted" ]; then
+    has_uncommitted="true"
+    unstaged_stats=$(git diff --shortstat 2>/dev/null | sed 's/^ *//')
+    staged_stats=$(git diff --cached --shortstat 2>/dev/null | sed 's/^ *//')
   fi
 
-  # Get the timestamp of the latest commit on origin/main
+  # Commits newer than origin/default_branch
   main_timestamp=$(git log -1 --format=%ct "origin/$default_branch" 2>/dev/null)
+  commits_count=0
+  committed_stats=""
 
-  # Find commits on HEAD that are NEWER than origin/main's latest commit
-  commits_after_main=""
+  TMPFILE=$(mktemp)
   git log HEAD --format="%ct %h %s" 2>/dev/null | while IFS= read -r line; do
     ts=$(echo "$line" | cut -d' ' -f1)
-    rest=$(echo "$line" | cut -d' ' -f2-)
     if [ -n "$ts" ] && [ "$ts" -gt "$main_timestamp" ] 2>/dev/null; then
-      echo "$rest"
+      echo "$line" | cut -d' ' -f2-
     fi
-  done >/tmp/commits_after_main_$$
-  commits_after_main=$(cat /tmp/commits_after_main_$$ 2>/dev/null)
-  rm -f /tmp/commits_after_main_$$
+  done > "$TMPFILE"
 
-  # Count commits
-  if [ -n "$commits_after_main" ]; then
-    commits_count=$(echo "$commits_after_main" | wc -l | tr -d ' ')
-  else
-    commits_count=0
+  if [ -s "$TMPFILE" ]; then
+    commits_count=$(wc -l < "$TMPFILE" | tr -d ' ')
+    committed_stats=$(git diff "origin/$default_branch" HEAD --shortstat 2>/dev/null | sed 's/^ *//')
   fi
+  rm -f "$TMPFILE"
 
-  # Get committed diff from origin/main to HEAD
-  committed_stats=$(git diff "origin/$default_branch" HEAD --shortstat 2>/dev/null)
-
-  # Check if on a stale branch (not main/master, no new commits)
-  is_stale_branch=""
+  # Stale branch detection
+  is_stale="false"
   if [ "$current_branch" != "$default_branch" ] && [ "$commits_count" -eq 0 ]; then
-    is_stale_branch="true"
+    is_stale="true"
   fi
 
-  # Build output for this repo
-  output=""
-  if [ "$commits_count" -gt 0 ] || [ -n "$has_uncommitted" ] || [ -n "$is_stale_branch" ]; then
-    output="${BLUE}${repo_name}${NC} [${YELLOW}${current_branch}${NC}]${has_uncommitted}
-"
+  # Categorize
+  category="clean"
+  if [ "$commits_count" -gt 0 ]; then
+    case "$current_branch" in
+      security*|dependabot*) category="security" ;;
+      *) category="active" ;;
+    esac
+  elif [ "$is_stale" = "true" ]; then
+    category="stale"
+  elif [ "$has_uncommitted" = "true" ]; then
+    category="uncommitted"
+  fi
 
-    if [ "$commits_count" -gt 0 ]; then
-      output="${output}  ${GREEN}${commits_count} new commits${NC}: ${committed_stats}
-"
-    elif [ -n "$is_stale_branch" ]; then
-      output="${output}  ${DIM}(stale branch - switch to ${default_branch})${NC}
-"
-    fi
+  # Skip clean repos
+  if [ "$category" = "clean" ]; then
+    continue
+  fi
 
-    if [ -n "$uncommitted_stats" ]; then
-      output="${output}  ${RED}Unstaged${NC}: ${uncommitted_stats}
-"
-    fi
-    if [ -n "$staged_stats" ]; then
-      output="${output}  ${YELLOW}Staged${NC}: ${staged_stats}
-"
-    fi
-    output="${output}
-"
+  # Build JSON entry
+  entry=$(printf '{"repo":"%s","branch":"%s","category":"%s","commits":%d,"uncommitted":%s' \
+    "$repo_name" "$current_branch" "$category" "$commits_count" "$has_uncommitted")
 
-    # Categorize
-    if [ "$commits_count" -gt 0 ]; then
-      # Has new work - check if security/dependabot branch
-      case "$current_branch" in
-      security* | dependabot*)
-        security_wip="${security_wip}${output}"
-        ;;
-      *)
-        active_wip="${active_wip}${output}"
-        ;;
-      esac
-    elif [ -n "$is_stale_branch" ]; then
-      # No new work, on old branch - needs cleanup
-      stale_branches="${stale_branches}${output}"
-    elif [ -n "$has_uncommitted" ]; then
-      # On main but has uncommitted changes
-      uncommitted_only="${uncommitted_only}${output}"
-    fi
+  if [ -n "$committed_stats" ]; then
+    entry="${entry},\"committed_stats\":\"$(json_str "$committed_stats")\""
+  fi
+  if [ -n "$unstaged_stats" ]; then
+    entry="${entry},\"unstaged_stats\":\"$(json_str "$unstaged_stats")\""
+  fi
+  if [ -n "$staged_stats" ]; then
+    entry="${entry},\"staged_stats\":\"$(json_str "$staged_stats")\""
+  fi
+  entry="${entry}}"
+
+  if [ "$FIRST_REPO" = "1" ]; then
+    REPOS_JSON="$entry"
+    FIRST_REPO=0
+  else
+    REPOS_JSON="${REPOS_JSON},${entry}"
   fi
 done
 
-# Print in priority order
-if [ -n "$active_wip" ]; then
-  printf "${GREEN}=== Active Work ===${NC}\n\n"
-  printf "%b" "$active_wip"
-fi
-
-if [ -n "$uncommitted_only" ]; then
-  printf "${YELLOW}=== Uncommitted / Stale Branches ===${NC}\n\n"
-  printf "%b" "$uncommitted_only"
-fi
-
-if [ -n "$stale_branches" ]; then
-  printf "${DIM}=== Stale Branches (switch to main) ===${NC}\n\n"
-  printf "%b" "$stale_branches"
-fi
-
-if [ -n "$security_wip" ]; then
-  printf "${DIM}=== Security/Dependabot ===${NC}\n\n"
-  printf "%b" "$security_wip"
-fi
-
-echo "Done."
+printf '{"repos":[%s]}\n' "$REPOS_JSON"

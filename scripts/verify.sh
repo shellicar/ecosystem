@@ -1,18 +1,13 @@
 #!/bin/sh
-# Verify build and tests pass
-#
-# Runs pnpm build and pnpm test, capturing output.
-# On success: prints a one-line summary
-# On failure: prints the full output for diagnosis
+# Verify build and tests pass.
+# Outputs JSON.
 #
 # Usage:
 #   verify.sh              # Run build + test
 #   verify.sh --build      # Run build only
 #   verify.sh --test       # Run test only
-#
-# Designed to minimise context consumption when called by Claude Code.
 
-set -e
+set -eu
 
 RUN_BUILD=1
 RUN_TEST=1
@@ -44,38 +39,60 @@ done
 TMPFILE=$(mktemp)
 trap 'rm -f "$TMPFILE"' EXIT
 
+json_str() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g' | tr '\n' ' '
+}
+
+build_status="skipped"
+build_output=""
+test_status="skipped"
+test_output=""
+exit_code=0
+
 # ── Build ─────────────────────────────────────────────────────────
 
 if [ "$RUN_BUILD" -eq 1 ]; then
-  printf "🔨 Building...\n"
   set +e
   pnpm run build > "$TMPFILE" 2>&1
-  build_status=$?
+  rc=$?
   set -e
 
-  if [ "$build_status" -ne 0 ]; then
-    printf "❌ Build failed (exit %d):\n\n" "$build_status"
-    cat "$TMPFILE"
-    exit 1
+  if [ "$rc" -eq 0 ]; then
+    build_status="pass"
+  else
+    build_status="fail"
+    build_output=$(cat "$TMPFILE")
+    exit_code=1
   fi
-  printf "  ✅ Build passed\n"
 fi
 
 # ── Test ──────────────────────────────────────────────────────────
 
 if [ "$RUN_TEST" -eq 1 ]; then
-  printf "🧪 Testing...\n"
   set +e
   pnpm run test > "$TMPFILE" 2>&1
-  test_status=$?
+  rc=$?
   set -e
 
-  if [ "$test_status" -ne 0 ]; then
-    printf "❌ Tests failed (exit %d):\n\n" "$test_status"
-    cat "$TMPFILE"
-    exit 1
+  if [ "$rc" -eq 0 ]; then
+    test_status="pass"
+  else
+    test_status="fail"
+    test_output=$(cat "$TMPFILE")
+    exit_code=1
   fi
-  printf "  ✅ Tests passed\n"
 fi
 
-printf "\n✅ Verification complete\n"
+# ── JSON output ───────────────────────────────────────────────────
+
+printf '{"build":"%s"' "$build_status"
+if [ -n "$build_output" ]; then
+  printf ',"build_output":"%s"' "$(json_str "$build_output")"
+fi
+printf ',"test":"%s"' "$test_status"
+if [ -n "$test_output" ]; then
+  printf ',"test_output":"%s"' "$(json_str "$test_output")"
+fi
+printf '}\n'
+
+exit "$exit_code"

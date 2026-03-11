@@ -21,6 +21,7 @@ Everything related to the @shellicar packages.
 - [`@shellicar/build-clean`](https://github.com/shellicar/build-clean) - Build plugin that automatically cleans unused files from output directories.
 - [`@shellicar/build-version`](https://github.com/shellicar/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
 - [`@shellicar/build-graphql`](https://github.com/shellicar/build-graphql) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
+- [`@shellicar/graphql-codegen-treeshake`](https://github.com/shellicar/graphql-codegen-treeshake) - A graphql-codegen preset that tree-shakes unused types from TypeScript output.
 
 ### Framework
 
@@ -33,4 +34,4 @@ Everything related to the @shellicar packages.
 - [`@shellicar/winston-azure-application-insights`](https://github.com/shellicar/winston-azure-application-insights) - An [Azure Application Insights](https://azure.microsoft.com/en-us/services/application-insights/) transport for [Winston](https://github.com/winstonjs/winston) logging library.
 - [`@shellicar/pino-applicationinsights-transport`](https://github.com/shellicar/pino-applicationinsights-transport) - [Azure Application Insights](https://azure.microsoft.com/en-us/services/application-insights) transport for [pino](https://github.com/pinojs/pino)
 
-<!-- END_ECOSYSTEM -->
+  <!-- END_ECOSYSTEM -->

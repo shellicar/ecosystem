@@ -16,8 +16,10 @@ build-graphql
 build-version
 core-config
 core-di
+claude-cli
 cosmos-query-builder
 ecosystem
+graphql-codegen-treeshake
 reference-enterprise
 reference-foundation
 svelte-adapter-azure-functions
@@ -30,7 +32,9 @@ build-graphql
 build-version
 core-config
 core-di
+claude-cli
 cosmos-query-builder
+graphql-codegen-treeshake
 svelte-adapter-azure-functions
 ui-shadcn
 winston-azure-application-insights"
