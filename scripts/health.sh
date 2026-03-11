@@ -20,8 +20,8 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ECOSYSTEM_DIR="$(dirname "$SCRIPT_DIR")"
 
-tsconfig_out=$("$ECOSYSTEM_DIR/check-tsconfig.sh"   2>/dev/null || true)
-migrations_out=$("$ECOSYSTEM_DIR/check-migrations.sh" 2>/dev/null || true)
+tsconfig_out=$("$SCRIPT_DIR/check-tsconfig.sh"   2>/dev/null || true)
+migrations_out=$("$SCRIPT_DIR/check-migrations.sh" 2>/dev/null || true)
 pkgjson_out=$("$SCRIPT_DIR/audit-package-json.sh"   2>/dev/null || true)
 deps_out=$("$SCRIPT_DIR/check-deps.sh"              2>/dev/null || true)
 audit_out=$("$SCRIPT_DIR/audit-all.sh"              2>/dev/null || true)
