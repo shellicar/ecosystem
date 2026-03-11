@@ -1,56 +1,101 @@
 #!/bin/sh
-# Audit package.json fields across all @shellicar library packages
-# Checks for required fields, consistency, and conventions
+# Audit package.json fields across all @shellicar library packages.
+# Outputs JSON.
+#
+# Checks per repo (each check has a max points value):
+#   private=false       5pts
+#   type=module         10pts
+#   license=MIT         5pts
+#   author              5pts
+#   description         5pts
+#   keywords            5pts
+#   repository.url      10pts
+#   bugs.url            5pts
+#   homepage            5pts
+#   publishConfig       10pts
+#   exports structure   10pts
+#   exports order       5pts
+#   path prefix (main)  5pts
+#   files array         10pts
+#   scripts.dev         5pts
+#
+# Usage:
+#   audit-package-json.sh              # Audit all library repos
+#   audit-package-json.sh build-clean  # Audit a single repo
 
-set -e
+set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/common.sh"
 
-ERRORS=0
-WARNINGS=0
+TOTAL_ERRORS=0
+TOTAL_WARNINGS=0
+TOTAL_REPOS=0
+REPOS_JSON=""
+FIRST_REPO=1
 
-error() {
-  printf "  ${RED}ERROR${NC} %s: %s\n" "$1" "$2"
-  ERRORS=$((ERRORS + 1))
+REPO_SCORE=0
+REPO_MAX=0
+REPO_CHECKS=""
+FIRST_CHECK=1
+
+json_str() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
-warn() {
-  printf "  ${YELLOW}WARN${NC}  %s: %s\n" "$1" "$2"
-  WARNINGS=$((WARNINGS + 1))
+add_check() {
+  check="$1" status="$2" value="$3" points_earned="$4" points_max="$5"
+  REPO_SCORE=$((REPO_SCORE + points_earned))
+  REPO_MAX=$((REPO_MAX + points_max))
+  case "$status" in
+    warn)  TOTAL_WARNINGS=$((TOTAL_WARNINGS + 1)) ;;
+    error) TOTAL_ERRORS=$((TOTAL_ERRORS + 1)) ;;
+  esac
+
+  entry=$(printf '{"check":"%s","status":"%s","value":"%s","points":%d,"max":%d}' \
+    "$(json_str "$check")" "$status" "$(json_str "$value")" "$points_earned" "$points_max")
+
+  if [ "$FIRST_CHECK" = "1" ]; then
+    REPO_CHECKS="$entry"
+    FIRST_CHECK=0
+  else
+    REPO_CHECKS="${REPO_CHECKS},${entry}"
+  fi
 }
 
-ok() {
-  printf "  ${GREEN}OK${NC}    %s: %s\n" "$1" "$2"
+ok()    { add_check "$1" "ok"    "$2" "$3" "$3"; }
+warn()  { add_check "$1" "warn"  "$2" 0    "$3"; }
+error() { add_check "$1" "error" "$2" 0    "$3"; }
+
+emit_repo() {
+  name="$1" pkg_path="${2:-}"
+  TOTAL_REPOS=$((TOTAL_REPOS + 1))
+
+  if [ "$REPO_MAX" -eq 0 ]; then pct=0
+  else pct=$((REPO_SCORE * 100 / REPO_MAX))
+  fi
+
+  repo_json=$(printf '{"name":"%s","pkg":"%s","score":%d,"max":%d,"pct":%d,"checks":[%s]}' \
+    "$(json_str "$name")" "$(json_str "$pkg_path")" "$REPO_SCORE" "$REPO_MAX" "$pct" "$REPO_CHECKS")
+
+  if [ "$FIRST_REPO" = "1" ]; then
+    REPOS_JSON="$repo_json"
+    FIRST_REPO=0
+  else
+    REPOS_JSON="${REPOS_JSON},${repo_json}"
+  fi
 }
 
-# Find the package.json for a repo's published package
 find_pkg() {
-  repo="$1"
-  repo_dir="$WORKSPACE_DIR/$repo"
-
-  if [ ! -d "$repo_dir" ]; then
-    return 1
-  fi
-
-  # Look for packages/*/package.json (monorepo pattern)
+  repo_dir="$WORKSPACE_DIR/$1"
+  [ -d "$repo_dir" ] || return 1
   for pkg in "$repo_dir"/packages/*/package.json; do
-    if [ -f "$pkg" ]; then
-      echo "$pkg"
-      return 0
-    fi
+    [ -f "$pkg" ] && { echo "$pkg"; return 0; }
   done
-
-  # Fallback to root package.json
-  if [ -f "$repo_dir/package.json" ]; then
-    echo "$repo_dir/package.json"
-    return 0
-  fi
-
+  [ -f "$repo_dir/package.json" ] && { echo "$repo_dir/package.json"; return 0; }
   return 1
 }
 
-# Get a JSON field value using node
 json_get() {
   node -e "
     const pkg = require('$1');
@@ -61,314 +106,172 @@ json_get() {
       val = val[p];
     }
     if (val === undefined) { process.exit(0); }
-    if (typeof val === 'object') {
-      console.log(JSON.stringify(val));
-    } else {
-      console.log(val);
-    }
+    if (typeof val === 'object') { console.log(JSON.stringify(val)); }
+    else { console.log(val); }
   " 2>/dev/null
 }
 
-# Get top-level keys in order
-json_keys() {
-  node -e "
-    const fs = require('fs');
-    const content = fs.readFileSync('$1', 'utf8');
-    const pkg = JSON.parse(content);
-    console.log(Object.keys(pkg).join(','));
-  " 2>/dev/null
-}
-
-# Check if exports conditions have correct order (import before require)
-check_exports_order() {
-  node -e "
-    const fs = require('fs');
-    const content = fs.readFileSync('$1', 'utf8');
-    const pkg = JSON.parse(content);
-    const exports = pkg.exports;
-    if (!exports) { process.exit(0); }
-
-    // Check if nested under '.'
-    const entry = exports['.'] || exports;
-
-    const keys = Object.keys(entry);
-    const importIdx = keys.indexOf('import');
-    const requireIdx = keys.indexOf('require');
-
-    if (importIdx === -1 || requireIdx === -1) {
-      // Only one format, that's fine
-      process.exit(0);
-    }
-
-    if (importIdx > requireIdx) {
-      console.log('require-first');
-    } else {
-      console.log('import-first');
-    }
-  " 2>/dev/null
-}
-
-# Check for typos in exports
-check_exports_typos() {
-  node -e "
-    const fs = require('fs');
-    const content = fs.readFileSync('$1', 'utf8');
-    const pkg = JSON.parse(content);
-    const exports = pkg.exports;
-    if (!exports) { process.exit(0); }
-
-    function findTypos(obj, path) {
-      for (const [key, val] of Object.entries(obj)) {
-        const currentPath = path ? path + '.' + key : key;
-        if (key === 'typess' || key === 'defualt' || key === 'requrie' || key === 'imoprt') {
-          console.log('typo:' + currentPath + ':' + key);
-        }
-        if (typeof val === 'object' && val !== null) {
-          findTypos(val, currentPath);
-        }
-      }
-    }
-    findTypos(exports, 'exports');
-  " 2>/dev/null
-}
-
-# Check if exports are nested under "."
 check_exports_nested() {
   node -e "
     const fs = require('fs');
-    const content = fs.readFileSync('$1', 'utf8');
-    const pkg = JSON.parse(content);
+    const pkg = JSON.parse(fs.readFileSync('$1', 'utf8'));
     const exports = pkg.exports;
     if (!exports) { console.log('missing'); process.exit(0); }
-
-    if (exports['.']) {
-      console.log('nested');
-    } else if (exports['import'] || exports['require'] || exports['types']) {
-      console.log('flat');
-    } else {
-      console.log('other');
-    }
+    if (exports['.']) { console.log('nested'); }
+    else if (exports['import'] || exports['require'] || exports['types']) { console.log('flat'); }
+    else { console.log('other'); }
   " 2>/dev/null
 }
 
-# Check path prefix convention
-check_path_prefix() {
-  value="$1"
-  if [ -z "$value" ]; then
-    return
-  fi
-  case "$value" in
-    ./*) echo "prefixed" ;;
-    *) echo "unprefixed" ;;
-  esac
+check_exports_order() {
+  node -e "
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('$1', 'utf8'));
+    const exports = pkg.exports;
+    if (!exports) { process.exit(0); }
+    const entry = exports['.'] || exports;
+    const keys = Object.keys(entry);
+    const importIdx = keys.indexOf('import');
+    const requireIdx = keys.indexOf('require');
+    if (importIdx === -1 || requireIdx === -1) { process.exit(0); }
+    console.log(importIdx > requireIdx ? 'require-first' : 'import-first');
+  " 2>/dev/null
 }
 
-audit_package() {
+audit_repo() {
   repo="$1"
+  REPO_SCORE=0
+  REPO_MAX=0
+  REPO_CHECKS=""
+  FIRST_CHECK=1
+
   pkg_path=$(find_pkg "$repo") || {
-    printf "\n${DIM}Skipping %s (not found)${NC}\n" "$repo"
+    add_check "pkg" "error" "not found" 0 100
+    emit_repo "$repo"
     return
   }
 
-  printf "\n${BLUE}=== %s ===${NC}\n" "$repo"
-  printf "  ${DIM}%s${NC}\n" "$pkg_path"
-
-  name=$(json_get "$pkg_path" "name")
-  version=$(json_get "$pkg_path" "version")
-  printf "  %s@%s\n" "$name" "$version"
-
-  # Required fields
+  # private
   private_val=$(json_get "$pkg_path" "private")
-  if [ "$private_val" = "false" ]; then
-    ok "private" "false"
-  elif [ -z "$private_val" ]; then
-    warn "private" "missing (should be false)"
-  else
-    error "private" "is '$private_val' (should be false)"
+  if [ "$private_val" = "false" ]; then ok "private" "false" 5
+  elif [ -z "$private_val" ]; then        warn "private" "missing (should be false)" 5
+  else                                    error "private" "$private_val (should be false)" 5
   fi
 
+  # type
   type_val=$(json_get "$pkg_path" "type")
-  if [ "$type_val" = "module" ]; then
-    ok "type" "module"
-  else
-    error "type" "'$type_val' (should be 'module')"
+  if [ "$type_val" = "module" ]; then ok "type" "module" 10
+  else                                error "type" "${type_val:-missing} (should be module)" 10
   fi
 
+  # license
   license_val=$(json_get "$pkg_path" "license")
-  if [ "$license_val" = "MIT" ]; then
-    ok "license" "MIT"
-  else
-    error "license" "'$license_val' (should be 'MIT')"
+  if [ "$license_val" = "MIT" ]; then ok "license" "MIT" 5
+  else                                error "license" "${license_val:-missing} (should be MIT)" 5
   fi
 
+  # author
   author_val=$(json_get "$pkg_path" "author")
-  if [ "$author_val" = "Stephen Hellicar" ]; then
-    ok "author" "Stephen Hellicar"
-  elif [ -z "$author_val" ]; then
-    error "author" "missing"
-  else
-    warn "author" "'$author_val' (expected 'Stephen Hellicar')"
+  if [ "$author_val" = "Stephen Hellicar" ]; then ok "author" "Stephen Hellicar" 5
+  elif [ -z "$author_val" ]; then                  error "author" "missing" 5
+  else                                              warn "author" "$author_val" 5
   fi
 
+  # description
   desc_val=$(json_get "$pkg_path" "description")
-  if [ -n "$desc_val" ]; then
-    ok "description" "present"
-  else
-    error "description" "missing or empty"
+  if [ -n "$desc_val" ]; then ok "description" "present" 5
+  else                        error "description" "missing" 5
   fi
 
-  keywords_val=$(json_get "$pkg_path" "keywords")
-  if [ -n "$keywords_val" ] && [ "$keywords_val" != "[]" ]; then
-    ok "keywords" "present"
-  else
-    warn "keywords" "missing or empty"
+  # keywords
+  kw_val=$(json_get "$pkg_path" "keywords")
+  if [ -n "$kw_val" ] && [ "$kw_val" != "[]" ]; then ok "keywords" "present" 5
+  else                                                 warn "keywords" "missing or empty" 5
   fi
 
-  # Repository
+  # repository.url
   repo_url=$(json_get "$pkg_path" "repository.url")
   expected_url="git+https://github.com/shellicar/${repo}.git"
-  if [ "$repo_url" = "$expected_url" ]; then
-    ok "repository.url" "correct"
-  elif [ -z "$repo_url" ]; then
-    error "repository.url" "missing (should be '$expected_url')"
-  else
-    warn "repository.url" "'$repo_url' (expected '$expected_url')"
+  if [ "$repo_url" = "$expected_url" ]; then ok "repository.url" "correct" 10
+  elif [ -z "$repo_url" ]; then              error "repository.url" "missing" 10
+  else                                       warn "repository.url" "$repo_url" 10
   fi
 
-  # Bugs
+  # bugs.url
   bugs_url=$(json_get "$pkg_path" "bugs.url")
   expected_bugs="https://github.com/shellicar/${repo}/issues"
-  if [ "$bugs_url" = "$expected_bugs" ]; then
-    ok "bugs.url" "correct"
-  elif [ -z "$bugs_url" ]; then
-    error "bugs.url" "missing"
-  else
-    warn "bugs.url" "'$bugs_url'"
+  if [ "$bugs_url" = "$expected_bugs" ]; then ok "bugs.url" "correct" 5
+  elif [ -z "$bugs_url" ]; then               error "bugs.url" "missing" 5
+  else                                        warn "bugs.url" "$bugs_url" 5
   fi
 
-  # Homepage
+  # homepage
   homepage_val=$(json_get "$pkg_path" "homepage")
   expected_homepage="https://github.com/shellicar/${repo}#readme"
-  if [ "$homepage_val" = "$expected_homepage" ]; then
-    ok "homepage" "correct"
-  elif [ -z "$homepage_val" ]; then
-    error "homepage" "missing"
-  else
-    warn "homepage" "'$homepage_val'"
+  if [ "$homepage_val" = "$expected_homepage" ]; then ok "homepage" "correct" 5
+  elif [ -z "$homepage_val" ]; then                   error "homepage" "missing" 5
+  else                                                warn "homepage" "$homepage_val" 5
   fi
 
   # publishConfig
   publish_access=$(json_get "$pkg_path" "publishConfig.access")
-  if [ "$publish_access" = "public" ]; then
-    ok "publishConfig" "access: public"
-  else
-    error "publishConfig" "missing or not public"
+  if [ "$publish_access" = "public" ]; then ok "publishConfig" "access: public" 10
+  else                                      error "publishConfig" "missing or not public" 10
   fi
 
-  # Exports structure
+  # exports structure
   exports_nested=$(check_exports_nested "$pkg_path")
-  if [ "$exports_nested" = "nested" ]; then
-    ok "exports" "nested under '.'"
-  elif [ "$exports_nested" = "flat" ]; then
-    error "exports" "flat structure (should be nested under '.')"
-  elif [ "$exports_nested" = "missing" ]; then
-    error "exports" "missing"
+  if [ "$exports_nested" = "nested" ]; then   ok "exports" "nested under '.'" 10
+  elif [ "$exports_nested" = "flat" ]; then   error "exports" "flat (should be nested under '.')" 10
+  elif [ "$exports_nested" = "missing" ]; then error "exports" "missing" 10
+  else                                         warn "exports" "unexpected structure" 10
   fi
 
-  # Exports typos
-  typos=$(check_exports_typos "$pkg_path")
-  if [ -n "$typos" ]; then
-    echo "$typos" | while IFS= read -r typo; do
-      field=$(echo "$typo" | cut -d: -f2)
-      value=$(echo "$typo" | cut -d: -f3)
-      error "exports" "typo '$value' at $field"
-    done
-  fi
-
-  # Exports condition order
+  # exports condition order
   exports_order=$(check_exports_order "$pkg_path")
-  if [ "$exports_order" = "require-first" ]; then
-    warn "exports" "require listed before import (convention: import first)"
-  elif [ "$exports_order" = "import-first" ]; then
-    ok "exports" "import-first ordering"
+  if [ "$exports_order" = "import-first" ]; then  ok "exports_order" "import-first" 5
+  elif [ "$exports_order" = "require-first" ]; then warn "exports_order" "require before import" 5
   fi
 
-  # Path prefix checks
+  # main path prefix
   main_val=$(json_get "$pkg_path" "main")
   if [ -n "$main_val" ]; then
-    prefix=$(check_path_prefix "$main_val")
-    if [ "$prefix" = "prefixed" ]; then
-      ok "main" "$main_val"
-    else
-      warn "main" "'$main_val' (should have ./ prefix)"
-    fi
+    case "$main_val" in
+      ./*) ok "main" "$main_val" 5 ;;
+      *)   warn "main" "$main_val (missing ./ prefix)" 5 ;;
+    esac
   fi
 
-  module_val=$(json_get "$pkg_path" "module")
-  if [ -n "$module_val" ]; then
-    prefix=$(check_path_prefix "$module_val")
-    if [ "$prefix" = "prefixed" ]; then
-      ok "module" "$module_val"
-    else
-      warn "module" "'$module_val' (should have ./ prefix)"
-    fi
-  fi
-
-  types_val=$(json_get "$pkg_path" "types")
-  if [ -n "$types_val" ]; then
-    prefix=$(check_path_prefix "$types_val")
-    if [ "$prefix" = "prefixed" ]; then
-      ok "types" "$types_val"
-    else
-      warn "types" "'$types_val' (should have ./ prefix)"
-    fi
-  fi
-
-  # Files array check
+  # files
   files_val=$(json_get "$pkg_path" "files")
   if [ -z "$files_val" ]; then
-    error "files" "missing"
+    error "files" "missing" 10
   else
-    has_md=$(echo "$files_val" | grep -c '\*\.md' || true)
-    if [ "$has_md" -gt 0 ]; then
-      ok "files" "includes *.md"
-    else
-      warn "files" "missing '*.md' entry"
+    has_md=$(printf '%s' "$files_val" | grep -c '\*\.md' || true)
+    if [ "$has_md" -gt 0 ]; then ok "files" "includes *.md" 10
+    else                          warn "files" "missing *.md entry" 10
     fi
   fi
 
-  # Scripts check
+  # scripts.dev
   dev_script=$(json_get "$pkg_path" "scripts.dev")
   watch_script=$(json_get "$pkg_path" "scripts.watch")
-  if [ -n "$dev_script" ]; then
-    ok "scripts.dev" "present"
-  elif [ -n "$watch_script" ]; then
-    warn "scripts" "'watch' script found instead of 'dev'"
+  if [ -n "$dev_script" ]; then           ok "scripts.dev" "present" 5
+  elif [ -n "$watch_script" ]; then       warn "scripts.dev" "watch found instead of dev" 5
   fi
 
-  # Field ordering
-  keys=$(json_keys "$pkg_path")
-  printf "  ${DIM}field order: %s${NC}\n" "$keys"
+  emit_repo "$repo" "$pkg_path"
 }
 
-printf "${BLUE}Package.json Audit${NC}\n"
-printf "Conventions: ./ prefix, *.md in files, import-first exports\n"
-
-for repo in $LIBRARY_REPOS; do
-  audit_package "$repo"
-done
-
-printf "\n${BLUE}=== Summary ===${NC}\n"
-if [ $ERRORS -gt 0 ]; then
-  printf "${RED}%d errors${NC}" "$ERRORS"
+if [ $# -gt 0 ]; then
+  audit_repo "$1"
 else
-  printf "${GREEN}0 errors${NC}"
-fi
-printf ", "
-if [ $WARNINGS -gt 0 ]; then
-  printf "${YELLOW}%d warnings${NC}\n" "$WARNINGS"
-else
-  printf "${GREEN}0 warnings${NC}\n"
+  for repo in $LIBRARY_REPOS; do
+    audit_repo "$repo"
+  done
 fi
 
-exit $ERRORS
+printf '{"repos":[%s],"summary":{"total":%d,"errors":%d,"warnings":%d}}\n' \
+  "$REPOS_JSON" "$TOTAL_REPOS" "$TOTAL_ERRORS" "$TOTAL_WARNINGS"
+
+exit "$TOTAL_ERRORS"

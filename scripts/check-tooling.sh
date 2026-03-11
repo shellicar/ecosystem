@@ -1,51 +1,40 @@
 #!/bin/sh
+# Check tooling versions across @shellicar repositories.
+# Outputs JSON.
+#
+# Usage:
+#   check-tooling.sh              # All repos
+#   check-tooling.sh -p <name>    # Single repo
+
 set -eu
 
-ESC=$(printf '\033')
-GREEN="${ESC}[0;32m"
-YELLOW="${ESC}[1;33m"
-BLUE="${ESC}[0;34m"
-RED="${ESC}[0;31m"
-DIM="${ESC}[2m"
-RESET="${ESC}[0m"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/common.sh"
 
-# Parse arguments
 SINGLE_PACKAGE=""
 while [ $# -gt 0 ]; do
   case "$1" in
-  -p | --package)
-    SINGLE_PACKAGE="$2"
-    shift 2
-    ;;
-  -h | --help)
-    printf "Usage: %s [-p|--package <name>]\n" "$0"
-    printf "  -p, --package <name>  Show all tool versions for a single package\n"
-    printf "  -h, --help            Show this help message\n"
-    exit 0
-    ;;
-  *)
-    printf "Unknown option: %s\n" "$1"
-    exit 1
-    ;;
+    -p|--package) SINGLE_PACKAGE="$2"; shift 2 ;;
+    -h|--help)
+      printf "Usage: %s [-p|--package <name>]\n" "$0"
+      exit 0
+      ;;
+    *) printf "Unknown option: %s\n" "$1" >&2; exit 1 ;;
   esac
 done
 
-# Get version from package.json packageManager field (pnpm@x.x.x+sha...)
 get_pnpm_version() {
   grep '"packageManager":' "$1" 2>/dev/null | sed 's/.*pnpm@\([^+"]*\).*/\1/' || printf ""
 }
 
-# Get version from .nvmrc
 get_node_version() {
-  tr -d '[:space:]' <"$1" 2>/dev/null || printf ""
+  tr -d '[:space:]' < "$1" 2>/dev/null || printf ""
 }
 
-# Get devDependency version from package.json
 get_dev_dependency() {
   grep "\"$2\":" "$1" 2>/dev/null | sed 's/.*": *"[\^~]*\([^"]*\)".*/\1/' || printf ""
 }
 
-# Get newest version of a dependency from workspace packages
 get_workspace_dependency() {
   newest=""
   for pkg in "$1/package.json" "$1"/packages/*/package.json; do
@@ -60,9 +49,8 @@ get_workspace_dependency() {
   printf "%s" "$newest"
 }
 
-# Collect repo directories
 collect_repos() {
-  for dir in ../*/; do
+  for dir in "$WORKSPACE_DIR"/*/; do
     name=$(basename "$dir")
     [ "$name" = "ecosystem" ] && continue
     [ "$name" = "repro" ] && continue
@@ -70,242 +58,99 @@ collect_repos() {
   done
 }
 
-# Version stats helpers
-find_mode() { printf "%s\n" "$1" | grep -v '^$' | sort | uniq -c | sort -rn | head -1 | awk '{print $2}'; }
-find_oldest() { printf "%s\n" "$1" | grep -v '^$' | sort -V | head -1; }
-find_newest() { printf "%s\n" "$1" | grep -v '^$' | sort -V | tail -1; }
+npm_latest() {
+  npm view "$1" version 2>/dev/null || printf "unknown"
+}
 
-# Get color based on version difference (red=major, yellow=minor, blue=patch)
-version_color() {
-  current=$1 target=$2
-  [ "$current" = "$target" ] && {
-    printf "%s" "$GREEN"
-    return
-  }
-
-  # Extract major.minor.patch
+version_status() {
+  current="$1" latest="$2"
+  [ -z "$current" ] && { printf "missing"; return; }
+  [ "$latest" = "unknown" ] && { printf "unknown"; return; }
+  [ "$current" = "$latest" ] && { printf "ok"; return; }
   cur_major=$(printf "%s" "$current" | cut -d. -f1)
+  lat_major=$(printf "%s" "$latest" | cut -d. -f1)
   cur_minor=$(printf "%s" "$current" | cut -d. -f2)
-  tar_major=$(printf "%s" "$target" | cut -d. -f1)
-  tar_minor=$(printf "%s" "$target" | cut -d. -f2)
-
-  if [ "$cur_major" != "$tar_major" ]; then
-    printf "%s" "$RED"
-  elif [ "$cur_minor" != "$tar_minor" ]; then
-    printf "%s" "$YELLOW"
-  else
-    printf "%s" "$BLUE"
-  fi
+  lat_minor=$(printf "%s" "$latest" | cut -d. -f2)
+  [ "$cur_major" != "$lat_major" ] && { printf "major"; return; }
+  [ "$cur_minor" != "$lat_minor" ] && { printf "minor"; return; }
+  printf "patch"
 }
 
-# Print summary with status icon
-print_summary() {
-  latest=$1 mode=$2 oldest=$3 newest=$4
-  summary="" icon=""
+# ── Single package mode ───────────────────────────────────────────
 
-  # Determine target for color comparison
-  target=$newest
-  [ -n "$latest" ] && [ "$latest" != "unknown" ] && target=$latest
-
-  [ -n "$latest" ] && [ "$latest" != "unknown" ] && summary="Latest: ${DIM}$latest${RESET}"
-
-  if [ "$oldest" = "$newest" ]; then
-    all_color=$(version_color "$oldest" "$target")
-    [ -n "$summary" ] && summary="$summary | All: ${all_color}$oldest${RESET}" || summary="All: ${all_color}$oldest${RESET}"
-    if [ -n "$latest" ] && [ "$latest" != "unknown" ] && [ "$oldest" = "$latest" ]; then
-      icon="✅"
-    elif [ -n "$latest" ] && [ "$latest" != "unknown" ]; then
-      icon="⚠️"
-    else
-      icon="✅"
-    fi
-  else
-    icon="⚠️"
-    oldest_color=$(version_color "$oldest" "$target")
-    newest_color=$(version_color "$newest" "$target")
-    [ -n "$summary" ] && summary="$summary | Oldest: ${oldest_color}$oldest${RESET} | Newest: ${newest_color}$newest${RESET}" || summary="Oldest: ${oldest_color}$oldest${RESET} | Newest: ${newest_color}$newest${RESET}"
-  fi
-
-  printf "  %b %s\n" "$summary" "$icon"
-}
-
-# Generic tool checker
-check_tool() {
-  tool_name=$1
-  npm_pkg=$2
-  get_version_cmd=$3
-
-  printf "\n${BLUE}═══ %s ═══${RESET}\n" "$tool_name"
-
-  # Get latest from npm if package specified
-  latest="unknown"
-  [ -n "$npm_pkg" ] && latest=$(npm view "$npm_pkg" version 2>/dev/null || printf "unknown")
-
-  # Collect versions
-  versions=""
-  for repo_dir in $(collect_repos); do
-    version=$(eval "$get_version_cmd")
-    [ -n "$version" ] && { [ -n "$versions" ] && versions="$versions
-$version" || versions="$version"; }
-  done
-
-  mode=$(find_mode "$versions")
-  oldest=$(find_oldest "$versions")
-  newest=$(find_newest "$versions")
-  print_summary "$latest" "$mode" "$oldest" "$newest"
-
-  # Determine target version
-  target=$newest
-  [ "$latest" != "unknown" ] && target=$latest
-
-  # Print per-repo status
-  for repo_dir in $(collect_repos); do
-    repo=$(basename "$repo_dir")
-    version=$(eval "$get_version_cmd")
-    if [ -z "$version" ]; then
-      printf "  %s: ${YELLOW}not found${RESET}\n" "$repo"
-    else
-      color=$(version_color "$version" "$target")
-      printf "  %s: ${color}%s${RESET}\n" "$repo" "$version"
-    fi
-  done
-}
-
-# Special checker for Node.js (.nvmrc - no npm package)
-check_node() {
-  printf "\n${BLUE}═══ Node.js (.nvmrc) ═══${RESET}\n"
-
-  versions=""
-  for repo_dir in $(collect_repos); do
-    nvmrc="$repo_dir/.nvmrc"
-    [ -f "$nvmrc" ] && version=$(get_node_version "$nvmrc") && [ -n "$version" ] && {
-      [ -n "$versions" ] && versions="$versions
-$version" || versions="$version"
-    }
-  done
-
-  mode=$(find_mode "$versions")
-  oldest=$(find_oldest "$versions")
-  newest=$(find_newest "$versions")
-  [ -n "$mode" ] && print_summary "" "$mode" "$oldest" "$newest"
-
-  for repo_dir in $(collect_repos); do
-    repo=$(basename "$repo_dir")
-    nvmrc="$repo_dir/.nvmrc"
-    if [ -f "$nvmrc" ]; then
-      version=$(get_node_version "$nvmrc")
-      color=$(version_color "$version" "$newest")
-      printf "  %s: ${color}%s${RESET}\n" "$repo" "$version"
-    else
-      printf "  %s: ${YELLOW}no .nvmrc${RESET}\n" "$repo"
-    fi
-  done
-}
-
-# Single package mode - show all tools for one package
-check_single_package() {
-  pkg_name=$1
-  repo_dir="../$pkg_name"
-
+if [ -n "$SINGLE_PACKAGE" ]; then
+  repo_dir="$WORKSPACE_DIR/$SINGLE_PACKAGE"
   if [ ! -d "$repo_dir" ] || [ ! -f "$repo_dir/package.json" ]; then
-    printf "${RED}Package not found: %s${RESET}\n" "$pkg_name"
+    printf '{"error":"package not found: %s"}\n' "$SINGLE_PACKAGE"
     exit 1
   fi
 
-  printf "${BLUE}═══ %s ═══${RESET}\n\n" "$pkg_name"
+  node_ver=""; nvmrc="$repo_dir/.nvmrc"
+  [ -f "$nvmrc" ] && node_ver=$(get_node_version "$nvmrc")
 
-  # Node.js
-  nvmrc="$repo_dir/.nvmrc"
-  if [ -f "$nvmrc" ]; then
-    version=$(get_node_version "$nvmrc")
-    printf "  Node.js:    ${GREEN}%s${RESET}\n" "$version"
-  else
-    printf "  Node.js:    ${YELLOW}no .nvmrc${RESET}\n"
-  fi
+  pnpm_ver=$(get_pnpm_version "$repo_dir/package.json")
+  pnpm_latest=$(npm_latest pnpm)
 
-  # pnpm
-  version=$(get_pnpm_version "$repo_dir/package.json")
-  latest=$(npm view pnpm version 2>/dev/null || printf "unknown")
-  if [ -n "$version" ]; then
-    color=$(version_color "$version" "$latest")
-    if [ "$version" = "$latest" ]; then
-      printf "  pnpm:       ${color}%s${RESET}\n" "$version"
-    else
-      printf "  pnpm:       ${color}%s${RESET} ${DIM}(latest: %s)${RESET}\n" "$version" "$latest"
-    fi
-  else
-    printf "  pnpm:       ${YELLOW}not found${RESET}\n"
-  fi
+  turbo_ver=$(get_dev_dependency "$repo_dir/package.json" "turbo")
+  turbo_latest=$(npm_latest turbo)
 
-  # Turbo
-  version=$(get_dev_dependency "$repo_dir/package.json" "turbo")
-  latest=$(npm view turbo version 2>/dev/null || printf "unknown")
-  if [ -n "$version" ]; then
-    color=$(version_color "$version" "$latest")
-    if [ "$version" = "$latest" ]; then
-      printf "  Turbo:      ${color}%s${RESET}\n" "$version"
-    else
-      printf "  Turbo:      ${color}%s${RESET} ${DIM}(latest: %s)${RESET}\n" "$version" "$latest"
-    fi
-  else
-    printf "  Turbo:      ${YELLOW}not found${RESET}\n"
-  fi
+  ts_ver=$(get_workspace_dependency "$repo_dir" "typescript")
+  ts_latest=$(npm_latest typescript)
 
-  # TypeScript
-  version=$(get_workspace_dependency "$repo_dir" "typescript")
-  latest=$(npm view typescript version 2>/dev/null || printf "unknown")
-  if [ -n "$version" ]; then
-    color=$(version_color "$version" "$latest")
-    if [ "$version" = "$latest" ]; then
-      printf "  TypeScript: ${color}%s${RESET}\n" "$version"
-    else
-      printf "  TypeScript: ${color}%s${RESET} ${DIM}(latest: %s)${RESET}\n" "$version" "$latest"
-    fi
-  else
-    printf "  TypeScript: ${YELLOW}not found${RESET}\n"
-  fi
+  lh_ver=$(get_dev_dependency "$repo_dir/package.json" "lefthook")
+  lh_latest=$(npm_latest lefthook)
 
-  # lefthook
-  version=$(get_dev_dependency "$repo_dir/package.json" "lefthook")
-  latest=$(npm view lefthook version 2>/dev/null || printf "unknown")
-  if [ -n "$version" ]; then
-    color=$(version_color "$version" "$latest")
-    if [ "$version" = "$latest" ]; then
-      printf "  lefthook:   ${color}%s${RESET}\n" "$version"
-    else
-      printf "  lefthook:   ${color}%s${RESET} ${DIM}(latest: %s)${RESET}\n" "$version" "$latest"
-    fi
-  else
-    printf "  lefthook:   ${YELLOW}not found${RESET}\n"
-  fi
+  sp_ver=$(get_dev_dependency "$repo_dir/package.json" "syncpack")
+  sp_latest=$(npm_latest syncpack)
 
-  # syncpack
-  version=$(get_dev_dependency "$repo_dir/package.json" "syncpack")
-  latest=$(npm view syncpack version 2>/dev/null || printf "unknown")
-  if [ -n "$version" ]; then
-    color=$(version_color "$version" "$latest")
-    if [ "$version" = "$latest" ]; then
-      printf "  syncpack:   ${color}%s${RESET}\n" "$version"
-    else
-      printf "  syncpack:   ${color}%s${RESET} ${DIM}(latest: %s)${RESET}\n" "$version" "$latest"
-    fi
-  else
-    printf "  syncpack:   ${YELLOW}not found${RESET}\n"
-  fi
-}
-
-# Main
-if [ -n "$SINGLE_PACKAGE" ]; then
-  check_single_package "$SINGLE_PACKAGE"
-else
-  printf "${BLUE}Checking tooling versions across repositories...${RESET}\n"
-
-  check_node
-  check_tool "pnpm (packageManager)" "pnpm" 'get_pnpm_version "$repo_dir/package.json"'
-  check_tool "Turbo" "turbo" 'get_dev_dependency "$repo_dir/package.json" "turbo"'
-  check_tool "TypeScript" "typescript" 'get_workspace_dependency "$repo_dir" "typescript"'
-  check_tool "lefthook" "lefthook" 'get_dev_dependency "$repo_dir/package.json" "lefthook"'
-  check_tool "syncpack" "syncpack" 'get_dev_dependency "$repo_dir/package.json" "syncpack"'
+  printf '{"repo":"%s","node":"%s","pnpm":{"version":"%s","latest":"%s","status":"%s"},"turbo":{"version":"%s","latest":"%s","status":"%s"},"typescript":{"version":"%s","latest":"%s","status":"%s"},"lefthook":{"version":"%s","latest":"%s","status":"%s"},"syncpack":{"version":"%s","latest":"%s","status":"%s"}}\n' \
+    "$SINGLE_PACKAGE" "$node_ver" \
+    "$pnpm_ver" "$pnpm_latest" "$(version_status "$pnpm_ver" "$pnpm_latest")" \
+    "$turbo_ver" "$turbo_latest" "$(version_status "$turbo_ver" "$turbo_latest")" \
+    "$ts_ver" "$ts_latest" "$(version_status "$ts_ver" "$ts_latest")" \
+    "$lh_ver" "$lh_latest" "$(version_status "$lh_ver" "$lh_latest")" \
+    "$sp_ver" "$sp_latest" "$(version_status "$sp_ver" "$sp_latest")"
+  exit 0
 fi
 
-printf "\n${GREEN}✅ Check complete${RESET}\n"
+# ── All repos mode ────────────────────────────────────────────────
+
+pnpm_latest=$(npm_latest pnpm)
+turbo_latest=$(npm_latest turbo)
+ts_latest=$(npm_latest typescript)
+lh_latest=$(npm_latest lefthook)
+sp_latest=$(npm_latest syncpack)
+
+REPOS_JSON=""
+FIRST_REPO=1
+
+for repo_dir in $(collect_repos); do
+  repo=$(basename "$repo_dir")
+
+  node_ver=""; nvmrc="$repo_dir/.nvmrc"
+  [ -f "$nvmrc" ] && node_ver=$(get_node_version "$nvmrc")
+
+  pnpm_ver=$(get_pnpm_version "$repo_dir/package.json")
+  turbo_ver=$(get_dev_dependency "$repo_dir/package.json" "turbo")
+  ts_ver=$(get_workspace_dependency "$repo_dir" "typescript")
+  lh_ver=$(get_dev_dependency "$repo_dir/package.json" "lefthook")
+  sp_ver=$(get_dev_dependency "$repo_dir/package.json" "syncpack")
+
+  entry=$(printf '{"repo":"%s","node":"%s","pnpm":{"version":"%s","status":"%s"},"turbo":{"version":"%s","status":"%s"},"typescript":{"version":"%s","status":"%s"},"lefthook":{"version":"%s","status":"%s"},"syncpack":{"version":"%s","status":"%s"}}' \
+    "$repo" "$node_ver" \
+    "$pnpm_ver" "$(version_status "$pnpm_ver" "$pnpm_latest")" \
+    "$turbo_ver" "$(version_status "$turbo_ver" "$turbo_latest")" \
+    "$ts_ver" "$(version_status "$ts_ver" "$ts_latest")" \
+    "$lh_ver" "$(version_status "$lh_ver" "$lh_latest")" \
+    "$sp_ver" "$(version_status "$sp_ver" "$sp_latest")")
+
+  if [ "$FIRST_REPO" = "1" ]; then
+    REPOS_JSON="$entry"
+    FIRST_REPO=0
+  else
+    REPOS_JSON="${REPOS_JSON},${entry}"
+  fi
+done
+
+printf '{"latest":{"pnpm":"%s","turbo":"%s","typescript":"%s","lefthook":"%s","syncpack":"%s"},"repos":[%s]}\n' \
+  "$pnpm_latest" "$turbo_latest" "$ts_latest" "$lh_latest" "$sp_latest" "$REPOS_JSON"

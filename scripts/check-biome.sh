@@ -1,107 +1,73 @@
 #!/bin/sh
+# Check Biome version consistency across @shellicar repositories.
+# Outputs JSON.
+#
+# Usage:
+#   check-biome.sh
+
 set -eu
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-RESET='\033[0m'
-
-# Get latest Biome version from npm
-get_latest_version() {
-  npm view @biomejs/biome version 2>/dev/null || printf "unknown"
-}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/common.sh"
 
 # Extract version from package.json devDependencies
 get_installed_version() {
-  pkg_json=$1
-  grep '"@biomejs/biome":' "$pkg_json" 2>/dev/null |
+  grep '"@biomejs/biome":' "$1" 2>/dev/null |
     sed 's/.*": *"[\^~]*\([^"]*\)".*/\1/' || printf ""
 }
 
-# Extract schema version from biome.json
+# Extract schema version from biome.json (versioned URL only)
 get_schema_version() {
-  biome_json=$1
-  grep '"$schema":' "$biome_json" 2>/dev/null |
-    sed 's|.*/schemas/\([^/]*\)/.*|\1|' || printf ""
+  grep '"$schema":' "$1" 2>/dev/null |
+    grep -o '/schemas/[^/]*/schema\.json' |
+    sed 's|/schemas/\([^/]*\)/schema\.json|\1|' || printf ""
 }
 
-# Compare semver versions (returns 0 if v1 < v2)
 version_lt() {
-  v1=$1
-  v2=$2
-  [ "$v1" != "$v2" ] && [ "$(printf '%s\n%s' "$v1" "$v2" | sort -V | head -n1)" = "$v1" ]
+  [ "$1" != "$2" ] && [ "$(printf '%s\n%s' "$1" "$2" | sort -V | head -n1)" = "$1" ]
 }
 
-# Check a single repository
-check_repo() {
-  biome_json=$1
-  latest=$2
+json_str() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+latest=$(npm view @biomejs/biome version 2>/dev/null || printf "unknown")
+
+REPOS_JSON=""
+FIRST_REPO=1
+
+for biome_json in $(find -L "$WORKSPACE_DIR" -maxdepth 2 -name "biome.json" -type f | sort); do
   repo_dir=$(dirname "$biome_json")
   repo_name=$(basename "$repo_dir")
+  [ "$repo_name" = "ecosystem" ] && continue
+
   pkg_json="$repo_dir/package.json"
-
-  printf "${BLUE}%s${RESET}\n" "$repo_name"
-
-  # Check if package.json exists
   if [ ! -f "$pkg_json" ]; then
-    printf "  ${YELLOW}⚠️ No package.json${RESET}\n\n"
-    return 1
+    continue
   fi
 
   installed=$(get_installed_version "$pkg_json")
   schema=$(get_schema_version "$biome_json")
 
-  # Check if installed version exists
   if [ -z "$installed" ]; then
-    printf "  ${YELLOW}⚠️ No @biomejs/biome in package.json${RESET}\n\n"
-    return 1
+    status="missing"
+  elif [ "$latest" != "unknown" ] && version_lt "$installed" "$latest"; then
+    status="outdated"
+  elif [ -n "$schema" ] && [ "$schema" != "$installed" ]; then
+    status="schema_mismatch"
+  else
+    status="ok"
   fi
 
-  printf "  Installed: %s\n" "$installed"
-  printf "  Schema:    %s\n" "$schema"
+  entry=$(printf '{"repo":"%s","installed":"%s","schema":"%s","latest":"%s","status":"%s"}' \
+    "$repo_name" "$installed" "$(json_str "$schema")" "$latest" "$status")
 
-  has_issues=false
-
-  # Check if outdated compared to latest
-  if [ "$latest" != "unknown" ] && version_lt "$installed" "$latest"; then
-    printf "  ${YELLOW}⚠️ Outdated: %s → %s${RESET}\n" "$installed" "$latest"
-    printf "    Run: ${GREEN}pnpm add -D @biomejs/biome@latest${RESET}\n"
-    has_issues=true
+  if [ "$FIRST_REPO" = "1" ]; then
+    REPOS_JSON="$entry"
+    FIRST_REPO=0
+  else
+    REPOS_JSON="${REPOS_JSON},${entry}"
   fi
-
-  # Check if schema version differs from installed
-  if [ -n "$schema" ] && [ "$schema" != "$installed" ]; then
-    printf "  ${YELLOW}⚠️ Schema mismatch: biome.json (%s) ≠ installed (%s)${RESET}\n" "$schema" "$installed"
-    printf "    Run: ${GREEN}pnpm biome migrate --write${RESET}\n"
-    has_issues=true
-  fi
-
-  if [ "$has_issues" = false ]; then
-    printf "  ${GREEN}✅ Up to date${RESET}\n"
-  fi
-
-  printf "\n"
-  if [ "$has_issues" = true ]; then return 1; else return 0; fi
-}
-
-# Main
-printf "${BLUE}Checking Biome versions across repositories...${RESET}\n\n"
-
-latest=$(get_latest_version)
-printf "Latest Biome version: ${GREEN}%s${RESET}\n\n" "$latest"
-
-has_issues=false
-
-for biome_json in $(find -L .. -maxdepth 2 -name "biome.json" -type f | sort); do
-  repo_name=$(basename "$(dirname "$biome_json")")
-  [ "$repo_name" = "ecosystem" ] && continue
-
-  check_repo "$biome_json" "$latest" || has_issues=true
 done
 
-if [ "$has_issues" = true ]; then
-  printf "${YELLOW}Some repositories need attention.${RESET}\n"
-  exit 1
-else
-  printf "${GREEN}All repositories are in sync!${RESET}\n"
-fi
+printf '{"latest":"%s","repos":[%s]}\n' "$latest" "$REPOS_JSON"

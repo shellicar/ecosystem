@@ -15,6 +15,8 @@
 - [`@shellicar/build-clean`](https://github.com/shellicar/build-clean) - Build plugin that automatically cleans unused files from output directories.
 - [`@shellicar/build-version`](https://github.com/shellicar/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
 - [`@shellicar/build-graphql`](https://github.com/shellicar/build-graphql) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
+- [`@shellicar/build-azure-local-settings`](https://github.com/shellicar/build-azure-local-settings) - Build plugin that resolves Azure Key Vault references in local settings files for local development.
+- [`@shellicar/graphql-codegen-treeshake`](https://github.com/shellicar/graphql-codegen-treeshake) - A graphql-codegen preset that tree-shakes unused types from TypeScript output.
 
 ### Framework
 

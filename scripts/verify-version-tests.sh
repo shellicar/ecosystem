@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. ./files/scripts/verify-version-functions.sh
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/../files/scripts/verify-version-functions.sh"
 
 TESTS_RUN=0
 TESTS_PASSED=0

@@ -4,7 +4,7 @@ set -eu
 
 # Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/scripts/common.sh"
+. "$SCRIPT_DIR/common.sh"
 
 # Parse arguments
 DESTRUCTIVE=false
@@ -26,7 +26,7 @@ EXCLUDE_CONDITIONAL="reference-foundation reference-enterprise"
 # Files that are expected to differ (just report)
 EXPECTED_DIFF_FILES=".syncpackrc turbo.json pnpm-workspace.yaml biome.json"
 
-cd files/
+cd "$SCRIPT_DIR/../files/"
 for j in $LIBRARY_REPOS; do
   target_dir="../../$j"
 

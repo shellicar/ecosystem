@@ -3,7 +3,15 @@ set -eu
 
 # Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/scripts/common.sh"
+. "$SCRIPT_DIR/common.sh"
+
+# Parse arguments
+DESTRUCTIVE=false
+for arg in "$@"; do
+  case "$arg" in
+    -d|--destructive) DESTRUCTIVE=true ;;
+  esac
+done
 
 readonly MARKER_BEGIN='<!-- BEGIN_ECOSYSTEM -->'
 readonly MARKER_END='<!-- END_ECOSYSTEM -->'
@@ -55,6 +63,10 @@ find -L .. -maxdepth 2 -name README.md -type f | while read -r readme_path; do
     continue
   fi
 
-  update_single_readme "$readme_path"
-  printf "${GREEN}Updated${RESET} %s successfully\n" "$readme_path"
+  if [ "$DESTRUCTIVE" = true ]; then
+    update_single_readme "$readme_path"
+    printf "${GREEN}Updated${RESET} %s successfully\n" "$readme_path"
+  else
+    printf "${RED}WOULD UPDATE${RESET} %s (use -d to apply)\n" "$readme_path"
+  fi
 done
