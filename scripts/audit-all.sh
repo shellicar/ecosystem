@@ -8,7 +8,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 REPOS_JSON=""
 FIRST_REPO=1
@@ -17,8 +17,8 @@ total_high=0
 total_moderate=0
 total_low=0
 
-for repo in $LIBRARY_REPOS; do
-  dir="${WORKSPACE_DIR}/${repo}"
+for dir in $ALL_REPO_DIRS; do
+  repo=$(basename "$dir")
   if [ ! -d "$dir" ]; then
     continue
   fi

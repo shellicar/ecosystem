@@ -8,7 +8,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 # Extract version from package.json devDependencies
 get_installed_version() {
@@ -36,13 +36,13 @@ latest=$(npm view @biomejs/biome version 2>/dev/null || printf "unknown")
 REPOS_JSON=""
 FIRST_REPO=1
 
-for biome_json in $(find -L "$WORKSPACE_DIR" -maxdepth 2 -name "biome.json" -type f | sort); do
-  repo_dir=$(dirname "$biome_json")
+for repo_dir in $ALL_REPO_DIRS; do
   repo_name=$(basename "$repo_dir")
   [ "$repo_name" = "ecosystem" ] && continue
 
+  biome_json="$repo_dir/biome.json"
   pkg_json="$repo_dir/package.json"
-  if [ ! -f "$pkg_json" ]; then
+  if [ ! -f "$biome_json" ] || [ ! -f "$pkg_json" ]; then
     continue
   fi
 
