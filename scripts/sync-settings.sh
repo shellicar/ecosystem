@@ -9,7 +9,7 @@
 
 # Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 OWNER="$GITHUB_OWNER"
 DRY_RUN=true
@@ -17,7 +17,7 @@ DRY_RUN=true
 # =============================================================================
 # REPO CATEGORIES
 # =============================================================================
-# LIBRARY_REPOS is defined in common.sh (published npm packages)
+# LIBRARY_REPOS is defined in common (published npm packages)
 
 REFERENCE_REPOS="reference-enterprise
 reference-foundation"

@@ -9,7 +9,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 SINGLE_PACKAGE=""
 while [ $# -gt 0 ]; do
@@ -50,7 +50,7 @@ get_workspace_dependency() {
 }
 
 collect_repos() {
-  for dir in "$WORKSPACE_DIR"/*/; do
+  for dir in $ALL_REPO_DIRS; do
     name=$(basename "$dir")
     [ "$name" = "ecosystem" ] && continue
     [ "$name" = "repro" ] && continue
@@ -79,7 +79,7 @@ version_status() {
 # ── Single package mode ───────────────────────────────────────────
 
 if [ -n "$SINGLE_PACKAGE" ]; then
-  repo_dir="$WORKSPACE_DIR/$SINGLE_PACKAGE"
+  repo_dir="$(repo_path "$SINGLE_PACKAGE")"
   if [ ! -d "$repo_dir" ] || [ ! -f "$repo_dir/package.json" ]; then
     printf '{"error":"package not found: %s"}\n' "$SINGLE_PACKAGE"
     exit 1

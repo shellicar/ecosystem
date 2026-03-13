@@ -8,7 +8,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 json_str() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g' | tr '\n' ' '
@@ -17,7 +17,7 @@ json_str() {
 REPOS_JSON=""
 FIRST_REPO=1
 
-for dir in "$WORKSPACE_DIR"/*/; do
+for dir in $ALL_REPO_DIRS; do
   if [ ! -d "$dir/.git" ]; then
     continue
   fi

@@ -15,7 +15,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 TOTAL_ERRORS=0
 TOTAL_WARNINGS=0
@@ -99,8 +99,8 @@ find_pkg_version() {
 }
 
 check_repo() {
-  repo="$1"
-  repo_dir="$WORKSPACE_DIR/$repo"
+  repo_dir="$(repo_path "$1")"
+  repo=$(basename "$repo_dir")
   REPO_SCORE=0
   REPO_MAX=0
   REPO_CHECKS=""
@@ -164,11 +164,11 @@ check_repo() {
 if [ $# -gt 0 ]; then
   check_repo "$1"
 else
-  for repo in $ALL_REPOS; do
-    if [ "$repo" = "ecosystem" ]; then
+  for repo_dir in $ALL_REPO_DIRS; do
+    if [ "$(basename "$repo_dir")" = "ecosystem" ]; then
       continue
     fi
-    check_repo "$repo"
+    check_repo "$repo_dir"
   done
 fi
 
