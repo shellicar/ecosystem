@@ -9,7 +9,7 @@
 
 # Source common definitions
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/common.sh"
+. "$SCRIPT_DIR/common"
 
 OWNER="$GITHUB_OWNER"
 DRY_RUN=true
