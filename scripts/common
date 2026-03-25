@@ -19,6 +19,7 @@ claude-cli
 cosmos-query-builder
 ecosystem
 graphql-codegen-treeshake
+mcp-exec
 reference-enterprise
 reference-foundation
 svelte-adapter-azure-functions
@@ -34,6 +35,7 @@ core-di
 claude-cli
 cosmos-query-builder
 graphql-codegen-treeshake
+mcp-exec
 svelte-adapter-azure-functions
 ui-shadcn
 winston-azure-application-insights"

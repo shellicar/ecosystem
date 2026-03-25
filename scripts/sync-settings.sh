@@ -27,16 +27,19 @@ CONFIG_REPOS="ecosystem"
 # =============================================================================
 # SETTINGS BY CATEGORY
 # =============================================================================
-# Format: auto_merge delete_branch wiki projects discussions issues
+# Format: auto_merge delete_branch wiki projects discussions issues pr_policy secret_scanning secret_scan_push dependabot_updates
 
 # Published npm packages - full features
-LIBRARY_SETTINGS="true true false false false true"
+LIBRARY_SETTINGS="true true false false false true collaborators_only enabled enabled disabled"
 
 # Reference/template repos
-REFERENCE_SETTINGS="true true false false false true"
+REFERENCE_SETTINGS="true true false false false true collaborators_only enabled enabled disabled"
 
 # Config/meta repos (ecosystem, etc.)
-CONFIG_SETTINGS="true true false false false false"
+CONFIG_SETTINGS="true true false false false false collaborators_only enabled enabled disabled"
+
+# Vulnerability alerts - enabled for all repos (alerts only, no auto PRs)
+WANT_VULNERABILITY_ALERTS="enabled"
 
 # =============================================================================
 # FUNCTIONS
@@ -52,7 +55,9 @@ in_list() {
 
 # Get settings for a repo based on its category
 # Usage: get_repo_settings <repo>
-# Sets: WANT_AUTO_MERGE, WANT_DELETE_BRANCH, WANT_WIKI, WANT_PROJECTS, WANT_DISCUSSIONS, WANT_ISSUES
+# Sets: WANT_AUTO_MERGE, WANT_DELETE_BRANCH, WANT_WIKI, WANT_PROJECTS,
+#       WANT_DISCUSSIONS, WANT_ISSUES, WANT_PR_POLICY,
+#       WANT_SECRET_SCANNING, WANT_SECRET_SCAN_PUSH, WANT_DEPENDABOT_UPDATES
 get_repo_settings() {
   repo="$1"
 
@@ -74,6 +79,10 @@ get_repo_settings() {
   WANT_PROJECTS=$(echo "$settings" | cut -d' ' -f4)
   WANT_DISCUSSIONS=$(echo "$settings" | cut -d' ' -f5)
   WANT_ISSUES=$(echo "$settings" | cut -d' ' -f6)
+  WANT_PR_POLICY=$(echo "$settings" | cut -d' ' -f7)
+  WANT_SECRET_SCANNING=$(echo "$settings" | cut -d' ' -f8)
+  WANT_SECRET_SCAN_PUSH=$(echo "$settings" | cut -d' ' -f9)
+  WANT_DEPENDABOT_UPDATES=$(echo "$settings" | cut -d' ' -f10)
 }
 
 # Get current repo settings from GitHub API
@@ -87,16 +96,33 @@ fetch_current_settings() {
     wiki: .has_wiki,
     projects: .has_projects,
     discussions: .has_discussions,
-    issues: .has_issues
+    issues: .has_issues,
+    pr_policy: .pull_request_creation_policy,
+    secret_scanning: .security_and_analysis.secret_scanning.status,
+    secret_scan_push: .security_and_analysis.secret_scanning_push_protection.status,
+    dependabot_updates: .security_and_analysis.dependabot_security_updates.status
   }' 2>/dev/null
 }
 
-# Parse a boolean from JSON
-# Usage: parse_bool <json> <key>
-parse_bool() {
+# Get vulnerability alerts status for a repo
+# Usage: fetch_vulnerability_alerts <repo>
+# Returns: "enabled" or "disabled"
+fetch_vulnerability_alerts() {
+  repo="$1"
+  response=$(gh api "repos/$OWNER/$repo/vulnerability-alerts" -i 2>/dev/null | head -1)
+  if echo "$response" | grep -q "204"; then
+    echo "enabled"
+  else
+    echo "disabled"
+  fi
+}
+
+# Parse a value from compact JSON (handles booleans and strings)
+# Usage: parse_value <json> <key>
+parse_value() {
   json="$1"
   key="$2"
-  echo "$json" | grep -o "\"$key\":[^,}]*" | cut -d':' -f2 | tr -d ' '
+  echo "$json" | grep -o "\"$key\":[^,}]*" | cut -d':' -f2 | tr -d ' "'
 }
 
 # Check if current settings match wanted settings
@@ -105,25 +131,23 @@ parse_bool() {
 settings_match() {
   json="$1"
 
-  current_auto_merge=$(parse_bool "$json" "auto_merge")
-  current_delete_branch=$(parse_bool "$json" "delete_branch")
-  current_wiki=$(parse_bool "$json" "wiki")
-  current_projects=$(parse_bool "$json" "projects")
-  current_discussions=$(parse_bool "$json" "discussions")
-  current_issues=$(parse_bool "$json" "issues")
-
-  [ "$current_auto_merge" = "$WANT_AUTO_MERGE" ] &&
-    [ "$current_delete_branch" = "$WANT_DELETE_BRANCH" ] &&
-    [ "$current_wiki" = "$WANT_WIKI" ] &&
-    [ "$current_projects" = "$WANT_PROJECTS" ] &&
-    [ "$current_discussions" = "$WANT_DISCUSSIONS" ] &&
-    [ "$current_issues" = "$WANT_ISSUES" ]
+  [ "$(parse_value "$json" "auto_merge")"         = "$WANT_AUTO_MERGE" ] &&
+  [ "$(parse_value "$json" "delete_branch")"      = "$WANT_DELETE_BRANCH" ] &&
+  [ "$(parse_value "$json" "wiki")"               = "$WANT_WIKI" ] &&
+  [ "$(parse_value "$json" "projects")"           = "$WANT_PROJECTS" ] &&
+  [ "$(parse_value "$json" "discussions")"        = "$WANT_DISCUSSIONS" ] &&
+  [ "$(parse_value "$json" "issues")"             = "$WANT_ISSUES" ] &&
+  [ "$(parse_value "$json" "pr_policy")"          = "$WANT_PR_POLICY" ] &&
+  [ "$(parse_value "$json" "secret_scanning")"    = "$WANT_SECRET_SCANNING" ] &&
+  [ "$(parse_value "$json" "secret_scan_push")"   = "$WANT_SECRET_SCAN_PUSH" ] &&
+  [ "$(parse_value "$json" "dependabot_updates")" = "$WANT_DEPENDABOT_UPDATES" ]
 }
 
 # Format settings for display
-# Usage: format_settings <auto_merge> <delete_branch> <wiki> <projects> <discussions> <issues>
+# Usage: format_settings <auto_merge> <delete_branch> <wiki> <projects> <discussions> <issues> <pr_policy> <secret_scanning> <secret_scan_push> <dependabot_updates>
 format_settings() {
-  printf "auto_merge=%s delete_branch=%s wiki=%s projects=%s discussions=%s issues=%s" "$1" "$2" "$3" "$4" "$5" "$6"
+  printf "auto_merge=%s delete_branch=%s wiki=%s projects=%s discussions=%s issues=%s pr_policy=%s secret_scanning=%s secret_scan_push=%s dependabot_updates=%s" \
+    "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"
 }
 
 # Apply settings to a repo (respects DRY_RUN)
@@ -132,7 +156,7 @@ apply_settings() {
   repo="$1"
   current="$2"
 
-  wanted=$(format_settings "$WANT_AUTO_MERGE" "$WANT_DELETE_BRANCH" "$WANT_WIKI" "$WANT_PROJECTS" "$WANT_DISCUSSIONS" "$WANT_ISSUES")
+  wanted=$(format_settings "$WANT_AUTO_MERGE" "$WANT_DELETE_BRANCH" "$WANT_WIKI" "$WANT_PROJECTS" "$WANT_DISCUSSIONS" "$WANT_ISSUES" "$WANT_PR_POLICY" "$WANT_SECRET_SCANNING" "$WANT_SECRET_SCAN_PUSH" "$WANT_DEPENDABOT_UPDATES")
 
   # Build gh repo edit flags
   if [ "$WANT_AUTO_MERGE" = "true" ]; then
@@ -152,6 +176,7 @@ apply_settings() {
     echo "  Current: $current"
     echo "  Target:  $wanted"
   else
+    # Apply basic settings via gh repo edit
     result=$(gh repo edit "$OWNER/$repo" \
       $auto_merge_flag \
       $delete_branch_flag \
@@ -160,13 +185,50 @@ apply_settings() {
       --enable-discussions=$WANT_DISCUSSIONS \
       --enable-issues=$WANT_ISSUES 2>&1)
 
-    if [ $? -eq 0 ]; then
-      printf "${YELLOW}Updated${NC}\n"
-      echo "  Was: $current"
-    else
-      printf "${RED}Failed to update${NC}\n"
+    if [ $? -ne 0 ]; then
+      printf "${RED}Failed to update basic settings${NC}\n"
       echo "  $result"
+      return 1
     fi
+
+    # Apply pull_request_creation_policy and security settings via PATCH
+    patch_json=$(printf '{"pull_request_creation_policy":"%s","security_and_analysis":{"secret_scanning":{"status":"%s"},"secret_scanning_push_protection":{"status":"%s"}}}' \
+      "$WANT_PR_POLICY" "$WANT_SECRET_SCANNING" "$WANT_SECRET_SCAN_PUSH")
+
+    result=$(echo "$patch_json" | gh api "repos/$OWNER/$repo" --method PATCH --input - 2>&1)
+    if [ $? -ne 0 ]; then
+      printf "${RED}Failed to update API settings${NC}\n"
+      echo "  $result"
+      return 1
+    fi
+
+    # Apply dependabot security updates (automated-security-fixes)
+    if [ "$WANT_DEPENDABOT_UPDATES" = "enabled" ]; then
+      gh api "repos/$OWNER/$repo/automated-security-fixes" --method PUT >/dev/null 2>&1
+    else
+      gh api "repos/$OWNER/$repo/automated-security-fixes" --method DELETE >/dev/null 2>&1
+    fi
+
+    printf "${YELLOW}Updated${NC}\n"
+    echo "  Was: $current"
+  fi
+}
+
+# Apply vulnerability alerts setting (respects DRY_RUN)
+# Usage: apply_vulnerability_alerts <repo> <current>
+apply_vulnerability_alerts() {
+  repo="$1"
+  current="$2"
+
+  if [ "$DRY_RUN" = true ]; then
+    echo "  vulnerability_alerts: $current → $WANT_VULNERABILITY_ALERTS (would update)"
+  else
+    if [ "$WANT_VULNERABILITY_ALERTS" = "enabled" ]; then
+      gh api "repos/$OWNER/$repo/vulnerability-alerts" --method PUT >/dev/null 2>&1
+    else
+      gh api "repos/$OWNER/$repo/vulnerability-alerts" --method DELETE >/dev/null 2>&1
+    fi
+    echo "  vulnerability_alerts: $current → $WANT_VULNERABILITY_ALERTS"
   fi
 }
 
@@ -186,7 +248,7 @@ while [ $# -gt 0 ]; do
     echo "  By default runs in dry-run mode (no changes made)"
     echo "  Use -d or --destructive to actually apply settings"
     echo ""
-    echo "Settings by category (auto_merge wiki projects discussions issues):"
+    echo "Settings by category (auto_merge delete_branch wiki projects discussions issues pr_policy secret_scanning secret_scan_push dependabot_updates):"
     echo ""
     echo "  Library repos:   $LIBRARY_SETTINGS"
     echo "  Reference repos: $REFERENCE_SETTINGS"
@@ -220,18 +282,40 @@ for repo in $ALL_REPOS; do
     continue
   fi
 
-  if settings_match "$current_json"; then
+  # Fetch vulnerability alerts (separate endpoint)
+  current_vuln=$(fetch_vulnerability_alerts "$repo")
+  vuln_ok=true
+  [ "$current_vuln" != "$WANT_VULNERABILITY_ALERTS" ] && vuln_ok=false
+
+  if settings_match "$current_json" && [ "$vuln_ok" = true ]; then
     printf "${BLUE}Up to date${NC}\n"
   else
-    current_auto_merge=$(parse_bool "$current_json" "auto_merge")
-    current_delete_branch=$(parse_bool "$current_json" "delete_branch")
-    current_wiki=$(parse_bool "$current_json" "wiki")
-    current_projects=$(parse_bool "$current_json" "projects")
-    current_discussions=$(parse_bool "$current_json" "discussions")
-    current_issues=$(parse_bool "$current_json" "issues")
-    current_formatted=$(format_settings "$current_auto_merge" "$current_delete_branch" "$current_wiki" "$current_projects" "$current_discussions" "$current_issues")
+    current_formatted=$(format_settings \
+      "$(parse_value "$current_json" "auto_merge")" \
+      "$(parse_value "$current_json" "delete_branch")" \
+      "$(parse_value "$current_json" "wiki")" \
+      "$(parse_value "$current_json" "projects")" \
+      "$(parse_value "$current_json" "discussions")" \
+      "$(parse_value "$current_json" "issues")" \
+      "$(parse_value "$current_json" "pr_policy")" \
+      "$(parse_value "$current_json" "secret_scanning")" \
+      "$(parse_value "$current_json" "secret_scan_push")" \
+      "$(parse_value "$current_json" "dependabot_updates")")
 
-    apply_settings "$repo" "$current_formatted"
+    if ! settings_match "$current_json"; then
+      apply_settings "$repo" "$current_formatted"
+    else
+      # Only vulnerability alerts differ
+      if [ "$DRY_RUN" = true ]; then
+        printf "${YELLOW}Would update${NC}\n"
+      else
+        printf "${YELLOW}Updated${NC}\n"
+      fi
+    fi
+
+    if [ "$vuln_ok" = false ]; then
+      apply_vulnerability_alerts "$repo" "$current_vuln"
+    fi
   fi
 done
 
