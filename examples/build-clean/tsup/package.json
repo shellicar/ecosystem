@@ -1,0 +1,22 @@
+{
+  "name": "@shellicar/build-clean-examples-tsup",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsup-node",
+    "dev": "tsup-node --watch",
+    "start": "run-s start:esm start:cjs",
+    "start:esm": "node dist/esm/main.js",
+    "start:cjs": "node dist/cjs/main.cjs",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@shellicar/build-clean": "workspace:^",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.5.0",
+    "npm-run-all2": "^8.0.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
