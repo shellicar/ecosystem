@@ -1,7 +1,7 @@
 # @shellicar/build-version
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/build-version.svg)](https://npmjs.com/package/@shellicar/build-version)
-[![build status](https://github.com/shellicar/build-version/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/build-version/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
 
 Build plugin that calculates and exposes version information through a virtual module import.
 
@@ -50,7 +50,7 @@ import version from '@shellicar/build-version/version'
 ### Build Tools
 
 - [`@shellicar/build-clean`](https://github.com/shellicar/build-clean) - Build plugin that automatically cleans unused files from output directories.
-- [`@shellicar/build-version`](https://github.com/shellicar/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
+- [`@shellicar/build-version`](https://github.com/shellicar/ecosystem/tree/main/packages/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
 - [`@shellicar/build-graphql`](https://github.com/shellicar/build-graphql) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
 
 ### Framework Adapters
@@ -119,7 +119,7 @@ VersionPlugin({
 
 ## Options
 
-See [types.ts](./packages/@shellicar/build-version/src/core/types.ts) for detailed options documentation.
+See [types.ts](./src/core/types.ts) for detailed options documentation.
 
 ## Credits
 
