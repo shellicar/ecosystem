@@ -65,7 +65,7 @@ jobs:
               const pkg = JSON.parse(fs.readFileSync(d + '/package.json', 'utf8'));
               return pkg.name.split('/').pop() === name;
             });
-            if (!match) { process.stderr.write('No package found for: ' + name + '\\\\n'); process.exit(1); }
+            if (!match) { process.stderr.write('No package found for: ' + name + '\\n'); process.exit(1); }
             process.stdout.write(match);
           ")
           echo "dir=$PACKAGE_DIR" >> "$GITHUB_OUTPUT"
