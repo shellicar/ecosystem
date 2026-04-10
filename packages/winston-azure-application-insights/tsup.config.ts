@@ -5,22 +5,20 @@ const commonOptions = (config: Options) =>
     bundle: true,
     clean: true,
     dts: true,
-    entry: ['src/**/*.ts'],
+    entry: ['src/index.ts'],
     esbuildOptions: (options) => {
       options.chunkNames = 'chunks/[name]-[hash]';
-      // entryNames flattens output paths, which causes collisions
-      // between src/types.ts and src/core/types.ts
-      // options.entryNames = '[name]';
+      options.entryNames = '[name]';
     },
     keepNames: true,
     minify: false,
-    watch: config.watch ?? false,
     platform: 'node',
     removeNodeProtocol: false,
     sourcemap: true,
     splitting: true,
     target: 'node22',
     treeshake: false,
+    watch: config.watch,
     tsconfig: 'tsconfig.json',
   }) satisfies Options;
 

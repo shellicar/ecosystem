@@ -1,0 +1,55 @@
+{"description":"Forked from willmorgan/winston-azure-application-insights (originally bragma/winston-azure-application-insights)","category":"changed"}
+{"description":"Update to applicationinsights 3.x","category":"changed"}
+{"description":"Update to winston 3.x","category":"changed"}
+{"description":"Use typescript","category":"changed"}
+{"type":"release","version":"5.0.0","date":"2024-09-22"}
+{"description":"Fix dependencies","category":"fixed"}
+{"description":"Use @biomejs/biome for linting","category":"changed"}
+{"type":"release","version":"5.0.1","date":"2024-09-30","tag":"5.0.1"}
+{"description":"Add ITelemetryFilter to allow filtering traces and exceptions","category":"added"}
+{"description":"Simplify tsup config","category":"changed"}
+{"description":"Fix applicationinsights dependencies","category":"fixed"}
+{"type":"release","version":"5.0.2","date":"2024-09-30","tag":"5.0.2"}
+{"description":"Add more options for createWinstonLogger helper function","category":"added"}
+{"type":"release","version":"5.0.3","date":"2024-09-30","tag":"5.0.3"}
+{"description":"Expose defaultMeta for helper function","category":"changed"}
+{"type":"release","version":"5.0.4","date":"2024-09-30","tag":"5.0.4"}
+{"description":"Expose level for creating logger","category":"changed"}
+{"type":"release","version":"5.0.5","date":"2024-10-06","tag":"5.0.5"}
+{"description":"Update options and logging fields","category":"changed"}
+{"type":"release","version":"5.0.6","date":"2024-10-06","tag":"5.0.6"}
+{"description":"Fix incorrect App Insights severity","category":"fixed"}
+{"type":"release","version":"5.0.7","date":"2024-10-06","tag":"5.0.7"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"5.1.0","date":"2025-08-03","tag":"5.1.0"}
+{"description":"Complete ground-up rewrite of the library with new architecture, API, and approach to logging","category":"changed"}
+{"description":"Factory functions for simpler setup","category":"added"}
+{"description":"Automatic Error object detection and extraction","category":"added"}
+{"description":"Smart error handling (Error as first parameter sends only exception)","category":"added"}
+{"description":"Multiple Error object support in single log call","category":"added"}
+{"description":"Object.create(null) support for GraphQL/Apollo compatibility","category":"added"}
+{"description":"Enhanced property extraction from splat parameters and defaultMeta","category":"added"}
+{"description":"Comprehensive test suite","category":"added"}
+{"description":"Extensible error detection with custom isError functions","category":"added"}
+{"description":"Customizable severity mapping for Winston levels","category":"added"}
+{"description":"Flexible trace and exception filtering","category":"added"}
+{"description":"Support for custom telemetry handlers","category":"added"}
+{"description":"Improved Winston behaviour compatibility","category":"changed"}
+{"description":"Better error message handling","category":"changed"}
+{"description":"Enhanced property extraction logic","category":"changed"}
+{"type":"release","version":"6.0.0","date":"2025-09-19","tag":"6.0.0"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"6.0.1","date":"2025-10-24","tag":"6.0.1"}
+{"description":"Concatenate all string parameters into Trace message","category":"changed"}
+{"type":"release","version":"6.0.2","date":"2025-10-24","tag":"6.0.2-preview.1"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"6.0.3","date":"2025-12-26","tag":"6.0.3"}
+{"description":"Fixed GHSA-7h2j-956f-4vf2 in brace-expansion","category":"security","metadata":{"ghsa":"GHSA-7h2j-956f-4vf2"}}
+{"description":"Fixed GHSA-3ppc-4f35-3m26 in minimatch","category":"security","metadata":{"ghsa":"GHSA-3ppc-4f35-3m26"}}
+{"description":"Fixed GHSA-7r86-cg39-jmmj in minimatch","category":"security","metadata":{"ghsa":"GHSA-7r86-cg39-jmmj"}}
+{"description":"Fixed GHSA-23c5-xmqv-rm74 in minimatch","category":"security","metadata":{"ghsa":"GHSA-23c5-xmqv-rm74"}}
+{"description":"Fixed GHSA-mw96-cpmx-2vgc in rollup","category":"security","metadata":{"ghsa":"GHSA-mw96-cpmx-2vgc"}}
+{"description":"Fixed GHSA-xxjr-mmjv-4gpg in lodash","category":"security","metadata":{"ghsa":"GHSA-xxjr-mmjv-4gpg"}}
+{"description":"Removed unused `applicationinsightsv34` alias","category":"changed"}
+{"description":"Updated development dependencies","category":"changed"}
+{"type":"release","version":"6.0.4","date":"2026-02-28","tag":"6.0.4"}
