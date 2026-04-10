@@ -78,12 +78,12 @@ const PREAMBLE = ['', '', 'All notable changes to this project will be documente
 
 const parts: string[] = [`# Changelog${PREAMBLE}`];
 
-parts.push('\n## [Unreleased]');
 if (unreleased.length > 0) {
+  parts.push('\n## Unreleased');
   parts.push(`\n${renderEntries(unreleased)}`);
 }
 
-for (const { entries, release } of groups) {
+for (const { entries, release } of [...groups].reverse()) {
   parts.push(`\n## [${release.version}] - ${release.date}`);
   if (entries.length > 0) {
     parts.push(`\n${renderEntries(entries)}`);
@@ -91,7 +91,12 @@ for (const { entries, release } of groups) {
 }
 
 if (groups.length > 0) {
-  parts.push(`\n${groups.map((g) => `[${g.release.version}]: ${tagUrl(g.release)}`).join('\n')}`);
+  parts.push(
+    `\n${[...groups]
+      .reverse()
+      .map((g) => `[${g.release.version}]: ${tagUrl(g.release)}`)
+      .join('\n')}`,
+  );
 }
 
 const output = `${parts.join('\n')}\n`;

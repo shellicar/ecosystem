@@ -17,12 +17,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shellicar/build-clean.git"
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/build-clean"
   },
   "bugs": {
-    "url": "https://github.com/shellicar/build-clean/issues"
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20build-clean%22"
   },
-  "homepage": "https://github.com/shellicar/build-clean#readme",
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/build-clean#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -225,10 +226,10 @@
   },
   "devDependencies": {
     "@nuxt/kit": "^4.4.2",
+    "@shellicar/typescript-config": "workspace:^",
     "@tsconfig/node22": "^22.0.5",
-    "esbuild": "^0.27.3",
     "@types/node": "^25.5.0",
-    "terser": "^5.46.1",
+    "esbuild": "^0.27.3",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },

@@ -25,50 +25,6 @@
       }
     }
   },
-  "linter": {
-    "enabled": true,
-    "domains": {
-      "project": "recommended"
-    },
-    "rules": {
-      "recommended": true,
-      "correctness": {
-        "noUnusedImports": "error",
-        "noUnusedVariables": "error"
-      },
-      "performance": {
-        "noBarrelFile": "error",
-        "noReExportAll": "error"
-      },
-      "suspicious": {
-        "noImportCycles": "error",
-        "noExplicitAny": "warn",
-        "noConsole": {
-          "level": "error",
-          "options": {
-            "allow": ["error"]
-          }
-        },
-        "noDebugger": "error"
-      },
-      "style": {
-        "noInferrableTypes": "error",
-        "useImportType": "error",
-        "noNonNullAssertion": "error",
-        "noYodaExpression": "error",
-        "useBlockStatements": "error",
-        "noSubstr": "error",
-        "useNodejsImportProtocol": "error",
-        "useConsistentMemberAccessibility": {
-          "level": "error",
-          "options": {
-            "accessibility": "explicit"
-          }
-        },
-        "useConst": "error"
-      }
-    }
-  },
   "overrides": [
     {
       "includes": ["scripts/**"],
