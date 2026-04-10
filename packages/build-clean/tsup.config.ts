@@ -14,6 +14,7 @@ const commonOptions = (config: Options) =>
     },
     keepNames: true,
     minify: false,
+    watch: config.watch ?? undefined,
     platform: 'node',
     removeNodeProtocol: false,
     sourcemap: true,
