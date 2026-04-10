@@ -3,7 +3,7 @@
 > An [Azure Application Insights](https://azure.microsoft.com/en-us/services/application-insights/) transport for [Winston](https://github.com/winstonjs/winston) logging library.
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/winston-azure-application-insights.svg)](https://npmjs.com/package/@shellicar/winston-azure-application-insights)
-[![build status](https://github.com/shellicar/ecosystem/tree/main/packages/winston-azure-application-insights/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/tree/main/packages/winston-azure-application-insights/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
 [![AI Assisted](https://img.shields.io/badge/AI--Assisted-GitHub_Copilot-412991?logo=github)][copilot]
 
 *Tests and documentation developed with assistance from [GitHub Copilot][copilot].*
