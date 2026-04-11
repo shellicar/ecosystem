@@ -1,0 +1,60 @@
+{
+  "name": "@shellicar/svelte-adapter-azure-functions",
+  "private": false,
+  "version": "1.0.3",
+  "type": "module",
+  "license": "MIT",
+  "author": "Stephen Hellicar",
+  "description": "Svelte adapter for Azure Function Apps",
+  "keywords": [
+    "svelte",
+    "azure",
+    "azure functions",
+    "adapter"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/svelte-adapter-azure-functions.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/svelte-adapter-azure-functions/issues"
+  },
+  "homepage": "https://github.com/shellicar/svelte-adapter-azure-functions#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "files"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "typess": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "devDependencies": {
+    "@azure/functions": "^4.11.2",
+    "@shellicar/build-clean": "^1.2.3",
+    "@sveltejs/kit": "^2.53.4",
+    "@types/node": "^25.3.2",
+    "@types/set-cookie-parser": "^2.4.10",
+    "set-cookie-parser": "^2.7.2",
+    "terser": "^5.46.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "esbuild": "^0.27.3"
+  }
+}
