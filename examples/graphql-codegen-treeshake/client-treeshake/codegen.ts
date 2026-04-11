@@ -3,7 +3,7 @@ import type { TypeScriptPluginConfig } from '@graphql-codegen/typescript';
 import { type ClientPresetConfig, preset } from '@shellicar/graphql-codegen-treeshake';
 
 const config: CodegenConfig = {
-  schema: '../../fixtures/schema.graphql',
+  schema: '../fixtures/schema.graphql',
   documents: ['src/**/*.graphql'],
   generates: {
     'src/generated/': {

@@ -3,7 +3,7 @@ import type { ClientPresetConfig } from '@graphql-codegen/client-preset';
 import type { TypeScriptPluginConfig } from '@graphql-codegen/typescript';
 
 const config: CodegenConfig = {
-  schema: '../../fixtures/schema.graphql',
+  schema: '../fixtures/schema.graphql',
   documents: ['src/**/*.graphql'],
   generates: {
     'src/generated/': {
