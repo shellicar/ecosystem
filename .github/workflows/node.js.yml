@@ -35,5 +35,5 @@ jobs:
     - run: pnpm run --if-present build --only
     - run: pnpm run --if-present type-check --only
     - run: pnpm run --if-present test --only
-    - run: pnpm run ci
+    - run: pnpm exec biome ci --diagnostic-level=error .
     - run: pnpm --filter scripts run validate
