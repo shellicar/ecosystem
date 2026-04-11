@@ -18,12 +18,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2",
-    "@vitest/coverage-v8": "^4",
+    "@vitest/coverage-v8": "^4.0.18",
     "knip": "^5",
     "lefthook": "^2",
     "npm-check-updates": "^19",
     "syncpack": "^14",
     "turbo": "^2",
-    "vitest": "^4"
+    "vitest": "^4.0.18"
   }
 }

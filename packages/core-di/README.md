@@ -3,7 +3,7 @@
 > A basic dependency injection library for TypeScript
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/core-di.svg)](https://npmjs.com/package/@shellicar/core-di)
-[![build status](https://github.com/shellicar/core-di/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/core-di/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
 
 ## Features
 
@@ -42,7 +42,7 @@ const svc = provider.resolve(IAbstract);
 ### Core Libraries
 
 - [`@shellicar/core-config`](https://github.com/shellicar/core-config) - A library for securely handling sensitive configuration values like connection strings, URLs, and secrets.
-- [`@shellicar/core-di`](https://github.com/shellicar/core-di) - A basic dependency injection library.
+- [`@shellicar/core-di`](https://github.com/shellicar/ecosystem/tree/main/packages/core-di) - A basic dependency injection library.
 
 ### Reference Architectures
 
@@ -79,7 +79,7 @@ With TypeScript 5.0 generally available with non-experimental decorators, most D
 
 My set of features is simple, based on my current usage
 
-See [readme examples](./examples/readme/src) for example source code.
+See [readme examples](../../examples/core-di/readme/src) for example source code.
 
 * Type-safe registration.
 

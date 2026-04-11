@@ -1,4 +1,3 @@
-import cleanPlugin from '@shellicar/build-clean/esbuild';
 import { defineConfig, type Options } from 'tsup';
 
 const commonOptions = (config: Options) =>
@@ -7,27 +6,24 @@ const commonOptions = (config: Options) =>
     clean: true,
     dts: true,
     entry: ['src/index.ts'],
-    esbuildPlugins: [cleanPlugin({ destructive: true })],
+    esbuildOptions: (options) => {
+      options.chunkNames = 'chunks/[name]-[hash]';
+      options.entryNames = '[name]';
+    },
     inject: ['inject.ts'],
     keepNames: true,
-    minify: config.watch ? false : 'terser',
+    minify: false,
+    platform: 'node',
     removeNodeProtocol: false,
     sourcemap: true,
     splitting: true,
-    target: 'node20',
-    treeshake: true,
+    target: 'node22',
+    treeshake: false,
+    watch: config.watch ?? undefined,
     tsconfig: 'tsconfig.json',
   }) satisfies Options;
 
 export default defineConfig((config) => [
-  {
-    ...commonOptions(config),
-    format: 'esm',
-    outDir: 'dist/esm',
-  },
-  {
-    ...commonOptions(config),
-    format: 'cjs',
-    outDir: 'dist/cjs',
-  },
+  { ...commonOptions(config), format: 'esm', outDir: 'dist/esm' },
+  { ...commonOptions(config), format: 'cjs', outDir: 'dist/cjs' },
 ]);
