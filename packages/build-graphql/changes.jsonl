@@ -1,0 +1,44 @@
+{"description":"Initial release.","category":"added"}
+{"type":"release","version":"0.1.0","date":"2025-01-05","tag":"0.1.0"}
+{"description":"Fix missing README","category":"fixed"}
+{"type":"release","version":"0.1.1","date":"2025-01-05","tag":"0.1.1"}
+{"description":"Force plugin to run in `pre` mode","category":"changed"}
+{"description":"Refactor and simplify plugin code","category":"changed"}
+{"description":"Use `packages` and `examples` monorepo structure","category":"changed"}
+{"type":"release","version":"1.0.0","date":"2025-01-09","tag":"1.0.0"}
+{"description":"Export types explicitly","category":"fixed"}
+{"description":"Fix logging prefix","category":"fixed"}
+{"type":"release","version":"1.0.1","date":"2025-01-16","tag":"1.0.1"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.1.0","date":"2025-08-03","tag":"1.1.0"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.2.0","date":"2025-08-27","tag":"1.2.0"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.2.1","date":"2025-10-24","tag":"1.2.1"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.2.2","date":"2025-12-26","tag":"1.2.2"}
+{"description":"Added `globOptions` to support passing all glob options directly when finding GraphQL files","category":"added"}
+{"description":"Adds support for `IgnoreLike` and `string[]` on `globIgnore` option, in addition to `string`.","category":"changed"}
+{"description":"`globIgnore` is now deprecated in favor of using `globOptions.ignore`","category":"deprecated"}
+{"type":"release","version":"1.3.0","date":"2026-01-05","tag":"1.3.0"}
+{"description":"Added `features` option to enable/disable specific plugin features","category":"added"}
+{"description":"Added esbuild watch mode feature for automatic rebuilds (enabled by default)","category":"added"}
+{"description":"Added Vite watch mode and HMR (Hot Module Replacement) feature (enabled by default)","category":"added"}
+{"description":"Added `errorPolicy` option to control how errors are handled during builds","category":"added"}
+{"description":"Updated `unplugin` dependency from ^2.3.11 to ^3.0.0","category":"changed"}
+{"description":"Explicitly exported all public types that were previously only available as dependencies of other types","category":"changed"}
+{"description":"`ignoreErrors` option is now deprecated in favour of using `errorPolicy`","category":"deprecated"}
+{"type":"release","version":"1.4.0","date":"2026-01-24","tag":"1.4.0"}
+{"description":"Fixed GHSA-7h2j-956f-4vf2 in @isaacs/brace-expansion","category":"security","metadata":{"ghsa":"GHSA-7h2j-956f-4vf2"}}
+{"description":"Updated @shellicar/build-clean to 1.2.2, biome to 2.3.14","category":"changed"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.4.1","date":"2026-02-09","tag":"1.4.1"}
+{"description":"Fixed GHSA-3ppc-4f35-3m26 in minimatch","category":"security","metadata":{"ghsa":"GHSA-3ppc-4f35-3m26"}}
+{"description":"Fixed GHSA-2g4f-4pwh-qvx6 in ajv","category":"security","metadata":{"ghsa":"GHSA-2g4f-4pwh-qvx6"}}
+{"description":"Fixed GHSA-38c4-r59v-3vqw in markdown-it","category":"security","metadata":{"ghsa":"GHSA-38c4-r59v-3vqw"}}
+{"description":"Updated @shellicar/build-clean to 1.2.3, rollup to 4.59.0","category":"changed"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.4.2","date":"2026-02-28","tag":"1.4.2"}
+{"description":"Fixed GHSA-5c6j-r48x-rmvq in serialize-javascript","category":"security","metadata":{"ghsa":"GHSA-5c6j-r48x-rmvq"}}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.4.3","date":"2026-03-01","tag":"1.4.3"}

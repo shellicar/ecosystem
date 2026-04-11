@@ -15,12 +15,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shellicar/build-graphql.git"
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/build-graphql"
   },
   "bugs": {
-    "url": "https://github.com/shellicar/build-graphql/issues"
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20build-graphql%22"
   },
-  "homepage": "https://github.com/shellicar/build-graphql#readme",
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/build-graphql#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -231,16 +232,15 @@
   "devDependencies": {
     "@luckycatfactory/esbuild-graphql-loader": "^3.8.1",
     "@nuxt/kit": "^4.3.1",
-    "@nuxt/schema": "^4.3.1",
-    "@shellicar/build-clean": "^1.2.3",
-    "@tsconfig/node20": "^20.1.9",
+    "@nuxt/schema": "3.21.2",
+    "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.3.2",
     "graphql": "^16.13.0",
     "npm-check-updates": "^19.6.3",
     "npm-run-all2": "^8.0.4",
     "rollup": "^4.59.0",
-    "terser": "^5.46.0",
     "tsup": "^8.5.1",
+    "typescript": "5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "webpack": "^5.105.3"

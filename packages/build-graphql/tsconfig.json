@@ -1,11 +1,10 @@
 {
-  "extends": "@tsconfig/node20/tsconfig.json",
+  "extends": "@shellicar/typescript-config/base.json",
   "compilerOptions": {
-    "moduleResolution": "bundler",
-    "module": "ES2022",
-    "target": "ES2024",
-    "strictNullChecks": true
+    "outDir": "dist",
+    "rootDir": ".",
+    "types": ["node"]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
 }
