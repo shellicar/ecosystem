@@ -1,0 +1,19 @@
+{
+  "name": "@shellicar/core-di-examples-esm",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsup-node",
+    "start": "node .",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@shellicar/build-clean": "^1.2.3",
+    "@shellicar/core-di": "workspace:^",
+    "@tsconfig/node20": "^20.1.9",
+    "@types/node": "^25.3.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

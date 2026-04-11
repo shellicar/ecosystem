@@ -1,0 +1,62 @@
+{
+  "name": "@shellicar/core-di",
+  "private": false,
+  "version": "3.1.6",
+  "type": "module",
+  "license": "MIT",
+  "author": "Stephen Hellicar",
+  "description": "A basic dependency injection library",
+  "keywords": [
+    "dependency injection",
+    "di",
+    "inversion of control container",
+    "ioc"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/core-di.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/core-di/issues"
+  },
+  "homepage": "https://github.com/shellicar/core-di#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      },
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@abraham/reflection": "^0.13.0",
+    "@js-joda/core": "^5.7.0",
+    "@shellicar/build-clean": "^1.2.3",
+    "@tsconfig/node20": "^20.1.9",
+    "@types/node": "^25.3.2",
+    "@vitest/coverage-v8": "^4.0.18",
+    "terser": "^5.46.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

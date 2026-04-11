@@ -1,0 +1,16 @@
+{
+  "name": "@shellicar/core-di-examples-tsx",
+  "private": true,
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "tsx .",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@shellicar/core-di": "workspace:^",
+    "@tsconfig/node20": "^20.1.9",
+    "@types/node": "^25.3.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

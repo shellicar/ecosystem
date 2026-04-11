@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx .",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.9",
+    "@types/node": "^25.3.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@shellicar/core-di": "workspace:^"
+  }
+}
