@@ -17,12 +17,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shellicar/core-config.git"
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/core-config"
   },
   "bugs": {
-    "url": "https://github.com/shellicar/core-config/issues"
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20core-config%22"
   },
-  "homepage": "https://github.com/shellicar/core-config#readme",
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/core-config#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -59,7 +60,7 @@
     "type-check": "tsc -p tsconfig.check.json"
   },
   "devDependencies": {
-    "@shellicar/build-clean": "^1.2.3",
+    "@shellicar/typescript-config": "workspace:*",
     "@tsconfig/node20": "^20.1.9",
     "@types/node": "^25.3.2",
     "terser": "^5.46.0",
