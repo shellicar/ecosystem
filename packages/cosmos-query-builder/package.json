@@ -1,0 +1,66 @@
+{
+  "name": "@shellicar/cosmos-query-builder",
+  "private": false,
+  "version": "1.1.1",
+  "type": "module",
+  "license": "MIT",
+  "author": "Stephen Hellicar",
+  "description": "A type-safe query builder for Azure Cosmos DB for NoSQL",
+  "keywords": [
+    "query",
+    "builder",
+    "azure",
+    "cosmos",
+    "db",
+    "cosmosdb",
+    "nosql",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/cosmos-query-builder"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20cosmos-query-builder%22"
+  },
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/cosmos-query-builder#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      },
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup-node",
+    "dev": "tsup-node --watch",
+    "type-check": "tsc -p tsconfig.check.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@azure/cosmos": "^4.9.1",
+    "@shellicar/typescript-config": "workspace:^",
+    "@types/node": "^25.3.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "@azure/cosmos": ">=4.0.0 <5.0.0"
+  }
+}
