@@ -1,0 +1,23 @@
+{
+  "name": "@shellicar/build-graphql-esbuild",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsx build.ts",
+    "dev": "tsx build.ts --watch",
+    "start": "node .",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@shellicar/build-graphql": "workspace:^",
+    "@tsconfig/node20": "^20.1.9",
+    "@types/node": "^25.3.2",
+    "esbuild": "^0.27.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

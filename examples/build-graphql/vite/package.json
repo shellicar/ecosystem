@@ -1,0 +1,19 @@
+{
+  "name": "@shellicar/build-graphql-examples-vite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon -w '../src/**/*.ts' -e .ts -x vite",
+    "build": "vite build",
+    "start": "vite preview",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@shellicar/build-graphql": "workspace:^",
+    "@tsconfig/node20": "^20.1.9",
+    "nodemon": "^3.1.14",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-inspect": "^11.3.3"
+  }
+}
