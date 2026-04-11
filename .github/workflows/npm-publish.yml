@@ -101,6 +101,11 @@ jobs:
             exit 0
           fi
           if [ "$BASE_VERSION" != "$FIRST_VERSION" ]; then
+            TAG_VERSION="${{ steps.tag.outputs.version }}"
+            if [[ "$TAG_VERSION" == *-* ]]; then
+              echo "✅ Pre-release ($TAG_VERSION) — changelog entry for $BASE_VERSION not required yet"
+              exit 0
+            fi
             echo "❌ First changelog entry [$FIRST_VERSION] does not match release base version [$BASE_VERSION]"
             exit 1
           fi
