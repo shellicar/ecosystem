@@ -1,0 +1,252 @@
+{
+  "name": "@shellicar/build-graphql",
+  "private": false,
+  "version": "1.4.3",
+  "type": "module",
+  "license": "MIT",
+  "author": "Stephen Hellicar",
+  "description": "Build plugin that loads GraphQL files and makes them importable via a virtual typedefs module.",
+  "keywords": [
+    "build",
+    "plugin",
+    "graphql",
+    "esbuild",
+    "vite"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/build-graphql"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20build-graphql%22"
+  },
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/build-graphql#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    },
+    "./astro": {
+      "import": {
+        "types": "./dist/esm/astro.d.ts",
+        "default": "./dist/esm/astro.js"
+      },
+      "require": {
+        "types": "./dist/cjs/astro.d.cts",
+        "default": "./dist/cjs/astro.cjs"
+      }
+    },
+    "./rspack": {
+      "import": {
+        "types": "./dist/esm/rspack.d.ts",
+        "default": "./dist/esm/rspack.js"
+      },
+      "require": {
+        "types": "./dist/cjs/rspack.d.cts",
+        "default": "./dist/cjs/rspack.cjs"
+      }
+    },
+    "./vite": {
+      "import": {
+        "types": "./dist/esm/vite.d.ts",
+        "default": "./dist/esm/vite.js"
+      },
+      "require": {
+        "types": "./dist/cjs/vite.d.cts",
+        "default": "./dist/cjs/vite.cjs"
+      }
+    },
+    "./webpack": {
+      "import": {
+        "types": "./dist/esm/webpack.d.ts",
+        "default": "./dist/esm/webpack.js"
+      },
+      "require": {
+        "types": "./dist/cjs/webpack.d.cts",
+        "default": "./dist/cjs/webpack.cjs"
+      }
+    },
+    "./rollup": {
+      "import": {
+        "types": "./dist/esm/rollup.d.ts",
+        "default": "./dist/esm/rollup.js"
+      },
+      "require": {
+        "types": "./dist/cjs/rollup.d.cts",
+        "default": "./dist/cjs/rollup.cjs"
+      }
+    },
+    "./esbuild": {
+      "import": {
+        "types": "./dist/esm/esbuild.d.ts",
+        "default": "./dist/esm/esbuild.js"
+      },
+      "require": {
+        "types": "./dist/cjs/esbuild.d.cts",
+        "default": "./dist/cjs/esbuild.cjs"
+      }
+    },
+    "./nuxt": {
+      "import": {
+        "types": "./dist/esm/nuxt.d.ts",
+        "default": "./dist/esm/nuxt.js"
+      },
+      "require": {
+        "types": "./dist/cjs/nuxt.d.cts",
+        "default": "./dist/cjs/nuxt.cjs"
+      }
+    },
+    "./farm": {
+      "import": {
+        "types": "./dist/esm/farm.d.ts",
+        "default": "./dist/esm/farm.js"
+      },
+      "require": {
+        "types": "./dist/cjs/farm.d.cts",
+        "default": "./dist/cjs/farm.cjs"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/esm/types.d.ts",
+        "default": "./dist/esm/types.js"
+      },
+      "require": {
+        "types": "./dist/cjs/types.d.cts",
+        "default": "./dist/cjs/types.cjs"
+      }
+    },
+    "./graphql": {
+      "import": {
+        "types": "./dist/esm/core/graphql.d.ts",
+        "default": "./dist/esm/core/graphql.js"
+      },
+      "require": {
+        "types": "./dist/cjs/core/graphql.d.cts",
+        "default": "./dist/cjs/core/graphql.cjs"
+      }
+    },
+    "./typedefs": {
+      "import": {
+        "types": "./dist/esm/core/typedefs.d.ts",
+        "default": "./dist/esm/core/typedefs.js"
+      },
+      "require": {
+        "types": "./dist/cjs/core/typedefs.d.cts",
+        "default": "./dist/cjs/core/typedefs.cjs"
+      }
+    }
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "astro": [
+        "./dist/esm/astro.d.ts"
+      ],
+      "rspack": [
+        "./dist/esm/rspack.d.ts"
+      ],
+      "vite": [
+        "./dist/esm/vite.d.ts"
+      ],
+      "webpack": [
+        "./dist/esm/webpack.d.ts"
+      ],
+      "rollup": [
+        "./dist/esm/rollup.d.ts"
+      ],
+      "esbuild": [
+        "./dist/esm/esbuild.d.ts"
+      ],
+      "nuxt": [
+        "./dist/esm/nuxt.d.ts"
+      ],
+      "farm": [
+        "./dist/esm/farm.d.ts"
+      ],
+      "types": [
+        "./dist/esm/types.d.ts"
+      ],
+      "typedefs": [
+        "./dist/esm/core/typedefs.d.ts"
+      ],
+      "index": [
+        "./dist/esm/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "*.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc -p tsconfig.check.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@farmfe/core": ">=1",
+    "@nuxt/kit": "^4",
+    "@nuxt/schema": "^4",
+    "esbuild": "*",
+    "rollup": "^4",
+    "vite": "^7",
+    "webpack": "^4 || ^5"
+  },
+  "peerDependenciesMeta": {
+    "@farmfe/core": {
+      "optional": true
+    },
+    "@nuxt/kit": {
+      "optional": true
+    },
+    "@nuxt/schema": {
+      "optional": true
+    },
+    "esbuild": {
+      "optional": true
+    },
+    "rollup": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
+    "webpack": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@luckycatfactory/esbuild-graphql-loader": "^3.8.1",
+    "@nuxt/kit": "^4.3.1",
+    "@nuxt/schema": "3.21.2",
+    "@shellicar/typescript-config": "workspace:^",
+    "@types/node": "^25.3.2",
+    "graphql": "^16.13.0",
+    "npm-check-updates": "^19.6.3",
+    "npm-run-all2": "^8.0.4",
+    "rollup": "^4.59.0",
+    "tsup": "^8.5.1",
+    "typescript": "5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "webpack": "^5.105.3"
+  },
+  "dependencies": {
+    "glob": "^13.0.6",
+    "unplugin": "^3.0.0"
+  }
+}

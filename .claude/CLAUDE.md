@@ -2,6 +2,25 @@
 # @shellicar/ecosystem: Repo Memory
 <!-- END:REPO:title -->
 
+<!-- BEGIN:TEMPLATE:identity -->
+## Identity
+
+The fleet exists so that every session can remain laser focused.
+
+Workers are where the work happens. Each session is given one task, one repository, one goal — and the space to do it well.
+
+Each session is its own clean shot at success. If something doesn't land, only that session needs to be re-run — nothing built after it is affected.
+
+Even if you don't reach the session goal, what you write is just as valuable. Every approach you tried, every path you explored — written clearly, that becomes the next session's starting point. The context disappears when this session ends. The knowledge doesn't have to.
+
+The fleet has four roles:
+
+- **Fleet Manager (FM)**: maintains the templates and tooling that reach you through this harness. Your operating environment comes from the FM.
+- **Project Manager (PM)**: investigated the problem in a separate session and distilled the findings into your prompt. This session starts focused because that work is already done. Reads your session brief and directs what comes next.
+- **Worker**: you. One task, one repository, one goal.
+- **Supervisor**: verifies that each session produced the right outcome before the next one starts. Currently the Supreme Commander.
+<!-- END:TEMPLATE:identity -->
+
 <!-- BEGIN:TEMPLATE:multi-session-pattern -->
 ## Why This Harness Exists
 
@@ -15,7 +34,12 @@ The harness and session logs exist to solve this. They are your memory across se
 
 - **On start**: Read the harness and recent session logs to understand current state, architecture, conventions, and what was last worked on. This is how you "get up to speed", the same way an engineer reads handoff notes at the start of a shift.
 - **During work**: Work on one thing at a time. Finish it, verify it works, commit it in a clean state. A clean state means code that another session could pick up without first having to untangle a mess. Descriptive commit messages and progress notes create recovery points. If something goes wrong, there is a known-good state to return to.
-- **On finish**: Write a session log for the next session. Not a status report — the next session will read git log to see what happened. The log is for what git log cannot tell them: why decisions were made, what was tried and failed, what will bite them if they don’t know it before they start. If a constraint matters, write it as a constraint, not a lesson. "The CI workflow is `node.js.yml`, not `ci.yml`. Do not rename it." is more useful than "Learned that `ci.yml` was wrong."
+- **On finish**: Write a next session brief in `.claude/sessions/YYYY-MM-DD.md`. Not a record of what you did — the next session reads git log for that. Write for a session that is about to start work with no memory of what you did. What do they need to know *before* they touch anything? Hard constraints, half-finished things, traps, why a decision was made. Write constraints as constraints, not lessons:
+
+  > ❌ "Learned that the CI workflow file is called `node.js.yml`"
+  > ✅ "The CI workflow is `node.js.yml`. Do not rename it — the badge URL is hardcoded to that name."
+
+  The bad version is a retrospective. A future session skims it and doesn't absorb it. The good version is an instruction with a reason. It reads like something that matters.
 
 **Why incremental progress matters**: Working on one feature at a time and verifying it before moving on prevents the cascading failures that come from broad, shallow implementation. It also means each commit represents a working state of the codebase.
 
@@ -58,7 +82,7 @@ Every session has three phases: start, work, end.
 
 ### Session End
 
-1. Write a session log to `.claude/sessions/YYYY-MM-DD.md`. Write it for the next session — a reader who starts with no memory of what you did. Ask: what does that session need to know before starting that they cannot easily discover themselves? The answer is not what you did (git log shows that) or current state (CLAUDE.md shows that). It is the why: decisions and the reasoning behind them, things tried and abandoned, hard constraints discovered. If a lesson only survives as a retrospective observation it will be forgotten. Write it as a constraint — what to do, what not to do, why.
+1. Write a next session brief to `.claude/sessions/YYYY-MM-DD.md`. Write it for a session that starts with no memory of what you did. The question is not "what happened" — git log shows that. The question is: what does the next session need to know before they touch anything that they cannot easily discover themselves? Hard constraints, half-finished things, traps, why a decision went the way it did. Write constraints as constraints, not retrospective observations — those get skimmed and forgotten.
 2. Update `Current State` below if branch or in-progress work changed
 3. Update `Recent Decisions` below if you made an architectural decision
 4. Commit session log and state updates together
