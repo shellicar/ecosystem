@@ -3,7 +3,7 @@
 > A type-safe query builder for [Azure Cosmos DB for NoSQL](https://docs.microsoft.com/en-us/azure/cosmos-db/nosql/)
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/cosmos-query-builder.svg)](https://npmjs.com/package/@shellicar/cosmos-query-builder)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
 
 > **Note**: This library is for Azure Cosmos DB for NoSQL (formerly SQL API). For MongoDB API, see [Azure Cosmos DB for MongoDB](https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb/).
 
