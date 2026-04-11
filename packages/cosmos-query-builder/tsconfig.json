@@ -1,17 +1,10 @@
 {
-  "extends": "@tsconfig/node22/tsconfig.json",
+  "extends": "@shellicar/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": ".",
-    "strictNullChecks": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "module": "ES2022",
-    "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "bundler",
-    "useDefineForClassFields": true
+    "types": ["node"]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
 }

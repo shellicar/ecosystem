@@ -18,12 +18,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shellicar/cosmos-query-builder.git"
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/cosmos-query-builder"
   },
   "bugs": {
-    "url": "https://github.com/shellicar/cosmos-query-builder/issues"
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20cosmos-query-builder%22"
   },
-  "homepage": "https://github.com/shellicar/cosmos-query-builder#readme",
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/cosmos-query-builder#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -53,11 +54,8 @@
   },
   "devDependencies": {
     "@azure/cosmos": "^4.9.1",
-    "@shellicar/build-clean": "^1.2.3",
-    "@tsconfig/node20": "^20.1.9",
-    "@tsconfig/node22": "^22.0.5",
+    "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.3.2",
-    "terser": "^5.46.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

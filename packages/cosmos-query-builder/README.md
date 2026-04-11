@@ -3,7 +3,7 @@
 > A type-safe query builder for [Azure Cosmos DB for NoSQL](https://docs.microsoft.com/en-us/azure/cosmos-db/nosql/)
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/cosmos-query-builder.svg)](https://npmjs.com/package/@shellicar/cosmos-query-builder)
-[![build status](https://github.com/shellicar/cosmos-query-builder/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/cosmos-query-builder/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
 > **Note**: This library is for Azure Cosmos DB for NoSQL (formerly SQL API). For MongoDB API, see [Azure Cosmos DB for MongoDB](https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb/).
 
@@ -39,7 +39,7 @@ builder.limit(50);
 const results = await builder.getAll(container);
 ```
 
-For a complete working example, see [examples/simple/src/main.ts](./examples/simple/src/main.ts).
+For a complete working example, see [examples/simple/src/main.ts](../../examples/cosmos-query-builder/simple/src/main.ts).
 
 <!-- BEGIN_ECOSYSTEM -->
 
@@ -47,8 +47,8 @@ For a complete working example, see [examples/simple/src/main.ts](./examples/sim
 
 ### Core Libraries
 
-- [`@shellicar/core-config`](https://github.com/shellicar/core-config) - A library for securely handling sensitive configuration values like connection strings, URLs, and secrets.
-- [`@shellicar/core-di`](https://github.com/shellicar/core-di) - A basic dependency injection library.
+- [`@shellicar/core-config`](https://github.com/shellicar/ecosystem/tree/main/packages/core-config) - A library for securely handling sensitive configuration values like connection strings, URLs, and secrets.
+- [`@shellicar/core-di`](https://github.com/shellicar/ecosystem/tree/main/packages/core-di) - A basic dependency injection library.
 
 ### Reference Architectures
 
@@ -57,18 +57,18 @@ For a complete working example, see [examples/simple/src/main.ts](./examples/sim
 
 ### Build Tools
 
-- [`@shellicar/build-clean`](https://github.com/shellicar/build-clean) - Build plugin that automatically cleans unused files from output directories.
-- [`@shellicar/build-version`](https://github.com/shellicar/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
-- [`@shellicar/build-graphql`](https://github.com/shellicar/build-graphql) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
+- [`@shellicar/build-clean`](https://github.com/shellicar/ecosystem/tree/main/packages/build-clean) - Build plugin that automatically cleans unused files from output directories.
+- [`@shellicar/build-version`](https://github.com/shellicar/ecosystem/tree/main/packages/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
+- [`@shellicar/build-graphql`](https://github.com/shellicar/ecosystem/tree/main/packages/build-graphql) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
 
 ### Framework Adapters
 
-- [`@shellicar/svelte-adapter-azure-functions`](https://github.com/shellicar/svelte-adapter-azure-functions) - A [SvelteKit adapter](https://kit.svelte.dev/docs/adapters) that builds your app into an Azure Function.
-- [`@shellicar/cosmos-query-builder`](https://github.com/shellicar/cosmos-query-builder) - Helper class for type safe advanced queries for Cosmos DB (Sql Core).
+- [`@shellicar/svelte-adapter-azure-functions`](https://github.com/shellicar/ecosystem/tree/main/packages/svelte-adapter-azure-functions) - A [SvelteKit adapter](https://kit.svelte.dev/docs/adapters) that builds your app into an Azure Function.
+- [`@shellicar/cosmos-query-builder`](https://github.com/shellicar/ecosystem/tree/main/packages/cosmos-query-builder) - Helper class for type safe advanced queries for Cosmos DB (Sql Core).
 
 ### Logging & Monitoring
 
-- [`@shellicar/winston-azure-application-insights`](https://github.com/shellicar/winston-azure-application-insights) - An [Azure Application Insights](https://azure.microsoft.com/en-us/services/application-insights/) transport for [Winston](https://github.com/winstonjs/winston) logging library.
+- [`@shellicar/winston-azure-application-insights`](https://github.com/shellicar/ecosystem/tree/main/packages/winston-azure-application-insights) - An [Azure Application Insights](https://azure.microsoft.com/en-us/services/application-insights/) transport for [Winston](https://github.com/winstonjs/winston) logging library.
 - [`@shellicar/pino-applicationinsights-transport`](https://github.com/shellicar/pino-applicationinsights-transport) - [Azure Application Insights](https://azure.microsoft.com/en-us/services/application-insights) transport for [pino](https://github.com/pinojs/pino)
 
 <!-- END_ECOSYSTEM -->
@@ -83,7 +83,7 @@ Originally developed for the Circuit Breaker platform at Hope Ventures, this lib
 
 Type-safe query builder for Azure Cosmos DB, supporting advanced operators and structured filtering.
 
-See [readme examples](./examples/readme/src) for example source code.
+See [readme examples](../../examples/cosmos-query-builder/readme/src) for example source code.
 
 - **Builder pattern** - Use methods like `where()`, `orderBy()`, `limit()` instead of writing raw SQL.
 

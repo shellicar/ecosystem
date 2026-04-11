@@ -1,0 +1,14 @@
+{"description":"Initial release","category":"added"}
+{"type":"release","version":"1.0.0","date":"2025-12-26","tag":"1.0.0"}
+{"description":"Add `ieq` and `ine` (case-insensitive) operations for `where(...)`","category":"added"}
+{"description":"Add `filter` for custom un-typed where clauses","category":"added"}
+{"description":"Allow function chaining","category":"added"}
+{"description":"Updated development dependencies","category":"changed"}
+{"type":"release","version":"1.1.0","date":"2026-01-19","tag":"1.1.0"}
+{"description":"Fix GHSA-7h2j-956f-4vf2 in brace-expansion","category":"security","metadata":{"ghsa":"GHSA-7h2j-956f-4vf2"}}
+{"description":"Fix GHSA-3ppc-4f35-3m26 in minimatch","category":"security","metadata":{"ghsa":"GHSA-3ppc-4f35-3m26"}}
+{"description":"Fix GHSA-7r86-cg39-jmmj in minimatch","category":"security","metadata":{"ghsa":"GHSA-7r86-cg39-jmmj"}}
+{"description":"Fix GHSA-23c5-xmqv-rm74 in minimatch","category":"security","metadata":{"ghsa":"GHSA-23c5-xmqv-rm74"}}
+{"description":"Fix GHSA-mw96-cpmx-2vgc in rollup","category":"security","metadata":{"ghsa":"GHSA-mw96-cpmx-2vgc"}}
+{"description":"Updated development dependencies","category":"changed"}
+{"type":"release","version":"1.1.1","date":"2026-02-28","tag":"1.1.1"}
