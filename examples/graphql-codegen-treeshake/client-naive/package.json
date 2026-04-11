@@ -1,0 +1,18 @@
+{
+  "name": "@shellicar-examples/client-naive",
+  "version": "1.0.0",
+  "description": "Naive graphql-codegen example using client-preset — generates all schema types regardless of usage",
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts"
+  },
+  "private": true,
+  "devDependencies": {
+    "@graphql-codegen/cli": "^6.1.3",
+    "@graphql-codegen/client-preset": "^5.2.4",
+    "@graphql-codegen/typescript": "^5.0.9",
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "graphql": "^16.13.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

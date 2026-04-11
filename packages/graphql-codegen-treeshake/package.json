@@ -1,0 +1,70 @@
+{
+  "name": "@shellicar/graphql-codegen-treeshake",
+  "version": "1.0.0",
+  "description": "A graphql-codegen preset that tree-shakes unused types from TypeScript output",
+  "main": "./dist/cjs/index.cjs",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "keywords": [
+    "graphql-codegen",
+    "preset",
+    "treeshake",
+    "typescript"
+  ],
+  "author": "Stephen Hellicar",
+  "license": "MIT",
+  "packageManager": "pnpm@10.32.1",
+  "private": false,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/graphql-codegen-treeshake.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/graphql-codegen-treeshake/issues"
+  },
+  "homepage": "https://github.com/shellicar/graphql-codegen-treeshake#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "*.md"
+  ],
+  "dependencies": {
+    "@graphql-codegen/client-preset": "^5.2.4",
+    "@graphql-codegen/typescript": "^5.0.9"
+  },
+  "peerDependencies": {
+    "graphql": "^16.12.0"
+  },
+  "devDependencies": {
+    "@graphql-codegen/plugin-helpers": "^6.1.1",
+    "@shellicar/build-clean": "^1.2.4",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.4.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "graphql": "^16.13.1",
+    "terser": "^5.46.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
