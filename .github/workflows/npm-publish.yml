@@ -3,6 +3,11 @@ name: Node.js Package
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to test (e.g. build-clean@1.4.0)'
+        required: true
 
 jobs:
   build:
@@ -18,7 +23,11 @@ jobs:
       - name: Parse release tag
         id: tag
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+          fi
           if [[ "$TAG" != *"@"* ]]; then
             echo "❌ Tag '$TAG' is not in package@version format"
             exit 1
@@ -45,32 +54,37 @@ jobs:
 
       - run: pnpm audit
       - run: pnpm i --frozen-lockfile
-      - run: pnpm run --if-present build --only
-      - run: pnpm run --if-present type-check --only
-      - run: pnpm run --if-present test --only
-      - run: pnpm run ci
 
       - name: Resolve package directory
         id: package
         env:
           PACKAGE_NAME: ${{ steps.tag.outputs.package }}
         run: |
-          PACKAGE_DIR=$(node -e "
-            const fs = require('fs');
-            const name = process.env.PACKAGE_NAME;
-            const dirs = ['packages']
-              .flatMap(d => fs.readdirSync(d).map(p => d + '/' + p))
-              .filter(d => { try { fs.statSync(d + '/package.json'); return true; } catch { return false; } });
-            const match = dirs.find(d => {
-              const pkg = JSON.parse(fs.readFileSync(d + '/package.json', 'utf8'));
-              return pkg.name.split('/').pop() === name;
-            });
-            if (!match) { process.stderr.write('No package found for: ' + name + '\\n'); process.exit(1); }
-            process.stdout.write(match);
-          ")
+          PACKAGE_DIR="packages/$PACKAGE_NAME"
+          if [ ! -f "$PACKAGE_DIR/package.json" ]; then
+            echo "❌ No package.json found at $PACKAGE_DIR"
+            exit 1
+          fi
+          ACTUAL_NAME=$(node -p "require('./$PACKAGE_DIR/package.json').name")
+          EXPECTED_NAME="@shellicar/$PACKAGE_NAME"
+          if [ "$ACTUAL_NAME" != "$EXPECTED_NAME" ]; then
+            echo "❌ Package name mismatch: expected $EXPECTED_NAME, got $ACTUAL_NAME"
+            exit 1
+          fi
+          echo "✅ Package verified: $ACTUAL_NAME at $PACKAGE_DIR"
           echo "dir=$PACKAGE_DIR" >> "$GITHUB_OUTPUT"
-          echo "Package directory: $PACKAGE_DIR"
 
+      - name: Build
+        run: pnpm turbo build --filter=./packages/${{ steps.tag.outputs.package }}...
+
+      - name: Type check
+        run: pnpm turbo type-check --filter=./packages/${{ steps.tag.outputs.package }}...
+
+      - name: Test
+        run: pnpm turbo test --filter=./packages/${{ steps.tag.outputs.package }}...
+
+      - name: Lint
+        run: pnpm exec biome ci --diagnostic-level=error .
 
       - name: Verify changelog
         run: |
@@ -120,6 +134,11 @@ jobs:
             exit 1
           fi
           echo "Publishing with tag: $TAG"
-          pnpm publish --provenance --ignore-scripts --no-git-checks --tag "$TAG"
+          DRY_RUN=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            DRY_RUN="--dry-run"
+            echo "⚠️ Dry run: workflow_dispatch trigger"
+          fi
+          pnpm publish --provenance --ignore-scripts --no-git-checks --tag "$TAG" $DRY_RUN
         env:
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
