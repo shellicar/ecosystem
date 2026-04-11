@@ -1,0 +1,64 @@
+{"description":"Initial release.","category":"added"}
+{"type":"release","version":"0.0.1","date":"2024-08-31","tag":"0.0.1"}
+{"description":"Use `@abraham/reflection` instead of `reflect-metadata`.","category":"changed"}
+{"type":"release","version":"0.0.2","date":"2024-08-31","tag":"0.0.2"}
+{"description":"Ability to register during scope.","category":"added"}
+{"description":"Use `pkgroll` for build.","category":"changed"}
+{"type":"release","version":"0.0.3","date":"2024-09-15","tag":"0.0.3"}
+{"description":"Ability to configure ServiceCollection/Provider.","category":"added"}
+{"description":"Ability to override registrations.","category":"added"}
+{"type":"release","version":"0.0.4","date":"2024-09-18","tag":"0.0.4"}
+{"description":"Ability to customise logging.","category":"added"}
+{"description":"More tests and examples.","category":"added"}
+{"description":"Use `tsup` for build.","category":"changed"}
+{"description":"`enable` and `disable` log functions.","category":"removed"}
+{"type":"release","version":"0.1.0","date":"2024-09-22","tag":"0.1.0"}
+{"description":"Prevent registration of singletons in scoped provider.","category":"fixed"}
+{"type":"release","version":"1.0.0","date":"2024-09-29","tag":"1.0.0"}
+{"description":"Extend `IServiceCollection.register` to accept multiple interfaces (ServiceIdentifiers). All interfaces will resolve to the same implementation (and hence, instance, respectful of lifetime).","category":"added"}
+{"description":"Add `IServiceCollection.overrideLifetime` to allow overriding the lifetime of all service descriptors matching the service identifier (mainly for testing scenarios).","category":"added"}
+{"description":"Some exported types changed names/functionality: `LifetimeBuilder` to `ILifetimeBuilder`, `ServiceBuilder` to `IServiceBuilder`, `IServiceScope` to `IResolutionScope` and `IScopedProvider`. No longer export `ServiceCollection` and `ServiceProvider`. Factory methods now take `IResolutionScope` instead of `IServiceScope & IServiceProvider`.","category":"changed"}
+{"description":"Switch to vitest from mocha.","category":"changed"}
+{"type":"release","version":"2.0.0","date":"2025-01-05","tag":"2.0.0"}
+{"description":"Update `cross-spawn` (CVE-2024-21538).","category":"security","metadata":{"cve":"CVE-2024-21538"}}
+{"type":"release","version":"2.0.1","date":"2025-01-07","tag":"2.0.1"}
+{"description":"Use `packages` and `examples` monorepo structure.","category":"changed"}
+{"description":"Use `tsup-node` for packaging.","category":"changed"}
+{"description":"Declare `@abraham/reflection` as dev dependency.","category":"changed"}
+{"description":"Add `readme` example project.","category":"added"}
+{"type":"release","version":"2.1.0","date":"2025-01-08","tag":"2.1.0"}
+{"description":"Change back to `tsup`.","category":"changed"}
+{"type":"release","version":"2.1.1","date":"2025-01-10","tag":"2.1.1"}
+{"description":"Fix export paths.","category":"fixed"}
+{"type":"release","version":"2.2.0","date":"2025-01-10","tag":"2.2.0"}
+{"description":"Fix typed factory registration needing to be non-abstract.","category":"fixed"}
+{"type":"release","version":"2.3.0","date":"2025-01-21","tag":"2.3.0"}
+{"description":"Added null/undefined checks for service registration and implementation.","category":"added"}
+{"description":"Added `InvalidServiceIdentifierError` for null/undefined service identifiers.","category":"added"}
+{"description":"Added `InvalidImplementationError` for null/undefined implementations.","category":"added"}
+{"type":"release","version":"2.4.0","date":"2025-05-18","tag":"2.4.0"}
+{"description":"Updated all dependencies to latest versions.","category":"changed"}
+{"description":"Enhanced error handling with better error message formatting showing both service identifier and implementation.","category":"added"}
+{"description":"Support for error chaining in dependency resolution failures.","category":"added"}
+{"type":"release","version":"3.0.0","date":"2025-08-03","tag":"3.0.0"}
+{"description":"Updated all dependencies to latest versions.","category":"changed"}
+{"type":"release","version":"3.1.0","date":"2025-08-24","tag":"3.1.0"}
+{"description":"Updated all dependencies to latest versions.","category":"changed"}
+{"type":"release","version":"3.1.1","date":"2025-10-24","tag":"3.1.1"}
+{"description":"Updated all dependencies to latest versions.","category":"changed"}
+{"type":"release","version":"3.1.2","date":"2025-12-26","tag":"3.1.2"}
+{"description":"Fixed CVE-2026-25547 in @isaacs/brace-expansion.","category":"security","metadata":{"ghsa":"GHSA-7h2j-956f-4vf2"}}
+{"description":"Moved pnpm overrides from package.json to pnpm-workspace.yaml.","category":"changed"}
+{"description":"Updated @shellicar/build-clean to 1.2.2, biome to 2.3.14.","category":"changed"}
+{"description":"Updated all dependencies to latest versions.","category":"changed"}
+{"type":"release","version":"3.1.3","date":"2026-02-09","tag":"3.1.3"}
+{"description":"Fixed circular dependency detection: all circular dependencies now throw `CircularDependencyError` instead of silently stack overflowing.","category":"fixed"}
+{"description":"Fixed self-dependency check that was unreachable due to comparing abstract class against concrete class.","category":"fixed"}
+{"description":"New `CircularDependencyError` exported error class.","category":"added"}
+{"type":"release","version":"3.1.4","date":"2026-02-22","tag":"3.1.4"}
+{"description":"Fixed singleton disposal: root provider now disposes singleton `IDisposable` instances when disposed, matching MS DI behaviour.","category":"fixed"}
+{"description":"Added `IDisposable` implementation to `IServiceProvider` interface.","category":"added"}
+{"type":"release","version":"3.1.5","date":"2026-02-23","tag":"3.1.5"}
+{"description":"Fixed GHSA-mw96-cpmx-2vgc: rollup arbitrary file write via path traversal.","category":"security","metadata":{"ghsa":"GHSA-mw96-cpmx-2vgc"}}
+{"description":"Updated all dependencies to latest versions.","category":"changed"}
+{"type":"release","version":"3.1.6","date":"2026-02-28","tag":"3.1.6"}
