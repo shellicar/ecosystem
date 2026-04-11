@@ -1,0 +1,8 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "GREETING_MESSAGE": "Hello from Azure Local Settings!",
+    "MAGIC_NUMBER": "42",
+    "FEATURE_FLAG_AWESOME": "true"
+  }
+}

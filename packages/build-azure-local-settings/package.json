@@ -1,0 +1,116 @@
+{
+  "name": "@shellicar/build-azure-local-settings",
+  "private": false,
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "Stephen Hellicar",
+  "description": "Build plugin that loads Azure local.settings.json with Key Vault reference resolution for non-Azure-Functions apps.",
+  "keywords": [
+    "esbuild",
+    "tsup",
+    "azure",
+    "local-settings",
+    "key-vault",
+    "azure-functions",
+    "plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/build-azure-local-settings.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/build-azure-local-settings/issues"
+  },
+  "homepage": "https://github.com/shellicar/build-azure-local-settings#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    },
+    "./esbuild": {
+      "import": {
+        "types": "./dist/esm/esbuild.d.ts",
+        "default": "./dist/esm/esbuild.js"
+      },
+      "require": {
+        "types": "./dist/cjs/esbuild.d.cts",
+        "default": "./dist/cjs/esbuild.cjs"
+      }
+    },
+    "./runtime": {
+      "import": {
+        "types": "./dist/esm/runtime.d.ts",
+        "default": "./dist/esm/runtime.js"
+      },
+      "require": {
+        "types": "./dist/cjs/runtime.d.cts",
+        "default": "./dist/cjs/runtime.cjs"
+      }
+    },
+    "./cjs-shim": {
+      "import": {
+        "default": "./dist/esm/cjs-shim.js"
+      }
+    }
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "index": [
+        "./dist/esm/index.d.ts"
+      ],
+      "esbuild": [
+        "./dist/esm/esbuild.d.ts"
+      ],
+      "runtime": [
+        "./dist/esm/runtime.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "*.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "type-check": "tsc -p tsconfig.check.json"
+  },
+  "peerDependencies": {
+    "esbuild": "*"
+  },
+  "peerDependenciesMeta": {
+    "esbuild": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@azure/identity": "^4.13.0",
+    "@azure/keyvault-secrets": "^4.10.0",
+    "regexp.escape": "^2.0.1"
+  },
+  "devDependencies": {
+    "@shellicar/build-clean": "^1.3.0",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.4.0",
+    "@types/regexp.escape": "^2.0.0",
+    "esbuild": "*",
+    "terser": "^5.46.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
