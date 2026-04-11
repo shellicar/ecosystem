@@ -14,12 +14,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shellicar/svelte-adapter-azure-functions.git"
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/svelte-adapter-azure-functions"
   },
   "bugs": {
-    "url": "https://github.com/shellicar/svelte-adapter-azure-functions/issues"
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20svelte-adapter-azure-functions%22"
   },
-  "homepage": "https://github.com/shellicar/svelte-adapter-azure-functions#readme",
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/svelte-adapter-azure-functions#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -36,19 +37,18 @@
   "exports": {
     ".": {
       "import": {
-        "typess": "./dist/index.d.ts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
     }
   },
   "devDependencies": {
     "@azure/functions": "^4.11.2",
-    "@shellicar/build-clean": "^1.2.3",
+    "@shellicar/typescript-config": "workspace:^",
     "@sveltejs/kit": "^2.53.4",
     "@types/node": "^25.3.2",
     "@types/set-cookie-parser": "^2.4.10",
     "set-cookie-parser": "^2.7.2",
-    "terser": "^5.46.0",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

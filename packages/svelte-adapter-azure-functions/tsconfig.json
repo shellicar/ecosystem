@@ -1,22 +1,13 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@shellicar/typescript-config/base.json",
   "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "target": "ES2023",
-    "allowJs": true,
-    "incremental": false,
-    "resolveJsonModule": true,
-    "moduleDetection": "force",
-    "isolatedModules": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "types": ["node"],
     "strict": true,
-    "strictNullChecks": true,
     "noUncheckedIndexedAccess": true,
-    "module": "ES2022",
-    "moduleResolution": "node"
+    "allowJs": true
   },
-  "include": ["**/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

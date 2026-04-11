@@ -1,0 +1,43 @@
+{"description":"Initial release","category":"added"}
+{"type":"release","version":"0.1.0","date":"2025-01-01","tag":"0.1.0"}
+{"description":"Added files to npm files","category":"fixed"}
+{"type":"release","version":"0.1.1","date":"2025-01-02","tag":"0.1.1"}
+{"description":"Added lighter README in package","category":"fixed"}
+{"type":"release","version":"0.2.0","date":"2025-01-09","tag":"0.2.0"}
+{"description":"Fix issue with `set-cookie-parser` not being bundled","category":"fixed"}
+{"type":"release","version":"0.2.1","date":"2025-01-09","tag":"0.2.1"}
+{"description":"Updated `ClientPrincipal` based on [documentation](https://learn.microsoft.com/en-us/azure/app-service/configure-authentication-user-identities#decoding-the-client-principal-header)","category":"changed"}
+{"type":"release","version":"0.2.2","date":"2025-01-09","tag":"0.2.2"}
+{"description":"Allow overriding function authLevel","category":"changed"}
+{"type":"release","version":"0.3.0","date":"2025-04-21","tag":"0.3.0"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"0.4.0","date":"2025-08-03","tag":"0.4.0"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.0.0","date":"2025-08-24","tag":"1.0.0"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.0.1","date":"2025-10-24","tag":"1.0.1"}
+{"description":"Updated all dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.0.2","date":"2025-12-26","tag":"1.0.2"}
+{"description":"Fix GHSA-g2pg-6438-jwpf in devalue","category":"security","metadata":{"ghsa":"GHSA-g2pg-6438-jwpf"}}
+{"description":"Fix GHSA-vw5p-8cq8-m7mv in devalue","category":"security","metadata":{"ghsa":"GHSA-vw5p-8cq8-m7mv"}}
+{"description":"Fix GHSA-j2f3-wq62-6q46 in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-j2f3-wq62-6q46"}}
+{"description":"Fix GHSA-j62c-4x62-9r35 in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-j62c-4x62-9r35"}}
+{"description":"Fix GHSA-7h2j-956f-4vf2 in brace-expansion","category":"security","metadata":{"ghsa":"GHSA-7h2j-956f-4vf2"}}
+{"description":"Fix GHSA-3ppc-4f35-3m26 in minimatch","category":"security","metadata":{"ghsa":"GHSA-3ppc-4f35-3m26"}}
+{"description":"Fix GHSA-7r86-cg39-jmmj in minimatch","category":"security","metadata":{"ghsa":"GHSA-7r86-cg39-jmmj"}}
+{"description":"Fix GHSA-23c5-xmqv-rm74 in minimatch","category":"security","metadata":{"ghsa":"GHSA-23c5-xmqv-rm74"}}
+{"description":"Fix GHSA-mw96-cpmx-2vgc in rollup","category":"security","metadata":{"ghsa":"GHSA-mw96-cpmx-2vgc"}}
+{"description":"Fix GHSA-6738-r8g5-qwp3 in svelte","category":"security","metadata":{"ghsa":"GHSA-6738-r8g5-qwp3"}}
+{"description":"Fix GHSA-g9mf-h72j-4rw9 in undici","category":"security","metadata":{"ghsa":"GHSA-g9mf-h72j-4rw9"}}
+{"description":"Fix GHSA-88qp-p4qg-rqm6 in svelte","category":"security","metadata":{"ghsa":"GHSA-88qp-p4qg-rqm6"}}
+{"description":"Fix GHSA-vrhm-gvg7-fpcf in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-vrhm-gvg7-fpcf"}}
+{"description":"Fix GHSA-crpf-4hrx-3jrp in devalue","category":"security","metadata":{"ghsa":"GHSA-crpf-4hrx-3jrp"}}
+{"description":"Fix GHSA-m56q-vw4c-c2cp in svelte","category":"security","metadata":{"ghsa":"GHSA-m56q-vw4c-c2cp"}}
+{"description":"Fix GHSA-f7gr-6p89-r883 in svelte","category":"security","metadata":{"ghsa":"GHSA-f7gr-6p89-r883"}}
+{"description":"Fix GHSA-h7h7-mm68-gmrc in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-h7h7-mm68-gmrc"}}
+{"description":"Fix GHSA-phwv-c562-gvmh in svelte","category":"security","metadata":{"ghsa":"GHSA-phwv-c562-gvmh"}}
+{"description":"Fix GHSA-33hq-fvwr-56pm in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-33hq-fvwr-56pm"}}
+{"description":"Fix GHSA-8qm3-746x-r74r in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-8qm3-746x-r74r"}}
+{"description":"Fix GHSA-fpg4-jhqr-589c in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-fpg4-jhqr-589c"}}
+{"description":"Updated development dependencies","category":"changed"}
+{"type":"release","version":"1.0.3","date":"2026-02-28","tag":"1.0.3"}
