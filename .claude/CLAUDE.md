@@ -15,7 +15,7 @@ The harness and session logs exist to solve this. They are your memory across se
 
 - **On start**: Read the harness and recent session logs to understand current state, architecture, conventions, and what was last worked on. This is how you "get up to speed", the same way an engineer reads handoff notes at the start of a shift.
 - **During work**: Work on one thing at a time. Finish it, verify it works, commit it in a clean state. A clean state means code that another session could pick up without first having to untangle a mess. Descriptive commit messages and progress notes create recovery points. If something goes wrong, there is a known-good state to return to.
-- **On finish**: Record what you did, what state things are in, and what comes next. This is the handoff note for the next session. Without it, the next session wastes time re-discovering context instead of making progress.
+- **On finish**: Write a session log for the next session. Not a status report — the next session will read git log to see what happened. The log is for what git log cannot tell them: why decisions were made, what was tried and failed, what will bite them if they don’t know it before they start. If a constraint matters, write it as a constraint, not a lesson. "The CI workflow is `node.js.yml`, not `ci.yml`. Do not rename it." is more useful than "Learned that `ci.yml` was wrong."
 
 **Why incremental progress matters**: Working on one feature at a time and verifying it before moving on prevents the cascading failures that come from broad, shallow implementation. It also means each commit represents a working state of the codebase.
 
@@ -58,7 +58,7 @@ Every session has three phases: start, work, end.
 
 ### Session End
 
-1. Write a session log to `.claude/sessions/YYYY-MM-DD.md` covering what was done, what changed, decisions made, and what's next. Auto-memory is for transient context about the user. Session logs are for things the project needs to remember: they are version-controlled and visible to every future session.
+1. Write a session log to `.claude/sessions/YYYY-MM-DD.md`. Write it for the next session — a reader who starts with no memory of what you did. Ask: what does that session need to know before starting that they cannot easily discover themselves? The answer is not what you did (git log shows that) or current state (CLAUDE.md shows that). It is the why: decisions and the reasoning behind them, things tried and abandoned, hard constraints discovered. If a lesson only survives as a retrospective observation it will be forgotten. Write it as a constraint — what to do, what not to do, why.
 2. Update `Current State` below if branch or in-progress work changed
 3. Update `Recent Decisions` below if you made an architectural decision
 4. Commit session log and state updates together

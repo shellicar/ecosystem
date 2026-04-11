@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": "//",
+  "root": false,
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "info"
+      },
+      "style": {
+        "useBlockStatements": "error",
+        "noNonNullAssertion": "error"
+      }
+    }
+  }
+}

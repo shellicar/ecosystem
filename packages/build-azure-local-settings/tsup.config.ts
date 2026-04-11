@@ -1,19 +1,23 @@
-import cleanPlugin from '@shellicar/build-clean/esbuild';
 import { defineConfig, type Options } from 'tsup';
 
 const commonOptions = (config: Options) =>
   ({
     bundle: true,
-    clean: false,
+    clean: true,
     dts: true,
-    esbuildPlugins: [cleanPlugin({ destructive: true })],
+    esbuildOptions: (options) => {
+      options.chunkNames = 'chunks/[name]-[hash]';
+      options.entryNames = '[name]';
+    },
     keepNames: true,
-    minify: config.watch ? false : 'terser',
+    minify: false,
+    platform: 'node',
     removeNodeProtocol: false,
     sourcemap: true,
     splitting: true,
     target: 'node22',
-    treeshake: true,
+    treeshake: false,
+    watch: config.watch ?? false,
     tsconfig: 'tsconfig.json',
   }) satisfies Options;
 
