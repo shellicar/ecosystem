@@ -1,0 +1,736 @@
+# Schema authored by Claude — three unrelated domains for treeshake testing.
+
+scalar DateTime
+scalar UUID
+scalar JSON
+
+# ─── Shared interfaces ────────────────────────────────────────────────────────
+
+interface Node {
+  id: UUID!
+}
+
+interface Timestamped {
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+interface Audited {
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: String!
+}
+
+# ─── Pagination ───────────────────────────────────────────────────────────────
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+input PaginationInput {
+  first: Int
+  after: String
+  last: Int
+  before: String
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DOMAIN 1: WIZARD ACADEMY
+# ══════════════════════════════════════════════════════════════════════════════
+
+enum WizardRank {
+  APPRENTICE
+  JOURNEYMAN
+  ADEPT
+  ARCHMAGE
+  GRANDMASTER
+}
+
+enum SpellSchool {
+  FIRE
+  ICE
+  LIGHTNING
+  SHADOW
+  HEALING
+  ILLUSION
+  TRANSMUTATION
+}
+
+enum SpellDifficulty {
+  CANTRIP
+  NOVICE
+  INTERMEDIATE
+  ADVANCED
+  LEGENDARY
+}
+
+enum PotionEffect {
+  HEALING
+  STRENGTH
+  INVISIBILITY
+  FLYING
+  TRUTH_SERUM
+  LOVE_POTION
+  CURSE_REMOVAL
+}
+
+enum WandCore {
+  DRAGON_HEARTSTRING
+  PHOENIX_FEATHER
+  UNICORN_HAIR
+  BASILISK_FANG
+  MERMAID_SCALE
+}
+
+type Wizard implements Node & Timestamped {
+  id: UUID!
+  name: String!
+  rank: WizardRank!
+  age: Int!
+  specialisation: SpellSchool
+  wand: Wand
+  spells: [Spell!]!
+  potions: [Potion!]!
+  familiars: [Familiar!]!
+  academy: WizardAcademy
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type WizardEdge {
+  cursor: String!
+  node: Wizard!
+}
+
+type WizardConnection {
+  edges: [WizardEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Wand implements Node {
+  id: UUID!
+  wood: String!
+  core: WandCore!
+  lengthInches: Float!
+  flexibility: String!
+  owner: Wizard
+}
+
+type Spell implements Node & Timestamped {
+  id: UUID!
+  name: String!
+  incantation: String
+  school: SpellSchool!
+  difficulty: SpellDifficulty!
+  description: String!
+  damagePoints: Int
+  healingPoints: Int
+  discoveredBy: Wizard
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SpellEdge {
+  cursor: String!
+  node: Spell!
+}
+
+type SpellConnection {
+  edges: [SpellEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Potion implements Node {
+  id: UUID!
+  name: String!
+  effect: PotionEffect!
+  brewTimeHours: Int!
+  ingredients: [String!]!
+  brewer: Wizard
+  isLegal: Boolean!
+}
+
+type Familiar implements Node {
+  id: UUID!
+  name: String!
+  species: String!
+  magicAffinity: SpellSchool
+  bonded: Boolean!
+  wizard: Wizard
+}
+
+type WizardAcademy implements Node & Audited {
+  id: UUID!
+  name: String!
+  foundedYear: Int!
+  headmaster: Wizard
+  students: WizardConnection!
+  faculty: [Wizard!]!
+  spellLibrary: SpellConnection!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: String!
+}
+
+type WizardAcademyEdge {
+  cursor: String!
+  node: WizardAcademy!
+}
+
+type WizardAcademyConnection {
+  edges: [WizardAcademyEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+# Wizard inputs
+
+input CreateWizardInput {
+  name: String!
+  rank: WizardRank!
+  age: Int!
+  specialisation: SpellSchool
+  academyId: UUID
+}
+
+input UpdateWizardInput {
+  id: UUID!
+  name: String
+  rank: WizardRank
+  specialisation: SpellSchool
+}
+
+input CastSpellInput {
+  wizardId: UUID!
+  spellId: UUID!
+  targetId: UUID
+  powerLevel: Int
+}
+
+input BrewPotionInput {
+  brewerId: UUID!
+  name: String!
+  effect: PotionEffect!
+  ingredients: [String!]!
+}
+
+input WizardFilterInput {
+  rank: WizardRank
+  specialisation: SpellSchool
+  academyId: UUID
+  nameContains: String
+}
+
+# Wizard-specific types not reachable from root queries (for treeshake testing)
+type SpellCastResult {
+  success: Boolean!
+  spell: Spell!
+  caster: Wizard!
+  damageDealt: Int
+  healingDone: Int
+  statusEffects: [String!]!
+}
+
+type BrewingLog {
+  id: UUID!
+  potion: Potion!
+  brewer: Wizard!
+  startedAt: DateTime!
+  completedAt: DateTime
+  notes: String
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DOMAIN 2: INTERGALACTIC SPACE STATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+enum AlienSpecies {
+  ZORBLAXIAN
+  GLORP
+  TENTACLED_ELDER
+  SILICON_BEING
+  VOID_SPAWN
+  HIVE_MIND
+  CRYSTALLINE
+}
+
+enum AlienDisposition {
+  FRIENDLY
+  HOSTILE
+  NEUTRAL
+  TRADE_HUNGRY
+  PHILOSOPHICALLY_CONFUSED
+}
+
+enum MissionStatus {
+  PLANNED
+  LAUNCHED
+  IN_PROGRESS
+  COMPLETED
+  CATASTROPHICALLY_FAILED
+  PROBABLY_FINE
+}
+
+enum MissionType {
+  EXPLORATION
+  DIPLOMACY
+  CARGO
+  RESCUE
+  SURVEILLANCE
+  CHEESE_DELIVERY
+}
+
+enum SpaceshipClass {
+  FIGHTER
+  CRUISER
+  FREIGHTER
+  DREADNOUGHT
+  DIPLOMATIC_VESSEL
+  FOOD_TRUCK
+}
+
+enum FuelType {
+  ANTIMATTER
+  DARK_ENERGY
+  HOPE_AND_DREAMS
+  RECYCLED_WISHES
+}
+
+type Alien implements Node & Timestamped {
+  id: UUID!
+  name: String!
+  species: AlienSpecies!
+  disposition: AlienDisposition!
+  homeworld: String!
+  numberOfLimbs: Int!
+  speaksCommon: Boolean!
+  languages: [String!]!
+  currentStation: SpaceStation
+  missions: [Mission!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type AlienEdge {
+  cursor: String!
+  node: Alien!
+}
+
+type AlienConnection {
+  edges: [AlienEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Spaceship implements Node & Audited {
+  id: UUID!
+  name: String!
+  registrationCode: String!
+  class: SpaceshipClass!
+  fuelType: FuelType!
+  maxWarpFactor: Float!
+  crewCapacity: Int!
+  crew: AlienConnection!
+  currentMission: Mission
+  dockingStation: SpaceStation
+  weapons: [String!]!
+  isOperational: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: String!
+}
+
+type SpaceshipEdge {
+  cursor: String!
+  node: Spaceship!
+}
+
+type SpaceshipConnection {
+  edges: [SpaceshipEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Mission implements Node & Timestamped {
+  id: UUID!
+  name: String!
+  type: MissionType!
+  status: MissionStatus!
+  description: String!
+  destination: String!
+  ship: Spaceship
+  crew: [Alien!]!
+  estimatedDurationDays: Int!
+  launchedAt: DateTime
+  completedAt: DateTime
+  successProbability: Float
+  missionLog: [MissionLogEntry!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type MissionLogEntry {
+  timestamp: DateTime!
+  message: String!
+  severity: String!
+  reportedBy: Alien
+}
+
+type SpaceStation implements Node & Audited {
+  id: UUID!
+  name: String!
+  sector: String!
+  coordinates: String!
+  population: Int!
+  residents: AlienConnection!
+  dockedShips: SpaceshipConnection!
+  activeMissions: [Mission!]!
+  amenities: [String!]!
+  isOperational: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: String!
+}
+
+# Space inputs
+
+input CreateAlienInput {
+  name: String!
+  species: AlienSpecies!
+  disposition: AlienDisposition!
+  homeworld: String!
+  numberOfLimbs: Int!
+  speaksCommon: Boolean!
+  languages: [String!]
+}
+
+input LaunchMissionInput {
+  name: String!
+  type: MissionType!
+  description: String!
+  destination: String!
+  shipId: UUID!
+  crewIds: [UUID!]!
+  estimatedDurationDays: Int!
+}
+
+input UpdateMissionStatusInput {
+  missionId: UUID!
+  status: MissionStatus!
+  logMessage: String
+}
+
+input AlienFilterInput {
+  species: AlienSpecies
+  disposition: AlienDisposition
+  stationId: UUID
+  speaksCommon: Boolean
+}
+
+# Space-specific types not directly exposed (for treeshake testing)
+type WarpCalculation {
+  origin: String!
+  destination: String!
+  warpFactor: Float!
+  estimatedTravelTime: String!
+  fuelRequired: Float!
+}
+
+type DiplomacyReport {
+  mission: Mission!
+  contactedSpecies: AlienSpecies!
+  outcome: String!
+  treatyProposed: Boolean!
+  incidentsReported: Int!
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DOMAIN 3: ARTISAN CHEESE COLLECTIVE
+# ══════════════════════════════════════════════════════════════════════════════
+
+enum CheeseType {
+  SOFT
+  SEMI_SOFT
+  SEMI_HARD
+  HARD
+  BLUE
+  FRESH
+  PROCESSED
+  SMOKED
+}
+
+enum MilkSource {
+  COW
+  GOAT
+  SHEEP
+  BUFFALO
+  YETI
+  ALIEN_COW
+}
+
+enum AgingStage {
+  FRESH
+  YOUNG
+  AGED
+  EXTRA_AGED
+  ANCIENT
+  POSSIBLY_SENTIENT
+}
+
+enum CaveClimate {
+  DRY
+  HUMID
+  COLD
+  TEMPERATE
+  MYSTERIOUS
+}
+
+enum PairingCategory {
+  WINE
+  BEER
+  WHISKY
+  FRUIT
+  BREAD
+  HONEY
+  EXISTENTIAL_DESPAIR
+}
+
+type Cheese implements Node & Timestamped {
+  id: UUID!
+  name: String!
+  type: CheeseType!
+  milkSource: MilkSource!
+  agingStage: AgingStage!
+  agingMonths: Int!
+  originCountry: String!
+  flavourProfile: [String!]!
+  smellRating: Int!
+  maker: Cheesemaker
+  cave: AgingCave
+  pairings: [Pairing!]!
+  awards: [CheeseAward!]!
+  isVegetarian: Boolean!
+  isSentient: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CheeseEdge {
+  cursor: String!
+  node: Cheese!
+}
+
+type CheeseConnection {
+  edges: [CheeseEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Cheesemaker implements Node & Audited {
+  id: UUID!
+  name: String!
+  country: String!
+  yearsOfExperience: Int!
+  speciality: CheeseType!
+  cheeses: CheeseConnection!
+  awards: [CheeseAward!]!
+  motto: String
+  believesCheeseIsSentient: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: String!
+}
+
+type CheeseEdge2 {
+  cursor: String!
+  node: Cheesemaker!
+}
+
+type CheeseEdgeConnection {
+  edges: [CheeseEdge2!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type AgingCave implements Node & Timestamped {
+  id: UUID!
+  name: String!
+  location: String!
+  climate: CaveClimate!
+  temperatureCelsius: Float!
+  humidityPercent: Float!
+  capacityWheels: Int!
+  currentOccupancy: Int!
+  cheeses: CheeseConnection!
+  knownHaunted: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Pairing implements Node {
+  id: UUID!
+  category: PairingCategory!
+  name: String!
+  description: String!
+  harmonyScore: Int!
+  cheese: Cheese!
+}
+
+type CheeseAward implements Node {
+  id: UUID!
+  name: String!
+  year: Int!
+  category: String!
+  awardedTo: Cheese
+  awardedToMaker: Cheesemaker
+  prestige: Int!
+}
+
+# Cheese inputs
+
+input CreateCheeseInput {
+  name: String!
+  type: CheeseType!
+  milkSource: MilkSource!
+  agingMonths: Int!
+  originCountry: String!
+  flavourProfile: [String!]!
+  makerId: UUID
+  caveId: UUID
+  isVegetarian: Boolean!
+}
+
+input UpdateAgingInput {
+  cheeseId: UUID!
+  caveId: UUID!
+  additionalMonths: Int!
+  notes: String
+}
+
+input CheeseFilterInput {
+  type: CheeseType
+  milkSource: MilkSource
+  agingStage: AgingStage
+  maxSmellRating: Int
+  isSentient: Boolean
+  originCountry: String
+}
+
+input AddPairingInput {
+  cheeseId: UUID!
+  category: PairingCategory!
+  name: String!
+  description: String!
+  harmonyScore: Int!
+}
+
+# Cheese-specific internal types (for treeshake testing)
+type AgeingReport {
+  cheese: Cheese!
+  cave: AgingCave!
+  startDate: DateTime!
+  projectedReadyDate: DateTime!
+  currentMouldCoverage: Float!
+  recommendedAction: String!
+}
+
+type CheeseCompetition {
+  id: UUID!
+  name: String!
+  year: Int!
+  location: String!
+  entries: [Cheese!]!
+  judges: [Cheesemaker!]!
+  awards: [CheeseAward!]!
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CROSS-DOMAIN UNION (the universe is small and weird)
+# ══════════════════════════════════════════════════════════════════════════════
+
+union SearchResult = Wizard | Alien | Cheese | Spaceship | WizardAcademy | SpaceStation | Cheesemaker
+
+type SearchResultEdge {
+  cursor: String!
+  node: SearchResult!
+}
+
+type SearchResultConnection {
+  edges: [SearchResultEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ROOT TYPES
+# ══════════════════════════════════════════════════════════════════════════════
+
+type Query {
+  # Wizard Academy
+  wizard(id: UUID!): Wizard
+  wizards(filter: WizardFilterInput, pagination: PaginationInput): WizardConnection!
+  spell(id: UUID!): Spell
+  spells(school: SpellSchool, difficulty: SpellDifficulty, pagination: PaginationInput): SpellConnection!
+  potion(id: UUID!): Potion
+  wand(id: UUID!): Wand
+  wizardAcademy(id: UUID!): WizardAcademy
+  wizardAcademies(pagination: PaginationInput): WizardAcademyConnection!
+
+  # Space Station
+  alien(id: UUID!): Alien
+  aliens(filter: AlienFilterInput, pagination: PaginationInput): AlienConnection!
+  spaceship(id: UUID!): Spaceship
+  spaceships(class: SpaceshipClass, pagination: PaginationInput): SpaceshipConnection!
+  mission(id: UUID!): Mission
+  missions(status: MissionStatus, type: MissionType, pagination: PaginationInput): [Mission!]!
+  spaceStation(id: UUID!): SpaceStation
+
+  # Cheese Collective
+  cheese(id: UUID!): Cheese
+  cheeses(filter: CheeseFilterInput, pagination: PaginationInput): CheeseConnection!
+  cheesemaker(id: UUID!): Cheesemaker
+  cheesemakers(country: String, pagination: PaginationInput): [Cheesemaker!]!
+  agingCave(id: UUID!): AgingCave
+  agingCaves(climate: CaveClimate): [AgingCave!]!
+  pairing(id: UUID!): Pairing
+
+  # Cross-domain
+  search(query: String!, types: [String!]): SearchResultConnection!
+}
+
+type Mutation {
+  # Wizard Academy
+  createWizard(input: CreateWizardInput!): Wizard!
+  updateWizard(input: UpdateWizardInput!): Wizard!
+  castSpell(input: CastSpellInput!): SpellCastResult!
+  brewPotion(input: BrewPotionInput!): Potion!
+
+  # Space Station
+  createAlien(input: CreateAlienInput!): Alien!
+  launchMission(input: LaunchMissionInput!): Mission!
+  updateMissionStatus(input: UpdateMissionStatusInput!): Mission!
+
+  # Cheese Collective
+  createCheese(input: CreateCheeseInput!): Cheese!
+  updateAging(input: UpdateAgingInput!): Cheese!
+  addPairing(input: AddPairingInput!): Pairing!
+}
+
+type Subscription {
+  # Wizard events
+  wizardRankChanged(wizardId: UUID!): Wizard!
+  spellCast(academyId: UUID): SpellCastResult!
+
+  # Space events
+  missionStatusChanged(missionId: UUID): Mission!
+  alienArrived(stationId: UUID!): Alien!
+
+  # Cheese events
+  cheeseReadyForHarvest(caveId: UUID!): Cheese!
+  cheeseAchievedSentience: Cheese!
+}

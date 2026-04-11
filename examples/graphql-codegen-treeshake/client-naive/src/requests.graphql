@@ -1,0 +1,96 @@
+fragment WandFields on Wand {
+  id
+  wood
+  core
+  lengthInches
+  flexibility
+}
+
+fragment SpellFields on Spell {
+  id
+  name
+  incantation
+  school
+  difficulty
+  description
+  damagePoints
+  healingPoints
+}
+
+fragment WizardFields on Wizard {
+  id
+  name
+  rank
+  age
+  specialisation
+  wand {
+    ...WandFields
+  }
+  createdAt
+  updatedAt
+}
+
+query GetWizard($id: UUID!) {
+  wizard(id: $id) {
+    ...WizardFields
+    spells {
+      ...SpellFields
+    }
+    familiars {
+      id
+      name
+      species
+      magicAffinity
+      bonded
+    }
+    academy {
+      id
+      name
+      foundedYear
+    }
+  }
+}
+
+query ListWizards($filter: WizardFilterInput, $pagination: PaginationInput) {
+  wizards(filter: $filter, pagination: $pagination) {
+    totalCount
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        ...WizardFields
+      }
+    }
+  }
+}
+
+query GetSpells($school: SpellSchool, $difficulty: SpellDifficulty) {
+  spells(school: $school, difficulty: $difficulty) {
+    totalCount
+    edges {
+      node {
+        ...SpellFields
+        discoveredBy {
+          id
+          name
+          rank
+        }
+      }
+    }
+  }
+}
+
+mutation CreateWizard($input: CreateWizardInput!) {
+  createWizard(input: $input) {
+    ...WizardFields
+  }
+}
+
+mutation UpdateWizard($input: UpdateWizardInput!) {
+  updateWizard(input: $input) {
+    ...WizardFields
+  }
+}

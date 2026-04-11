@@ -91,11 +91,11 @@ Every session has three phases: start, work, end.
 <!-- BEGIN:REPO:current-state -->
 ## Current State
 
-Pre-migration. The monorepo migration has not started yet.
+All 10 packages imported. PR #16 (`feature/monorepo-import-graphql-codegen-treeshake`) open for the final import.
+
+Previous phases (PRs #7-#15) all merged to main. CI workflows, root tooling, and scaffold all in place.
 
 Migration plan: `projects/ecosystem/briefs/monorepo-migration.md` in the fleet repo (`~/repos/fleet/claude-fleet-shellicar`).
-
-No packages have been imported. No CI workflows exist yet. The repo has only a harness.
 <!-- END:REPO:current-state -->
 
 <!-- BEGIN:REPO:architecture -->
