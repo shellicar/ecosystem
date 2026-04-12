@@ -12,36 +12,36 @@
 // Usage:
 //   echo '[...]' | node scripts/fix-ghsa.mjs
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import semver from "semver";
-import YAML from "yaml";
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import semver from 'semver';
+import YAML from 'yaml';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const workspacePath = join(__dirname, "..", "pnpm-workspace.yaml");
+const workspacePath = join(__dirname, '..', 'pnpm-workspace.yaml');
 
 // ── Read inputs ─────────────────────────────────────────────────────
 
-const input = readFileSync("/dev/stdin", "utf8");
+const input = readFileSync('/dev/stdin', 'utf8');
 const vulnerabilities = JSON.parse(input);
 
 if (!Array.isArray(vulnerabilities) || vulnerabilities.length === 0) {
-  process.stderr.write("No vulnerability data on stdin\n");
+  process.stderr.write('No vulnerability data on stdin\n');
   process.exit(1);
 }
 
-const raw = readFileSync(workspacePath, "utf8");
-const doc = YAML.parseDocument(raw, { schema: "failsafe" });
-const overridesNode = doc.get("overrides", true);
+const raw = readFileSync(workspacePath, 'utf8');
+const doc = YAML.parseDocument(raw, { schema: 'failsafe' });
+const overridesNode = doc.get('overrides', true);
 const merged = new Map();
-if (overridesNode && YAML.isPair(overridesNode) || YAML.isMap(overridesNode)) {
+if ((overridesNode && YAML.isPair(overridesNode)) || YAML.isMap(overridesNode)) {
   for (const pair of overridesNode.items) {
     merged.set(String(pair.key), String(pair.value));
   }
 } else if (overridesNode) {
   // Fallback: plain object parse
-  const parsed = YAML.parse(raw, { schema: "failsafe" });
+  const parsed = YAML.parse(raw, { schema: 'failsafe' });
   if (parsed.overrides) {
     for (const [k, v] of Object.entries(parsed.overrides)) {
       merged.set(k, v);
@@ -55,20 +55,20 @@ const actions = [];
 // Convert API range ">= 3.0.0, < 3.1.2" to pnpm format ">=3.0.0 <3.1.2"
 function normalizeRange(range) {
   return range
-    .replace(/,\s*/g, " ")
-    .replace(/(>=|<=|>|<)\s+/g, "$1")
+    .replace(/,\s*/g, ' ')
+    .replace(/(>=|<=|>|<)\s+/g, '$1')
     .trim();
 }
 
 // Parse override key "koa@>=3.0.0 <3.1.2" -> { pkg: "koa", range: ">=3.0.0 <3.1.2" }
 function parseKey(key) {
   let atIdx;
-  if (key.startsWith("@")) {
-    atIdx = key.indexOf("@", 1);
+  if (key.startsWith('@')) {
+    atIdx = key.indexOf('@', 1);
   } else {
-    atIdx = key.indexOf("@");
+    atIdx = key.indexOf('@');
   }
-  if (atIdx === -1) return { pkg: key, range: "" };
+  if (atIdx === -1) return { pkg: key, range: '' };
   return { pkg: key.substring(0, atIdx), range: key.substring(atIdx + 1) };
 }
 
@@ -127,14 +127,14 @@ for (const vuln of vulnerabilities) {
     if (existing.pkg !== vuln.pkg) continue;
     if (existingKey === key) continue; // handled separately below
     if (rangeContains(range, existing.range)) {
-      actions.push({ action: "remove", key: existingKey, value: merged.get(existingKey) });
+      actions.push({ action: 'remove', key: existingKey, value: merged.get(existingKey) });
       merged.delete(existingKey);
     }
   }
 
   // Add or update the override
   merged.set(key, value);
-  actions.push({ action: "add", key, value });
+  actions.push({ action: 'add', key, value });
 }
 
 // ── Write back ──────────────────────────────────────────────────────
@@ -150,13 +150,13 @@ for (const [k, v] of sortedEntries) {
   newMap.add(new YAML.Pair(keyNode, valNode));
 }
 
-doc.set("overrides", newMap);
+doc.set('overrides', newMap);
 writeFileSync(workspacePath, doc.toString());
 
 // ── Report ──────────────────────────────────────────────────────────
 
 for (const a of actions) {
-  if (a.action === "remove") {
+  if (a.action === 'remove') {
     process.stdout.write(`  REMOVE  ${a.key}: '${a.value}'\n`);
   } else {
     process.stdout.write(`  ADD     ${a.key}: '${a.value}'\n`);
@@ -164,7 +164,7 @@ for (const a of actions) {
 }
 
 if (actions.length === 0) {
-  process.stdout.write("  No changes needed\n");
+  process.stdout.write('  No changes needed\n');
   process.exit(2);
 }
 
