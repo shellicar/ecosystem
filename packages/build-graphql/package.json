@@ -193,9 +193,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
     "type-check": "tsc -p tsconfig.check.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "watch": "tsup --watch"
   },
   "peerDependencies": {
     "@farmfe/core": ">=1",
