@@ -86,9 +86,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
     "test": "vitest run",
-    "type-check": "tsc -p tsconfig.check.json"
+    "type-check": "tsc -p tsconfig.check.json",
+    "watch": "tsup --watch"
   },
   "peerDependencies": {
     "esbuild": "*"

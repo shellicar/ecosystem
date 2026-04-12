@@ -5,8 +5,8 @@
   "main": "./dist/cjs/index.cjs",
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
-    "type-check": "tsc -p tsconfig.check.json"
+    "type-check": "tsc -p tsconfig.check.json",
+    "watch": "tsup --watch"
   },
   "keywords": [
     "graphql-codegen",
