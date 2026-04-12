@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ecosystem health dashboard — aggregates all audit scripts.
 # Per-package: check-tsconfig, audit-package-json, check-biome.
-# Workspace-level: check-deps.
+# Workspace-level: check-deps, pnpm audit.
 # Outputs JSON.
 #
 # Usage:
@@ -11,6 +11,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
 PKG_ARG="${1:-}"
 
 AUDIT_TMP="$(mktemp -d)"
@@ -31,6 +32,7 @@ run_check "check-biome.sh"        "biome.json"
 
 if [ -z "$PKG_ARG" ]; then
   "$SCRIPT_DIR/check-deps.sh" > "$AUDIT_TMP/deps.json" 2>/dev/null || true
+  pnpm --dir "$WORKSPACE_DIR" audit --json > "$AUDIT_TMP/vuln.json" 2>/dev/null || true
 fi
 
 AUDIT_TMP="$AUDIT_TMP" node -e "
@@ -47,6 +49,7 @@ AUDIT_TMP="$AUDIT_TMP" node -e "
   const pkgJson  = readJson('pkg.json');
   const biome    = readJson('biome.json');
   const deps     = readJson('deps.json');
+  const vuln     = readJson('vuln.json');
 
   const byName = new Map();
 
@@ -84,7 +87,20 @@ AUDIT_TMP="$AUDIT_TMP" node -e "
     summary: { packages: packages.length, avg_pct: avgPct, errors, warnings },
   };
 
-  if (deps) result.workspace = { deps };
+  if (deps || vuln) {
+    result.workspace = {};
+    if (deps) result.workspace.deps = deps;
+    if (vuln) {
+      const v = (vuln.metadata || {}).vulnerabilities || {};
+      result.workspace.vuln = {
+        critical: v.critical || 0,
+        high:     v.high     || 0,
+        moderate: v.moderate || 0,
+        low:      v.low      || 0,
+        total:    v.total    || 0,
+      };
+    }
+  }
 
   process.stdout.write(JSON.stringify(result) + '\n');
 "
