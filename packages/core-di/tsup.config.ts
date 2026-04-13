@@ -10,7 +10,6 @@ const commonOptions = (config: Options) =>
       options.chunkNames = 'chunks/[name]-[hash]';
       options.entryNames = '[name]';
     },
-    inject: ['inject.ts'],
     keepNames: true,
     minify: false,
     platform: 'node',

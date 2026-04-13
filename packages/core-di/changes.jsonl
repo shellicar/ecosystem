@@ -62,3 +62,5 @@
 {"description":"Fixed GHSA-mw96-cpmx-2vgc: rollup arbitrary file write via path traversal.","category":"security","metadata":{"ghsa":"GHSA-mw96-cpmx-2vgc"}}
 {"description":"Updated all dependencies to latest versions.","category":"changed"}
 {"type":"release","version":"3.1.6","date":"2026-02-28","tag":"3.1.6"}
+{"description":"Replace @abraham/reflection with a global WeakMap for metadata storage","category":"changed"}
+{"description":"Remove @abraham/reflection dependency","category":"removed"}
