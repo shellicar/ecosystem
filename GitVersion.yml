@@ -1,7 +1,6 @@
 increment: Patch
 tag-prefix: '.*@'
 strategies:
-- ConfiguredNextVersion
 - MergeMessage
 - TrackReleaseBranches
 - VersionInBranchName
