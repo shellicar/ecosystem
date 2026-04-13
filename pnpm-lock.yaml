@@ -1162,9 +1162,6 @@ importers:
 
   packages/core-di:
     devDependencies:
-      '@abraham/reflection':
-        specifier: ^0.13.0
-        version: 0.13.0
       '@js-joda/core':
         specifier: ^5.7.0
         version: 5.7.0
@@ -1362,9 +1359,6 @@ importers:
         version: 4.3.6
 
 packages:
-
-  '@abraham/reflection@0.13.0':
-    resolution: {integrity: sha512-sQYhhraGPPRP6zoqpqpSaoYL+XY5KNmQCcoB3IuQh1z1aWmkHXcxwyTxRkTJ60L2aUjrbiqIqoYkrB/1c7kjQA==}
 
   '@ardatan/relay-compiler@13.0.1':
     resolution: {integrity: sha512-afG3YPwuSA0E5foouZusz5GlXKs74dObv4cuWyLyfKsYFj2r7oGRNB28v18HvwuLSQtQFCi+DpIe0TZkgQDYyg==}
@@ -7095,8 +7089,6 @@ packages:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
 snapshots:
-
-  '@abraham/reflection@0.13.0': {}
 
   '@ardatan/relay-compiler@13.0.1(graphql@16.13.2)':
     dependencies:
