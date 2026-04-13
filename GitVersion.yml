@@ -1,5 +1,5 @@
-next-version: 1.0.0
 increment: Patch
+tag-prefix: '.*@'
 strategies:
 - ConfiguredNextVersion
 - MergeMessage
