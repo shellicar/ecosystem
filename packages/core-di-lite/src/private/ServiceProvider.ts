@@ -48,7 +48,7 @@ export class ServiceProvider extends IServiceProvider {
   }
 
   private injectDependencies<T extends SourceType>(instance: T): void {
-    const deps = getMetadata((instance as object).constructor as object) ?? {};
+    const deps = getMetadata(instance.constructor) ?? {};
     for (const [key, depIdentifier] of Object.entries(deps)) {
       const dep = this.resolveInternal(depIdentifier as ServiceIdentifier<any>);
       (instance as Record<string, unknown>)[key] = dep;

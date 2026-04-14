@@ -11,6 +11,6 @@ export class ServiceBuilder<T extends SourceType> implements IServiceBuilder<T> 
         implementation,
         createInstance: factory ?? (() => new (implementation as Newable<T>)()),
       });
-    }) as ServiceBuilderOptions<T>;
+    });
   }
 }
