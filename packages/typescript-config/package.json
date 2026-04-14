@@ -7,6 +7,6 @@
     "./strict.json": "./strict.json"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22"
+    "@tsconfig/node22": "^22.0.5"
   }
 }

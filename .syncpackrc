@@ -7,10 +7,40 @@
       "pinVersion": "workspace:^"
     },
     {
+      "label": "Pinned Azure Cosmos versions for version-specific test fixtures",
+      "dependencies": ["@azure/cosmos"],
+      "packages": [
+        "@shellicar/cosmos-query-builder-examples-cosmos451",
+        "@shellicar/cosmos-query-builder-examples-cosmos460"
+      ],
+      "isIgnored": true
+    },
+    {
+      "label": "Pinned applicationinsights versions for version-specific test fixtures",
+      "dependencies": ["applicationinsights"],
+      "packages": [
+        "v2",
+        "v3.3",
+        "v3.9",
+        "v3.12"
+      ],
+      "isIgnored": true
+    },
+    {
       "dependencies": ["@types/**"],
       "dependencyTypes": ["!dev"],
       "isBanned": true,
       "label": "@types packages should only be under devDependencies"
+    },
+    {
+      "label": "unplugin: build-clean/build-version on v2, build-graphql on v3",
+      "dependencies": ["unplugin"],
+      "isIgnored": true
+    },
+    {
+      "label": "Peer dependencies use intentionally wider ranges",
+      "dependencyTypes": ["peer"],
+      "isIgnored": true
     },
     {
       "label": "Ignore non-standard dependency types",

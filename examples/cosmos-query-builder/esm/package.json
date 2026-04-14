@@ -9,11 +9,11 @@
     "type-check": "tsc -p tsconfig.check.json"
   },
   "devDependencies": {
-    "@azure/cosmos": "^4.9.1",
-    "@shellicar/build-clean": "^1.2.3",
+    "@azure/cosmos": "^4.9.2",
+    "@shellicar/build-clean": "workspace:^",
     "@shellicar/cosmos-query-builder": "workspace:^",
     "@tsconfig/node22": "^22.0.5",
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.6.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
