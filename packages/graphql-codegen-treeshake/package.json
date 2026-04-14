@@ -1,6 +1,6 @@
 {
   "name": "@shellicar/graphql-codegen-treeshake",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A graphql-codegen preset that tree-shakes unused types from TypeScript output",
   "main": "./dist/cjs/index.cjs",
   "scripts": {

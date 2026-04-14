@@ -42,3 +42,6 @@
 {"description":"Fixed GHSA-5c6j-r48x-rmvq in serialize-javascript","category":"security","metadata":{"ghsa":"GHSA-5c6j-r48x-rmvq"}}
 {"description":"Updated all dependencies to latest versions","category":"changed"}
 {"type":"release","version":"1.4.3","date":"2026-03-01","tag":"1.4.3"}
+{"description":"Fixed GHSA-r4q5-vmmm-2653 in follow-redirects","category":"security","metadata":{"ghsa":"GHSA-r4q5-vmmm-2653"}}
+{"description":"Updated dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.4.4","date":"2026-04-15","tag":"build-graphql@1.4.4"}

@@ -32,3 +32,5 @@
 {"description":"Updated @shellicar/build-clean to 1.2.3, biome to 2.4.4","category":"changed"}
 {"description":"Updated all dependencies to latest versions","category":"changed"}
 {"type":"release","version":"2.1.4","date":"2026-02-28","tag":"2.1.4"}
+{"description":"Updated dependencies to latest versions","category":"changed"}
+{"type":"release","version":"2.1.5","date":"2026-04-15","tag":"core-config@2.1.5"}

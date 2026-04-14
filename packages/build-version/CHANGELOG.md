@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] - 2026-04-15
+
+### Changed
+
+- Updated vite peer dependency from ^6 to ^7
+- Updated dependencies to latest versions
+
+### Security
+
+- Fixed GHSA-r4q5-vmmm-2653 in follow-redirects ([GHSA-r4q5-vmmm-2653](https://github.com/advisories/GHSA-r4q5-vmmm-2653))
+
 ## [1.3.6] - 2026-03-28
 
 ### Changed
@@ -123,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[1.3.7]: https://github.com/shellicar/ecosystem/releases/tag/build-version@1.3.7
 [1.3.6]: https://github.com/shellicar/ecosystem/releases/tag/1.3.6
 [1.3.5]: https://github.com/shellicar/ecosystem/releases/tag/1.3.5
 [1.3.4]: https://github.com/shellicar/ecosystem/releases/tag/1.3.4
