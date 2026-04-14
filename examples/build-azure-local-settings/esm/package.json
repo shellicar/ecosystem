@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@shellicar/build-azure-local-settings": "workspace:^",
-    "@shellicar/build-clean": "^1.3.0",
+    "@shellicar/build-clean": "workspace:^",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^25.6.0",
     "tsup": "^8.5.1",

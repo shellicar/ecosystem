@@ -195,7 +195,7 @@
     "esbuild": "^0.27",
     "rolldown": ">=1.0.0-rc.1",
     "rollup": "^3",
-    "vite": "^6",
+    "vite": "^7",
     "webpack": "^4 || ^5"
   },
   "peerDependenciesMeta": {
@@ -232,7 +232,8 @@
     "@types/node": "^25.6.0",
     "esbuild": "^0.27.3",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7"
   },
   "dependencies": {
     "unplugin": "^2.3.11"
