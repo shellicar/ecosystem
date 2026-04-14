@@ -60,7 +60,7 @@
     "watch": "tsup-node --watch"
   },
   "devDependencies": {
-    "@shellicar/typescript-config": "workspace:*",
+    "@shellicar/typescript-config": "workspace:^",
     "@tsconfig/node20": "^20.1.9",
     "@types/node": "^25.6.0",
     "terser": "^5.46.1",

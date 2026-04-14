@@ -21,7 +21,7 @@
     "@vitest/coverage-v8": "^4.1.4",
     "knip": "^5",
     "lefthook": "^2",
-    "npm-check-updates": "^19",
+    "npm-check-updates": "^19.6.3",
     "syncpack": "^14",
     "turbo": "^2",
     "vitest": "^4.1.4"

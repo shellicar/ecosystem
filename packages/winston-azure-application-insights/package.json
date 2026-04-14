@@ -52,7 +52,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "@shellicar/typescript-config": "workspace:*",
+    "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.6.0",
     "@types/triple-beam": "^1.3.5",
     "@vitest/coverage-v8": "^4.1.4",

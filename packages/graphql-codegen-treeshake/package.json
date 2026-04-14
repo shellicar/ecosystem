@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@graphql-codegen/plugin-helpers": "^6.3.0",
-    "@shellicar/typescript-config": "workspace:*",
+    "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.4",
     "graphql": "^16.13.2",
