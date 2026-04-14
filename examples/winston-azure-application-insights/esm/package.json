@@ -9,11 +9,11 @@
     "type-check": "tsc -p tsconfig.check.json"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^1.52.0",
+    "@dotenvx/dotenvx": "^1.61.0",
     "@shellicar/winston-azure-application-insights": "workspace:^",
     "@tsconfig/node20": "^20.1.9",
-    "@types/node": "^25.3.2",
-    "applicationinsightsv3": "npm:applicationinsights@^3.12.1",
+    "@types/node": "^25.6.0",
+    "applicationinsightsv3": "npm:applicationinsights@^3.14.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
