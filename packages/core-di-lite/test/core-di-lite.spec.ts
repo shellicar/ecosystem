@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CircularDependencyError, UnregisteredServiceError, createServiceCollection, dependsOn } from '../src';
+import { CircularDependencyError, createServiceCollection, dependsOn, UnregisteredServiceError } from '../src';
 
 // Registration and resolution
 abstract class IFoo {
