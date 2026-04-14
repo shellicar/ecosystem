@@ -1,4 +1,4 @@
-import { CircularDependencyError, UnregisteredServiceError, ServiceError, ServiceCreationError } from '../errors';
+import { CircularDependencyError, ServiceCreationError, ServiceError, UnregisteredServiceError } from '../errors';
 import { IServiceProvider } from '../interfaces';
 import type { ServiceIdentifier, SourceType } from '../types';
 import { injectDependencies } from './injectDependencies';

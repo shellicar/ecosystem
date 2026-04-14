@@ -1,6 +1,5 @@
-import type { SourceType, ServiceIdentifier } from '../types';
+import type { ServiceIdentifier, SourceType } from '../types';
 import { getMetadata } from './metadata';
-
 
 export function injectDependencies<T extends SourceType>(instance: T, resolveInternal: <U extends SourceType>(id: ServiceIdentifier<U>) => U): void {
   const deps = getMetadata(instance.constructor) ?? {};
