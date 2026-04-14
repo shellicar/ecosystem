@@ -1,0 +1,60 @@
+{
+  "name": "@shellicar/core-di-lite",
+  "private": false,
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "Stephen Hellicar",
+  "description": "A stripped-down dependency injection container for CLI use cases",
+  "keywords": [
+    "dependency injection",
+    "di",
+    "inversion of control container",
+    "ioc",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shellicar/ecosystem.git",
+    "directory": "packages/core-di-lite"
+  },
+  "bugs": {
+    "url": "https://github.com/shellicar/ecosystem/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22pkg%3A%20core-di-lite%22"
+  },
+  "homepage": "https://github.com/shellicar/ecosystem/tree/main/packages/core-di-lite#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      },
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "type-check": "tsc -p tsconfig.check.json",
+    "watch": "tsup --watch"
+  },
+  "devDependencies": {
+    "@shellicar/typescript-config": "workspace:^",
+    "@types/node": "^25.3.2",
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
