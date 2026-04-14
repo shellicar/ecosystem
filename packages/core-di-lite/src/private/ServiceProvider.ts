@@ -1,63 +1,16 @@
-import { CircularDependencyError, ServiceCreationError, ServiceError, UnregisteredServiceError } from '../errors';
+import { UnregisteredServiceError } from '../errors';
 import { IServiceProvider } from '../interfaces';
 import type { ServiceIdentifier, SourceType } from '../types';
-import { getMetadata } from './metadata';
-import type { ServiceDescriptorLite } from './ServiceDescriptor';
 
 export class ServiceProvider extends IServiceProvider {
-  private readonly singletons = new Map<ServiceIdentifier<any>, any>();
-  private readonly resolving = new Set<ServiceIdentifier<any>>();
-
-  constructor(private readonly registrations: Map<ServiceIdentifier<any>, ServiceDescriptorLite<any>>) {
+  constructor(private readonly singletons: Map<ServiceIdentifier<any>, any>) {
     super();
   }
 
-  public build(): void {
-    for (const identifier of this.registrations.keys()) {
-      this.resolveInternal(identifier);
-    }
-  }
-
   public resolve<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
-    return this.resolveInternal(identifier);
-  }
-
-  private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
-    if (this.singletons.has(identifier)) {
-      return this.singletons.get(identifier);
-    }
-
-    if (this.resolving.has(identifier)) {
-      throw new CircularDependencyError(identifier);
-    }
-
-    const descriptor = this.registrations.get(identifier);
-    if (descriptor === undefined) {
+    if (!this.singletons.has(identifier)) {
       throw new UnregisteredServiceError(identifier);
     }
-
-    this.resolving.add(identifier);
-    try {
-      const instance = descriptor.createInstance(this);
-      this.injectDependencies(instance);
-      this.singletons.set(identifier, instance);
-      return instance;
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceCreationError(identifier, error instanceof Error ? error : undefined, descriptor.implementation);
-    } finally {
-      this.resolving.delete(identifier);
-    }
-  }
-
-  private injectDependencies<T extends SourceType>(instance: T): void {
-    const deps = getMetadata(instance.constructor) ?? {};
-    for (const key of Reflect.ownKeys(deps)) {
-      const depIdentifier = deps[key];
-      const dep = this.resolveInternal(depIdentifier);
-      (instance as Record<string | symbol, unknown>)[key] = dep;
-    }
+    return this.singletons.get(identifier);
   }
 }
