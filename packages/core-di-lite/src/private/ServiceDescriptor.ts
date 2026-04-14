@@ -1,7 +1,8 @@
 import type { IServiceProvider } from '../interfaces';
-import type { SourceType } from '../types';
+import type { InstanceFactory, ServiceRegistration, SourceType } from '../types';
 
 export type ServiceDescriptorLite<T extends SourceType> = {
-  implementation: { name: string };
+  implementation: ServiceRegistration<T>;
+  factory?: InstanceFactory<T>;
   createInstance: (scope: IServiceProvider) => T;
 };
