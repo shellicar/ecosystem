@@ -65,3 +65,4 @@
 {"description":"Replace @abraham/reflection with a global WeakMap for metadata storage","category":"changed"}
 {"description":"Remove @abraham/reflection dependency","category":"removed"}
 {"type":"release","version":"3.1.7","date":"2026-04-14","tag":"core-di@3.1.7"}
+{"description":"Fix factory registrations with the same implementation class sharing a singleton incorrectly","category":"fixed"}

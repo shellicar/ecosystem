@@ -1,5 +1,5 @@
 import { Lifetime } from '../enums';
-import { createRegistrationMap, type RegistrationMap, type ServiceIdentifier, type ServiceRegistration, type SourceType } from '../types';
+import { type CacheKey, createRegistrationMap, type RegistrationMap, type ServiceIdentifier, type ServiceRegistration, type SourceType } from '../types';
 
 export class ResolutionContext {
   constructor(
@@ -23,14 +23,14 @@ export class ResolutionContext {
     this.resolving.delete(implementation);
   }
 
-  public getFromLifetime<T extends SourceType>(implementation: ServiceRegistration<T>, lifetime: Lifetime): T | null {
+  public getFromLifetime<T extends SourceType>(cacheKey: CacheKey<T>, lifetime: Lifetime): T | null {
     const map = this.getMapForLifetime(lifetime);
-    return map?.get(implementation);
+    return map?.get(cacheKey);
   }
 
-  public setForLifetime<T extends SourceType>(implementation: ServiceRegistration<T>, instance: T, lifetime: Lifetime): void {
+  public setForLifetime<T extends SourceType>(cacheKey: CacheKey<T>, instance: T, lifetime: Lifetime): void {
     const map = this.getMapForLifetime(lifetime);
-    map?.set(implementation, instance);
+    map?.set(cacheKey, instance);
   }
 
   private getMapForLifetime(lifetime: Lifetime) {

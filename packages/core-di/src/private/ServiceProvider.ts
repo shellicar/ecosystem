@@ -35,7 +35,7 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   private resolveInternal<T extends SourceType>(descriptor: ServiceDescriptor<T>, context: ResolutionContext, serviceIdentifier?: ServiceIdentifier<T>): T {
-    const existing = context.getFromLifetime(descriptor.implementation, descriptor.lifetime);
+    const existing = context.getFromLifetime<T>(descriptor.cacheKey, descriptor.lifetime);
     if (existing != null) {
       return existing;
     }
@@ -95,7 +95,7 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   private createInstance<T extends SourceType>(descriptor: ServiceDescriptor<T>, context: ResolutionContext, serviceIdentifier?: ServiceIdentifier<T>): T {
     const instance = this.createInstanceInternal(descriptor, context, serviceIdentifier);
     this.setDependencies(descriptor.implementation, instance, context, serviceIdentifier);
-    context.setForLifetime(descriptor.implementation, instance, descriptor.lifetime);
+    context.setForLifetime(descriptor.cacheKey, instance, descriptor.lifetime);
     return instance;
   }
 

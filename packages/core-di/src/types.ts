@@ -11,6 +11,7 @@ export type Newable<T> = new (...args: any[]) => T;
 export type ServiceIdentifier<T extends SourceType> = { prototype: T; name: string }; //AbstractNewable<T>;
 export type ServiceImplementation<T extends SourceType> = Newable<T>;
 export type ServiceRegistration<T extends SourceType> = ServiceIdentifier<T> | ServiceImplementation<T>;
+export type CacheKey<T extends SourceType> = ServiceRegistration<T> | InstanceFactory<T>;
 
 export type InstanceFactory<T extends SourceType> = (x: IResolutionScope) => T;
 
@@ -18,6 +19,7 @@ export type ServiceModuleType = Newable<IServiceModule>;
 
 export type ServiceDescriptor<T extends SourceType> = {
   readonly implementation: ServiceRegistration<T>;
+  readonly cacheKey: CacheKey<T>;
   lifetime: Lifetime;
   createInstance(context: IResolutionScope): T;
 };
@@ -52,11 +54,11 @@ export type ServiceBuilderOptions<T extends SourceType> = {
   (implementation: ServiceIdentifier<T>, factory: InstanceFactory<T>): ILifetimeBuilder;
 };
 
-export type RegistrationMap<T extends SourceType = any> = Map<ServiceRegistration<T>, T>;
+export type RegistrationMap<T extends SourceType = any> = Map<CacheKey<T>, T>;
 export type DescriptorMap<T extends SourceType = any> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]>;
 
 export const createRegistrationMap = <T extends SourceType = any>(): RegistrationMap<T> => {
-  return new Map<ServiceRegistration<T>, T>();
+  return new Map<CacheKey<T>, T>();
 };
 
 export const createDescriptorMap = <T extends SourceType = any>(): DescriptorMap<T> => {
