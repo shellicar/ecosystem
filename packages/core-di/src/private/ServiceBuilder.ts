@@ -30,6 +30,7 @@ export class ServiceBuilder<T extends SourceType> implements IServiceBuilder<T> 
   private createDescriptor(factory: InstanceFactory<T> | undefined, implementation: ServiceRegistration<T>): ServiceDescriptor<T> {
     return {
       implementation,
+      cacheKey: factory ?? implementation,
       lifetime: Lifetime.Resolve,
       createInstance: factory ?? (() => new (implementation as ServiceImplementation<T>)()),
     };
