@@ -1,5 +1,6 @@
 import type { IServiceCollection } from './interfaces';
+import { ServiceCollection } from './private/ServiceCollection';
 
 export function createServiceCollection(): IServiceCollection {
-  throw new Error('not implemented');
+  return new ServiceCollection();
 }
