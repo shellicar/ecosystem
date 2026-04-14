@@ -24,14 +24,14 @@ export class ServiceProvider extends IServiceProvider {
 
   private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
     if (this.singletons.has(identifier)) {
-      return this.singletons.get(identifier) as T;
+      return this.singletons.get(identifier);
     }
 
     if (this.resolving.has(identifier)) {
       throw new CircularDependencyError(identifier);
     }
 
-    const descriptor = this.registrations.get(identifier) as ServiceDescriptorLite<T> | undefined;
+    const descriptor = this.registrations.get(identifier);
     if (descriptor === undefined) {
       throw new UnregisteredServiceError(identifier);
     }
@@ -56,7 +56,7 @@ export class ServiceProvider extends IServiceProvider {
     const deps = getMetadata(instance.constructor) ?? {};
     for (const key of Reflect.ownKeys(deps)) {
       const depIdentifier = deps[key];
-      const dep = this.resolveInternal(depIdentifier as ServiceIdentifier<any>);
+      const dep = this.resolveInternal(depIdentifier);
       (instance as Record<string | symbol, unknown>)[key] = dep;
     }
   }
