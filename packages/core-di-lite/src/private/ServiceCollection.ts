@@ -1,3 +1,4 @@
+import { DuplicateRegistrationError } from '../errors';
 import type { IServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
 import type { ServiceIdentifier, SourceType } from '../types';
 import { ServiceBuilder } from './ServiceBuilder';
@@ -9,6 +10,9 @@ export class ServiceCollection implements IServiceCollection {
 
   public register<T extends SourceType>(identifier: ServiceIdentifier<T>): IServiceBuilder<T> {
     return new ServiceBuilder<T>((descriptor) => {
+      if (this.registrations.has(identifier)) {
+        throw new DuplicateRegistrationError(identifier);
+      }
       this.registrations.set(identifier, descriptor);
     });
   }

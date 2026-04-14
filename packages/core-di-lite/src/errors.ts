@@ -18,6 +18,14 @@ export class CircularDependencyError extends ServiceError {
   }
 }
 
+export class DuplicateRegistrationError<T extends object> extends ServiceError {
+  name = 'DuplicateRegistrationError';
+  constructor(identifier: ServiceIdentifier<T>) {
+    super(`Service already registered: ${identifier.name}`);
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 export class ServiceCreationError<T extends object> extends ServiceError {
   name = 'ServiceCreationError';
   constructor(

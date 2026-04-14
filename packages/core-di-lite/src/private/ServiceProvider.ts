@@ -1,4 +1,4 @@
-import { CircularDependencyError, UnregisteredServiceError } from '../errors';
+import { CircularDependencyError, ServiceCreationError, ServiceError, UnregisteredServiceError } from '../errors';
 import { IServiceProvider } from '../interfaces';
 import type { ServiceIdentifier, SourceType } from '../types';
 import { getMetadata } from './metadata';
@@ -42,6 +42,11 @@ export class ServiceProvider extends IServiceProvider {
       this.injectDependencies(instance);
       this.singletons.set(identifier, instance);
       return instance;
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceCreationError(identifier, error instanceof Error ? error : undefined, descriptor.implementation);
     } finally {
       this.resolving.delete(identifier);
     }

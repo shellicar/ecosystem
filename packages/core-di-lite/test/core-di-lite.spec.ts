@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CircularDependencyError, createServiceCollection, dependsOn, UnregisteredServiceError } from '../src';
+import { CircularDependencyError, createServiceCollection, DuplicateRegistrationError, dependsOn, ServiceCreationError, UnregisteredServiceError } from '../src';
 
 // Registration and resolution
 abstract class IFoo {
@@ -319,5 +319,34 @@ describe('Factory and decorator combination', () => {
     const actual = provider.resolve(IDecorated).result();
     const expected = 'extra:foo';
     expect(actual).toBe(expected);
+  });
+});
+
+describe('Duplicate registration', () => {
+  it('throws DuplicateRegistrationError when the same identifier is registered twice', () => {
+    const services = createServiceCollection();
+    services.register(IFoo).to(Foo);
+    const actual = () => services.register(IFoo).to(Foo);
+    expect(actual).toThrow(DuplicateRegistrationError);
+  });
+});
+
+describe('Service creation errors', () => {
+  it('wraps factory errors in ServiceCreationError', () => {
+    const services = createServiceCollection();
+    services.register(IFoo).to(IFoo, () => {
+      throw new TypeError('boom');
+    });
+    const actual = () => services.buildProvider();
+    expect(actual).toThrow(ServiceCreationError);
+  });
+});
+
+describe('@dependsOn with unregistered dependency', () => {
+  it('throws UnregisteredServiceError at build time when @dependsOn references an unregistered service', () => {
+    const services = createServiceCollection();
+    services.register(IWithOneDep).to(WithOneDep);
+    const actual = () => services.buildProvider();
+    expect(actual).toThrow(UnregisteredServiceError);
   });
 });
