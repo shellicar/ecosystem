@@ -12,3 +12,5 @@
 {"description":"Fix GHSA-mw96-cpmx-2vgc in rollup","category":"security","metadata":{"ghsa":"GHSA-mw96-cpmx-2vgc"}}
 {"description":"Updated development dependencies","category":"changed"}
 {"type":"release","version":"1.1.1","date":"2026-02-28","tag":"1.1.1"}
+{"description":"Updated dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.1.2","date":"2026-04-15","tag":"cosmos-query-builder@1.1.2"}

@@ -41,3 +41,5 @@
 {"description":"Fix GHSA-fpg4-jhqr-589c in @sveltejs/kit","category":"security","metadata":{"ghsa":"GHSA-fpg4-jhqr-589c"}}
 {"description":"Updated development dependencies","category":"changed"}
 {"type":"release","version":"1.0.3","date":"2026-02-28","tag":"1.0.3"}
+{"description":"Updated dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.0.4","date":"2026-04-15","tag":"svelte-adapter-azure-functions@1.0.4"}

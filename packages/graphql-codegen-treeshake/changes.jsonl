@@ -1,2 +1,4 @@
 {"description":"Initial release.","category":"added"}
 {"type":"release","version":"1.0.0","date":"2026-03-11","tag":"1.0.0"}
+{"description":"Updated dependencies to latest versions","category":"changed"}
+{"type":"release","version":"1.0.1","date":"2026-04-15","tag":"graphql-codegen-treeshake@1.0.1"}
