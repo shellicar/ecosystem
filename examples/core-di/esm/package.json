@@ -12,7 +12,7 @@
     "@shellicar/build-clean": "^1.2.3",
     "@shellicar/core-di": "workspace:^",
     "@tsconfig/node20": "^20.1.9",
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.6.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }

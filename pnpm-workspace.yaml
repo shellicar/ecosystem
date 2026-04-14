@@ -4,3 +4,4 @@ packages:
   - examples/*/*
 overrides:
   'cookie@<0.7.0': '>=0.7.0'
+  follow-redirects@<=1.15.11: '>=1.16.0'

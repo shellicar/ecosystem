@@ -99,17 +99,17 @@
     }
   },
   "dependencies": {
-    "@azure/identity": "^4.13.0",
-    "@azure/keyvault-secrets": "^4.10.0",
+    "@azure/identity": "^4.13.1",
+    "@azure/keyvault-secrets": "^4.11.1",
     "regexp.escape": "^2.0.1"
   },
   "devDependencies": {
     "@shellicar/typescript-config": "workspace:^",
-    "@types/node": "^25.4.0",
+    "@types/node": "^25.6.0",
     "@types/regexp.escape": "^2.0.0",
     "esbuild": "*",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.4"
   }
 }

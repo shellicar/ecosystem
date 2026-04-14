@@ -43,16 +43,16 @@
     }
   },
   "devDependencies": {
-    "@azure/functions": "^4.11.2",
+    "@azure/functions": "^4.12.0",
     "@shellicar/typescript-config": "workspace:^",
-    "@sveltejs/kit": "^2.53.4",
-    "@types/node": "^25.3.2",
+    "@sveltejs/kit": "^2.57.1",
+    "@types/node": "^25.6.0",
     "@types/set-cookie-parser": "^2.4.10",
     "set-cookie-parser": "^2.7.2",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.4"
   },
   "dependencies": {
     "esbuild": "^0.27.3"
