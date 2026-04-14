@@ -54,9 +54,10 @@ export class ServiceProvider extends IServiceProvider {
 
   private injectDependencies<T extends SourceType>(instance: T): void {
     const deps = getMetadata(instance.constructor) ?? {};
-    for (const [key, depIdentifier] of Object.entries(deps)) {
+    for (const key of Reflect.ownKeys(deps)) {
+      const depIdentifier = deps[key];
       const dep = this.resolveInternal(depIdentifier as ServiceIdentifier<any>);
-      (instance as Record<string, unknown>)[key] = dep;
+      (instance as Record<string | symbol, unknown>)[key] = dep;
     }
   }
 }

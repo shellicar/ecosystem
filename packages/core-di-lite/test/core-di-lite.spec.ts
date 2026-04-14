@@ -38,6 +38,18 @@ class Dep implements IDep {
     return 'dep';
   }
 }
+
+// Symbol-keyed @dependsOn
+const symField = Symbol('dep');
+abstract class IWithSymbolDep {
+  abstract run(): string;
+}
+class WithSymbolDep implements IWithSymbolDep {
+  @dependsOn(IDep) readonly [symField]!: IDep;
+  run() {
+    return this[symField]?.check() ?? 'not injected';
+  }
+}
 abstract class IWithOneDep {
   abstract run(): string;
 }
@@ -339,6 +351,31 @@ describe('Service creation errors', () => {
     });
     const actual = () => services.buildProvider();
     expect(actual).toThrow(ServiceCreationError);
+  });
+});
+
+describe('@dependsOn with symbol-keyed field', () => {
+  it('injects symbol-keyed dependencies', () => {
+    const services = createServiceCollection();
+    services.register(IDep).to(Dep);
+    services.register(IWithSymbolDep).to(WithSymbolDep);
+    const provider = services.buildProvider();
+    const actual = provider.resolve(IWithSymbolDep).run();
+    const expected = 'dep';
+    expect(actual).toBe(expected);
+  });
+});
+
+describe('Registration-order independence', () => {
+  it('resolves correctly when services are registered in reverse dependency order', () => {
+    const services = createServiceCollection();
+    services.register(IA).to(A);
+    services.register(IB).to(B);
+    services.register(IC).to(C);
+    const provider = services.buildProvider();
+    const actual = provider.resolve(IA).value();
+    const expected = 'a:b:c';
+    expect(actual).toBe(expected);
   });
 });
 
