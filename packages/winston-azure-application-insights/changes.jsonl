@@ -55,3 +55,7 @@
 {"type":"release","version":"6.0.4","date":"2026-02-28","tag":"6.0.4"}
 {"description":"Updated dependencies to latest versions","category":"changed"}
 {"type":"release","version":"6.0.5","date":"2026-04-15","tag":"winston-azure-application-insights@6.0.5"}
+{"description":"Fixed GHSA-xq3m-2v4x-88gg in protobufjs","category":"security","metadata":{"ghsa":"GHSA-xq3m-2v4x-88gg"}}
+{"description":"Fixed GHSA-qx2v-qp2m-jg93 in postcss","category":"security","metadata":{"ghsa":"GHSA-qx2v-qp2m-jg93"}}
+{"description":"Updated patch dependencies","category":"changed"}
+{"type":"release","version":"6.0.6","date":"2026-05-08","tag":"winston-azure-application-insights@6.0.6"}

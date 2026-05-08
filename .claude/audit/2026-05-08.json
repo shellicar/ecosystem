@@ -1,0 +1,85 @@
+{
+  "actions": [],
+  "advisories": {
+    "1117015": {
+      "findings": [
+        {
+          "version": "8.5.9",
+          "paths": ["examples__build-azure-local-settings__cjs>tsup>postcss"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/postcss/postcss/security/advisories/GHSA-qx2v-qp2m-jg93\n- https://nvd.nist.gov/vuln/detail/CVE-2026-41305\n- https://github.com/postcss/postcss/releases/tag/8.5.10\n- https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+      "created": "2026-04-24T15:31:42.000Z",
+      "id": 1117015,
+      "npm_advisory_id": null,
+      "overview": "# PostCSS: XSS via Unescaped `</style>` in CSS Stringify Output\n\n## Summary\n\nPostCSS v8.5.5 (latest) does not escape `</style>` sequences when stringifying CSS ASTs. When user-submitted CSS is parsed and re-stringified for embedding in HTML `<style>` tags, `</style>` in CSS values breaks out of the style context, enabling XSS.\n\n## Proof of Concept\n\n```javascript\nconst postcss = require('postcss');\n\n// Parse user CSS and re-stringify for page embedding\nconst userCSS = 'body { content: \"</style><script>alert(1)</script><style>\"; }';\nconst ast = postcss.parse(userCSS);\nconst output = ast.toResult().css;\nconst html = `<style>${output}</style>`;\n\nconsole.log(html);\n// <style>body { content: \"</style><script>alert(1)</script><style>\"; }</style>\n//\n// Browser: </style> closes the style tag, <script> executes\n```\n\n**Tested output** (Node.js v22, postcss v8.5.5):\n```\nInput: body { content: \"</style><script>alert(1)</script><style>\"; }\nOutput: body { content: \"</style><script>alert(1)</script><style>\"; }\nContains </style>: true\n```\n\n## Impact\n\nImpact non-bundler use cases since bundlers for XSS on their own. Requires some PostCSS plugin to have malware code, which can inject XSS to website.\n\n## Suggested Fix\n\nEscape `</style` in all stringified output values:\n```javascript\noutput = output.replace(/<\\/(style)/gi, '<\\\\/$1');\n```\n\n## Credits\nDiscovered and reported by [Sunil Kumar](https://tharvid.in) ([@TharVid](https://github.com/TharVid))",
+      "reported_by": null,
+      "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+      "metadata": null,
+      "cves": ["CVE-2026-41305"],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "postcss",
+      "vulnerable_versions": "<8.5.10",
+      "github_advisory_id": "GHSA-qx2v-qp2m-jg93",
+      "recommendation": "Upgrade to version 8.5.10 or later",
+      "patched_versions": ">=8.5.10",
+      "updated": "2026-04-24T15:31:44.000Z",
+      "cvss": {
+        "score": 6.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+      },
+      "cwe": ["CWE-79"],
+      "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93"
+    },
+    "1117571": {
+      "findings": [
+        {
+          "version": "7.5.4",
+          "paths": ["examples__winston-azure-application-insights__cjs>applicationinsights>@azure/monitor-opentelemetry>@opentelemetry/sdk-node>@opentelemetry/exporter-logs-otlp-grpc>@grpc/grpc-js>@grpc/proto-loader>protobufjs"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/protobufjs/protobuf.js/security/advisories/GHSA-xq3m-2v4x-88gg\n- https://nvd.nist.gov/vuln/detail/CVE-2026-41242\n- https://github.com/protobufjs/protobuf.js/commit/535df444ac060243722ac5d672db205e5c531d75\n- https://github.com/protobufjs/protobuf.js/commit/ff7b2afef8754837cc6dc64c864cd111ab477956\n- https://github.com/protobufjs/protobuf.js/releases/tag/protobufjs-v7.5.5\n- https://github.com/protobufjs/protobuf.js/releases/tag/protobufjs-v8.0.1\n- https://github.com/advisories/GHSA-xq3m-2v4x-88gg",
+      "created": "2026-04-16T22:34:57.000Z",
+      "id": 1117571,
+      "npm_advisory_id": null,
+      "overview": "## Summary\n\nprotobufjs could execute generated JavaScript code derived from protobuf schema metadata. When loading a crafted JSON descriptor, schema-controlled type names and type references could reach runtime code generation without sufficient validation.\n\n## Impact\n\nAn attacker who can provide a malicious protobuf definition or JSON descriptor to an application may be able to execute arbitrary JavaScript in the context of the process using protobufjs.\n\nThis requires control over the protobuf schema or descriptor being loaded. Applications that only decode messages using trusted, application-defined schemas are not directly affected by this issue.\n\n## Preconditions\n\n- The application must allow an attacker to control or influence a protobuf definition or JSON descriptor.\n- The application must load that definition through protobufjs reflection APIs such as descriptor loading.\n- The affected generated-code path must be reached, for example by performing an operation on the loaded type.\n\n## Workarounds\n\nDo not load protobuf definitions or JSON descriptors from untrusted sources with affected versions. If untrusted schemas must be accepted, validate or restrict them before loading and run schema processing in an isolated environment.",
+      "reported_by": null,
+      "title": "Arbitrary code execution in protobufjs",
+      "metadata": null,
+      "cves": ["CVE-2026-41242"],
+      "access": "public",
+      "severity": "critical",
+      "module_name": "protobufjs",
+      "vulnerable_versions": "<7.5.5",
+      "github_advisory_id": "GHSA-xq3m-2v4x-88gg",
+      "recommendation": "Upgrade to version 7.5.5 or later",
+      "patched_versions": ">=7.5.5",
+      "updated": "2026-05-04T22:12:42.000Z",
+      "cvss": {
+        "score": 9.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "cwe": ["CWE-94"],
+      "url": "https://github.com/advisories/GHSA-xq3m-2v4x-88gg"
+    }
+  },
+  "muted": [],
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 0,
+      "critical": 1
+    },
+    "dependencies": 1244,
+    "devDependencies": 0,
+    "optionalDependencies": 0,
+    "totalDependencies": 1244
+  }
+}

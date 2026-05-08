@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/core-di-lite",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "author": "Stephen Hellicar",
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@shellicar/typescript-config": "workspace:^",
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.3.5",
     "@vitest/coverage-v8": "^4.0.18",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
