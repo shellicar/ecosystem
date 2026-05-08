@@ -14,3 +14,5 @@
 {"type":"release","version":"1.1.1","date":"2026-02-28","tag":"1.1.1"}
 {"description":"Updated dependencies to latest versions","category":"changed"}
 {"type":"release","version":"1.1.2","date":"2026-04-15","tag":"cosmos-query-builder@1.1.2"}
+{"description":"Fixed GHSA-qx2v-qp2m-jg93 in postcss","category":"security","metadata":{"ghsa":"GHSA-qx2v-qp2m-jg93"}}
+{"description":"Updated patch dependencies","category":"changed"}
