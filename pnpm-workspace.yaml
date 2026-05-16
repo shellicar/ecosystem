@@ -3,7 +3,14 @@ packages:
   - scripts
   - examples/*/*
 overrides:
+  '@opentelemetry/exporter-prometheus@<0.217.0': '>=0.217.0'
+  '@opentelemetry/sdk-node@<0.217.0': '>=0.217.0'
   'cookie@<0.7.0': '>=0.7.0'
+  devalue@>=5.6.3 <=5.8.0: '>=5.8.1'
   follow-redirects@<=1.15.11: '>=1.16.0'
   postcss@<8.5.10: '>=8.5.10'
   protobufjs@<7.5.5: '>=7.5.5'
+  'protobufjs@>=8.0.0 <=8.0.1': '>=8.0.2'
+  svelte@<=5.55.6: '>=5.55.7'
+  svelte@>=5.46.0 <=5.55.6: '>=5.55.7'
+  svelte@>=5.51.5 <=5.55.6: '>=5.55.7'

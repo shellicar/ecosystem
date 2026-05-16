@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix `whereOr` silently dropping `in`, `contains`, `ieq`, and `ine` conditions
+### Changed
+
+- Updated patch dependencies
 
 ## [1.1.3] - 2026-05-08
 
