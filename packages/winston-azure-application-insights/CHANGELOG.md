@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.7] - 2026-05-17
+
+### Changed
+
+- Updated patch dependencies
+
+### Security
+
+- Fixed GHSA-q7rr-3cgh-j5r3 in @opentelemetry/sdk-node ([GHSA-q7rr-3cgh-j5r3](https://github.com/advisories/GHSA-q7rr-3cgh-j5r3))
+- Fixed GHSA-66ff-xgx4-vchm in protobufjs ([GHSA-66ff-xgx4-vchm](https://github.com/advisories/GHSA-66ff-xgx4-vchm))
+- Fixed GHSA-75px-5xx7-5xc7 in protobufjs ([GHSA-75px-5xx7-5xc7](https://github.com/advisories/GHSA-75px-5xx7-5xc7))
+- Fixed GHSA-jvwf-75h9-cwgg in protobufjs ([GHSA-jvwf-75h9-cwgg](https://github.com/advisories/GHSA-jvwf-75h9-cwgg))
+- Fixed GHSA-685m-2w69-288q in protobufjs ([GHSA-685m-2w69-288q](https://github.com/advisories/GHSA-685m-2w69-288q))
+- Fixed GHSA-2pr8-phx7-x9h3 in protobufjs ([GHSA-2pr8-phx7-x9h3](https://github.com/advisories/GHSA-2pr8-phx7-x9h3))
+- Fixed GHSA-fx83-v9x8-x52w in protobufjs ([GHSA-fx83-v9x8-x52w](https://github.com/advisories/GHSA-fx83-v9x8-x52w))
+- Fixed GHSA-q6x5-8v7m-xcrf in protobufjs ([GHSA-q6x5-8v7m-xcrf](https://github.com/advisories/GHSA-q6x5-8v7m-xcrf))
+
 ## [6.0.6] - 2026-05-08
 
 ### Changed
@@ -148,6 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to winston 3.x
 - Use typescript
 
+[6.0.7]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.7
 [6.0.6]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.6
 [6.0.5]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.5
 [6.0.4]: https://github.com/shellicar/ecosystem/releases/tag/6.0.4

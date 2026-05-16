@@ -5,3 +5,5 @@
 {"description":"Fixed GHSA-qx2v-qp2m-jg93 in postcss","category":"security","metadata":{"ghsa":"GHSA-qx2v-qp2m-jg93"}}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.0.2","date":"2026-05-08","tag":"graphql-codegen-treeshake@1.0.2"}
+{"description":"Updated patch dependencies","category":"changed"}
+{"type":"release","version":"1.0.3","date":"2026-05-17","tag":"graphql-codegen-treeshake@1.0.3"}
