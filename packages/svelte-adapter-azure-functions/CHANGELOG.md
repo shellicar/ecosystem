@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-05-17
+
+### Changed
+
+- Updated patch dependencies
+
+### Security
+
+- Fixed GHSA-77vg-94rm-hx3p in devalue ([GHSA-77vg-94rm-hx3p](https://github.com/advisories/GHSA-77vg-94rm-hx3p))
+- Fixed GHSA-pr6f-5x2q-rwfp in svelte ([GHSA-pr6f-5x2q-rwfp](https://github.com/advisories/GHSA-pr6f-5x2q-rwfp))
+- Fixed GHSA-f3cj-j4f6-wq85 in svelte ([GHSA-f3cj-j4f6-wq85](https://github.com/advisories/GHSA-f3cj-j4f6-wq85))
+- Fixed GHSA-rcqx-6q8c-2c42 in svelte ([GHSA-rcqx-6q8c-2c42](https://github.com/advisories/GHSA-rcqx-6q8c-2c42))
+- Fixed GHSA-9rmh-mm8f-r9h6 in svelte ([GHSA-9rmh-mm8f-r9h6](https://github.com/advisories/GHSA-9rmh-mm8f-r9h6))
+
 ## [1.0.5] - 2026-05-08
 
 ### Changed
@@ -111,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
+[1.0.6]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.6
 [1.0.5]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.5
 [1.0.4]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.4
 [1.0.3]: https://github.com/shellicar/ecosystem/releases/tag/1.0.3

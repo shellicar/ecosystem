@@ -72,3 +72,4 @@
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"4.0.1","date":"2026-05-08","tag":"core-di@4.0.1"}
 {"description":"Updated patch dependencies","category":"changed"}
+{"type":"release","version":"4.0.2","date":"2026-05-17","tag":"core-di@4.0.2"}

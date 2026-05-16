@@ -6,3 +6,4 @@
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.0.2","date":"2026-05-08","tag":"build-azure-local-settings@1.0.2"}
 {"description":"Updated patch dependencies","category":"changed"}
+{"type":"release","version":"1.0.3","date":"2026-05-17","tag":"build-azure-local-settings@1.0.3"}

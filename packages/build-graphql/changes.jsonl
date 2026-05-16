@@ -49,3 +49,4 @@
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.4.5","date":"2026-05-08","tag":"build-graphql@1.4.5"}
 {"description":"Updated patch dependencies","category":"changed"}
+{"type":"release","version":"1.4.6","date":"2026-05-17","tag":"build-graphql@1.4.6"}
