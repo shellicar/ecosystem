@@ -46,3 +46,9 @@
 {"description":"Fixed GHSA-qx2v-qp2m-jg93 in postcss","category":"security","metadata":{"ghsa":"GHSA-qx2v-qp2m-jg93"}}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.0.5","date":"2026-05-08","tag":"svelte-adapter-azure-functions@1.0.5"}
+{"description":"Fixed GHSA-77vg-94rm-hx3p in devalue","category":"security","metadata":{"ghsa":"GHSA-77vg-94rm-hx3p"}}
+{"description":"Fixed GHSA-pr6f-5x2q-rwfp in svelte","category":"security","metadata":{"ghsa":"GHSA-pr6f-5x2q-rwfp"}}
+{"description":"Fixed GHSA-f3cj-j4f6-wq85 in svelte","category":"security","metadata":{"ghsa":"GHSA-f3cj-j4f6-wq85"}}
+{"description":"Fixed GHSA-rcqx-6q8c-2c42 in svelte","category":"security","metadata":{"ghsa":"GHSA-rcqx-6q8c-2c42"}}
+{"description":"Fixed GHSA-9rmh-mm8f-r9h6 in svelte","category":"security","metadata":{"ghsa":"GHSA-9rmh-mm8f-r9h6"}}
+{"description":"Updated patch dependencies","category":"changed"}

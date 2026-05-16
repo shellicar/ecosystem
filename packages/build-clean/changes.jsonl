@@ -40,3 +40,4 @@
 {"description":"Fixed GHSA-qx2v-qp2m-jg93 in postcss","category":"security","metadata":{"ghsa":"GHSA-qx2v-qp2m-jg93"}}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.3.4","date":"2026-05-08","tag":"build-clean@1.3.4"}
+{"description":"Updated patch dependencies","category":"changed"}

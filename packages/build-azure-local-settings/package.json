@@ -105,11 +105,11 @@
   },
   "devDependencies": {
     "@shellicar/typescript-config": "workspace:^",
-    "@types/node": "^25.6.2",
+    "@types/node": "^25.8.0",
     "@types/regexp.escape": "^2.0.0",
     "esbuild": "^0.27.7",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   }
 }

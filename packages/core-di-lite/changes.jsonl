@@ -3,3 +3,4 @@
 {"description":"Fixed GHSA-qx2v-qp2m-jg93 in postcss","category":"security","metadata":{"ghsa":"GHSA-qx2v-qp2m-jg93"}}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.0.1","date":"2026-05-08","tag":"core-di-lite@1.0.1"}
+{"description":"Updated patch and minor dependencies","category":"changed"}

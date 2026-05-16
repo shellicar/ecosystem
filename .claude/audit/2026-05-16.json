@@ -1,0 +1,250 @@
+{
+  "actions": [],
+  "advisories": {
+    "1117942": {
+      "findings": [
+        {
+          "version": "0.208.0",
+          "paths": ["examples__winston-azure-application-insights__cjs>applicationinsights>@azure/monitor-opentelemetry>@opentelemetry/sdk-node"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/open-telemetry/opentelemetry-js/security/advisories/GHSA-q7rr-3cgh-j5r3\n- https://github.com/advisories/GHSA-q7rr-3cgh-j5r3",
+      "created": "2026-05-11T14:42:10.000Z",
+      "id": 1117942,
+      "npm_advisory_id": null,
+      "overview": "## Summary\n\nA single malformed HTTP request crashes any Node.js process running the OpenTelemetry JS Prometheus exporter. The metrics endpoint (default `0.0.0.0:9464`) has no error handling around URL parsing, so a request with an invalid URI causes an uncaught `TypeError` that terminates the process.\n\n**You are affected by this vulnerability if either of the following apply to your application:**\n\n* you directly use `@opentelemetry/exporter-prometheus` in your code through its built-in server.\n* your `OTEL_METRICS_EXPORTER` environment variable includes `prometheus` **AND**\n  * you use `@opentelemetry/sdk-node`\n  * you use  `@opentelemetry/auto-instrumentations-node` via `--require @opentelemetry/auto-instrumentations-node/register`/`--import @opentelemetry/auto-instrumentations-node/register`\n\n## Impact\n\n**Denial of service.** Any application using the OpenTelemetry Prometheus exporter’s built-in server can be crashed by a single unauthenticated network packet sent to the metrics port. No authentication, special privileges, or prior access is required.\n\n## Remediation\n\n### Update to the fixed version\n\nUpdate `@opentelemetry/exporter-prometheus` and `@opentelemetry/sdk-node` to version **0.217.0** or later. \nUpdate `@opentelemetry/auto-instrumentations-node` to version **0.75.0** or later.\n\nThis release adds proper error handling around the URL constructor, returning an HTTP `400` response on parse failure rather than allowing the exception to propagate and crash the process.\n\n```\nnpm install @opentelemetry/exporter-prometheus@latest\n```\n\n### Do Not Expose the Endpoint to Untrusted Users\n\n> [!IMPORTANT] \n> The following mitigations reduce exposure but do not fully remediate the vulnerability. Any client that *can* reach the metrics endpoint - including your own Prometheus scraper host if compromised - could still trigger the crash. Updating to **0.217.0** is the recommended resolution.\n\nIf updating is not immediately feasible, restrict access to the metrics endpoint so that it is not reachable by untrusted or unauthenticated network clients. For example:\n\n* **Bind to localhost only** by setting the `host` option to `127.0.0.1` when configuring the `PrometheusExporter`, so the port is not exposed on public or shared network interfaces\n\n* **Use a firewall or network policy** to restrict access to port `9464` (or whichever port you have configured) to only trusted Prometheus scrape hosts\n\n* **Place the endpoint behind a reverse proxy** that filters or validates incoming requests before they reach the exporter\n\n## Details\n\nIn `PrometheusExporter.ts`, the `_requestHandler` calls `new URL(request.url, this._baseUrl)` without any error handling. Node's HTTP parser accepts absolute-form URIs (e.g. `http://`) for proxy compatibility, including malformed ones. When `request.url` is `\"http://\"`, the `URL` constructor throws `TypeError: Invalid URL`. Since there is no try-catch in the handler, the exception propagates as an uncaught exception and crashes the process.\n\nThe Prometheus metrics endpoint is unauthenticated by design (Prometheus scrapes it) and binds to `0.0.0.0` by default, meaning it is reachable by any network client that can connect to the metrics port.\n\n## Proof of Concept\n\nStart any Node.js application with the Prometheus exporter running on the default port `9464`, then send a single raw TCP packet:\n\n```\necho -ne 'GET http:// HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' | nc localhost 9464\n```\n\nThe process crashes immediately with:\n\n```\nTypeError: Invalid URL\n    at new URL (...)\n    at PrometheusExporter._requestHandler (...)\n```",
+      "reported_by": null,
+      "title": "Prometheus exporter process crash via malformed HTTP request",
+      "metadata": null,
+      "cves": ["CVE-2026-44902"],
+      "access": "public",
+      "severity": "high",
+      "module_name": "@opentelemetry/sdk-node",
+      "vulnerable_versions": "<0.217.0",
+      "github_advisory_id": "GHSA-q7rr-3cgh-j5r3",
+      "recommendation": "Upgrade to version 0.217.0 or later",
+      "patched_versions": ">=0.217.0",
+      "updated": "2026-05-11T14:42:12.000Z",
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "cwe": ["CWE-755"],
+      "url": "https://github.com/advisories/GHSA-q7rr-3cgh-j5r3"
+    },
+    "1117943": {
+      "findings": [
+        {
+          "version": "0.208.0",
+          "paths": ["examples__winston-azure-application-insights__cjs>applicationinsights>@azure/monitor-opentelemetry>@opentelemetry/sdk-node>@opentelemetry/exporter-prometheus"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/open-telemetry/opentelemetry-js/security/advisories/GHSA-q7rr-3cgh-j5r3\n- https://github.com/advisories/GHSA-q7rr-3cgh-j5r3",
+      "created": "2026-05-11T14:42:10.000Z",
+      "id": 1117943,
+      "npm_advisory_id": null,
+      "overview": "## Summary\n\nA single malformed HTTP request crashes any Node.js process running the OpenTelemetry JS Prometheus exporter. The metrics endpoint (default `0.0.0.0:9464`) has no error handling around URL parsing, so a request with an invalid URI causes an uncaught `TypeError` that terminates the process.\n\n**You are affected by this vulnerability if either of the following apply to your application:**\n\n* you directly use `@opentelemetry/exporter-prometheus` in your code through its built-in server.\n* your `OTEL_METRICS_EXPORTER` environment variable includes `prometheus` **AND**\n  * you use `@opentelemetry/sdk-node`\n  * you use  `@opentelemetry/auto-instrumentations-node` via `--require @opentelemetry/auto-instrumentations-node/register`/`--import @opentelemetry/auto-instrumentations-node/register`\n\n## Impact\n\n**Denial of service.** Any application using the OpenTelemetry Prometheus exporter’s built-in server can be crashed by a single unauthenticated network packet sent to the metrics port. No authentication, special privileges, or prior access is required.\n\n## Remediation\n\n### Update to the fixed version\n\nUpdate `@opentelemetry/exporter-prometheus` and `@opentelemetry/sdk-node` to version **0.217.0** or later. \nUpdate `@opentelemetry/auto-instrumentations-node` to version **0.75.0** or later.\n\nThis release adds proper error handling around the URL constructor, returning an HTTP `400` response on parse failure rather than allowing the exception to propagate and crash the process.\n\n```\nnpm install @opentelemetry/exporter-prometheus@latest\n```\n\n### Do Not Expose the Endpoint to Untrusted Users\n\n> [!IMPORTANT] \n> The following mitigations reduce exposure but do not fully remediate the vulnerability. Any client that *can* reach the metrics endpoint - including your own Prometheus scraper host if compromised - could still trigger the crash. Updating to **0.217.0** is the recommended resolution.\n\nIf updating is not immediately feasible, restrict access to the metrics endpoint so that it is not reachable by untrusted or unauthenticated network clients. For example:\n\n* **Bind to localhost only** by setting the `host` option to `127.0.0.1` when configuring the `PrometheusExporter`, so the port is not exposed on public or shared network interfaces\n\n* **Use a firewall or network policy** to restrict access to port `9464` (or whichever port you have configured) to only trusted Prometheus scrape hosts\n\n* **Place the endpoint behind a reverse proxy** that filters or validates incoming requests before they reach the exporter\n\n## Details\n\nIn `PrometheusExporter.ts`, the `_requestHandler` calls `new URL(request.url, this._baseUrl)` without any error handling. Node's HTTP parser accepts absolute-form URIs (e.g. `http://`) for proxy compatibility, including malformed ones. When `request.url` is `\"http://\"`, the `URL` constructor throws `TypeError: Invalid URL`. Since there is no try-catch in the handler, the exception propagates as an uncaught exception and crashes the process.\n\nThe Prometheus metrics endpoint is unauthenticated by design (Prometheus scrapes it) and binds to `0.0.0.0` by default, meaning it is reachable by any network client that can connect to the metrics port.\n\n## Proof of Concept\n\nStart any Node.js application with the Prometheus exporter running on the default port `9464`, then send a single raw TCP packet:\n\n```\necho -ne 'GET http:// HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' | nc localhost 9464\n```\n\nThe process crashes immediately with:\n\n```\nTypeError: Invalid URL\n    at new URL (...)\n    at PrometheusExporter._requestHandler (...)\n```",
+      "reported_by": null,
+      "title": "Prometheus exporter process crash via malformed HTTP request",
+      "metadata": null,
+      "cves": ["CVE-2026-44902"],
+      "access": "public",
+      "severity": "high",
+      "module_name": "@opentelemetry/exporter-prometheus",
+      "vulnerable_versions": "<0.217.0",
+      "github_advisory_id": "GHSA-q7rr-3cgh-j5r3",
+      "recommendation": "Upgrade to version 0.217.0 or later",
+      "patched_versions": ">=0.217.0",
+      "updated": "2026-05-11T14:42:12.000Z",
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "cwe": ["CWE-755"],
+      "url": "https://github.com/advisories/GHSA-q7rr-3cgh-j5r3"
+    },
+    "1118895": {
+      "findings": [
+        {
+          "version": "5.55.5",
+          "paths": ["examples__svelte-adapter-azure-functions__svelte-app>svelte"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/sveltejs/svelte/security/advisories/GHSA-pr6f-5x2q-rwfp\n- https://nvd.nist.gov/vuln/detail/CVE-2026-27121\n- https://github.com/sveltejs/svelte/releases/tag/svelte%405.55.7\n- https://github.com/advisories/GHSA-pr6f-5x2q-rwfp",
+      "created": "2026-05-14T20:19:42.000Z",
+      "id": 1118895,
+      "npm_advisory_id": null,
+      "overview": "When using spread syntax to render attributes from untrusted data, event handler properties are included in the rendered HTML output. If an application spreads user-controlled or external data as element attributes, an attacker can inject malicious event handlers that execute in victims' browsers. Note that this vulnerability _only_ triggers if the user's browser has JavaScript enabled but Svelte's hydration mechanism does not reach the vulnerable element before the event fires.\n\nThis is similar to but different from [CVE-2026-27121](https://nvd.nist.gov/vuln/detail/CVE-2026-27121).",
+      "reported_by": null,
+      "title": "Svelte SSR vulnerable to cross-site scripting via spread attributes",
+      "metadata": null,
+      "cves": ["CVE-2026-42599"],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "svelte",
+      "vulnerable_versions": "<=5.55.6",
+      "github_advisory_id": "GHSA-pr6f-5x2q-rwfp",
+      "recommendation": "Upgrade to version 5.55.7 or later",
+      "patched_versions": ">=5.55.7",
+      "updated": "2026-05-14T20:19:46.000Z",
+      "cvss": {
+        "score": 0,
+        "vectorString": null
+      },
+      "cwe": ["CWE-79"],
+      "url": "https://github.com/advisories/GHSA-pr6f-5x2q-rwfp"
+    },
+    "1118900": {
+      "findings": [
+        {
+          "version": "5.55.5",
+          "paths": ["examples__svelte-adapter-azure-functions__svelte-app>svelte"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/sveltejs/svelte/security/advisories/GHSA-f3cj-j4f6-wq85\n- https://github.com/sveltejs/svelte/commit/a16ebc67bbcf8f708360195687e1b2719463e1a4\n- http://github.com/sveltejs/svelte/releases/tag/svelte%405.55.7\n- https://github.com/advisories/GHSA-f3cj-j4f6-wq85",
+      "created": "2026-05-14T20:30:09.000Z",
+      "id": 1118900,
+      "npm_advisory_id": null,
+      "overview": "Contents of `hydratable` promises were not properly stringified, potentially leading to an XSS exploit. You are vulnerable if all of the following is true:\n- you are using `hydratable` (an experimental feature at the time of this report)\n- you are passing attacker-controlled input such that a synchronous value is hydrated, then a promise value, e.g. `hydratable('someKey', () => [synchronousValue, promiseValue])`",
+      "reported_by": null,
+      "title": "Svelte: SSR XSS via Insecure Promise Serialization in hydratable",
+      "metadata": null,
+      "cves": [],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "svelte",
+      "vulnerable_versions": ">=5.46.0 <=5.55.6",
+      "github_advisory_id": "GHSA-f3cj-j4f6-wq85",
+      "recommendation": "Upgrade to version 5.55.7 or later",
+      "patched_versions": ">=5.55.7",
+      "updated": "2026-05-14T20:30:13.000Z",
+      "cvss": {
+        "score": 0,
+        "vectorString": null
+      },
+      "cwe": ["CWE-79"],
+      "url": "https://github.com/advisories/GHSA-f3cj-j4f6-wq85"
+    },
+    "1118905": {
+      "findings": [
+        {
+          "version": "5.55.5",
+          "paths": ["examples__svelte-adapter-azure-functions__svelte-app>svelte"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/sveltejs/svelte/security/advisories/GHSA-rcqx-6q8c-2c42\n- https://github.com/sveltejs/svelte/releases/tag/svelte%405.55.7\n- https://github.com/advisories/GHSA-rcqx-6q8c-2c42",
+      "created": "2026-05-14T20:29:13.000Z",
+      "id": 1118905,
+      "npm_advisory_id": null,
+      "overview": "Svelte was vulnerable to DOM clobbering of its internal framework state on elements, potentially leading to XSS attacks.\n\nYou are vulnerable if all of the following is true:\n- you are using attribute spreading on a form element\n- you are using attribute spreading or allow a dynamic value for the `name` attribute on an input or button element within that form\n- both of these are simultaneously user-controllable\n\n```svelte\n<form {...spread1}>\n  <input {...spread2}>\n</form>\n```",
+      "reported_by": null,
+      "title": "Svelte Vulnerable to XSS via DOM Clobbering of Internal Framework State",
+      "metadata": null,
+      "cves": ["CVE-2026-42573"],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "svelte",
+      "vulnerable_versions": "<=5.55.6",
+      "github_advisory_id": "GHSA-rcqx-6q8c-2c42",
+      "recommendation": "Upgrade to version 5.55.7 or later",
+      "patched_versions": ">=5.55.7",
+      "updated": "2026-05-14T20:29:13.000Z",
+      "cvss": {
+        "score": 0,
+        "vectorString": null
+      },
+      "cwe": ["CWE-79"],
+      "url": "https://github.com/advisories/GHSA-rcqx-6q8c-2c42"
+    },
+    "1118906": {
+      "findings": [
+        {
+          "version": "5.55.5",
+          "paths": ["examples__svelte-adapter-azure-functions__svelte-app>svelte"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/sveltejs/svelte/security/advisories/GHSA-9rmh-mm8f-r9h6\n- https://github.com/sveltejs/svelte/releases/tag/svelte%405.55.7\n- https://github.com/advisories/GHSA-9rmh-mm8f-r9h6",
+      "created": "2026-05-14T20:29:05.000Z",
+      "id": 1118906,
+      "npm_advisory_id": null,
+      "overview": "An internal regex in the Svelte runtime can take exponential time to test in `<svelte:element this={tag}></svelte:element>`. You are only vulnerable to this if you allow tags of unconstrained length. If your application only allows a predetermined list of tags or trims their length before passing them to `svelte:element`, you are safe.",
+      "reported_by": null,
+      "title": "Svelte: ReDoS in `<svelte:element>` Tag Validation",
+      "metadata": null,
+      "cves": ["CVE-2026-42567"],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "svelte",
+      "vulnerable_versions": ">=5.51.5 <=5.55.6",
+      "github_advisory_id": "GHSA-9rmh-mm8f-r9h6",
+      "recommendation": "Upgrade to version 5.55.7 or later",
+      "patched_versions": ">=5.55.7",
+      "updated": "2026-05-14T20:29:08.000Z",
+      "cvss": {
+        "score": 0,
+        "vectorString": null
+      },
+      "cwe": ["CWE-1333"],
+      "url": "https://github.com/advisories/GHSA-9rmh-mm8f-r9h6"
+    },
+    "1119005": {
+      "findings": [
+        {
+          "version": "5.8.0",
+          "paths": ["examples__svelte-adapter-azure-functions__svelte-app>@sveltejs/kit>devalue"]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/sveltejs/devalue/security/advisories/GHSA-77vg-94rm-hx3p\n- https://github.com/sveltejs/devalue/commit/206ca6712fbc380a4571c59de9ab04b91110792d\n- https://github.com/sveltejs/devalue/releases/tag/v5.8.1\n- https://github.com/advisories/GHSA-77vg-94rm-hx3p",
+      "created": "2026-05-14T20:23:47.000Z",
+      "id": 1119005,
+      "npm_advisory_id": null,
+      "overview": "`devalue.parse` could, due to quirks in some JavaScript engines, be convinced to allocate much more memory than was needed when deserializing sparse arrays, leading to excessive memory consumption.",
+      "reported_by": null,
+      "title": "Svelte devalue: DoS via sparse array deserialization",
+      "metadata": null,
+      "cves": ["CVE-2026-42570"],
+      "access": "public",
+      "severity": "high",
+      "module_name": "devalue",
+      "vulnerable_versions": ">=5.6.3 <=5.8.0",
+      "github_advisory_id": "GHSA-77vg-94rm-hx3p",
+      "recommendation": "Upgrade to version 5.8.1 or later",
+      "patched_versions": ">=5.8.1",
+      "updated": "2026-05-15T02:04:45.000Z",
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "cwe": ["CWE-770"],
+      "url": "https://github.com/advisories/GHSA-77vg-94rm-hx3p"
+    }
+  },
+  "muted": [],
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 4,
+      "high": 3,
+      "critical": 0
+    },
+    "dependencies": 1229,
+    "devDependencies": 0,
+    "optionalDependencies": 0,
+    "totalDependencies": 1229
+  }
+}
