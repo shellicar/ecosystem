@@ -139,4 +139,172 @@ ORDER BY
   c.givenName DESC`);
     });
   });
+
+  describe('whereOr', () => {
+    describe('in', () => {
+      it('emits ARRAY_CONTAINS wrapped in the OR group', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (ARRAY_CONTAINS(@p0, c.givenName))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'in', value: ['joe', 'bob'] }]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+
+      it('binds parameters[0] to the array value with name @p0', () => {
+        const expected = { name: '@p0', value: ['joe', 'bob'] };
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'in', value: ['joe', 'bob'] }]);
+        const actual = builder.query().parameters?.[0];
+
+        expect(actual).toEqual(expected);
+      });
+    });
+
+    describe('contains', () => {
+      it('emits ARRAY_CONTAINS wrapped in the OR group', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (ARRAY_CONTAINS(c.givenName, @p0))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'contains', value: 'joe' }]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+
+      it('binds parameters[0] to the value with name @p0', () => {
+        const expected = { name: '@p0', value: 'joe' };
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'contains', value: 'joe' }]);
+        const actual = builder.query().parameters?.[0];
+
+        expect(actual).toEqual(expected);
+      });
+    });
+
+    describe('ieq', () => {
+      it('emits StringEquals wrapped in the OR group', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (StringEquals(c.givenName, @p0, true))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'ieq', value: 'joe' }]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+
+      it('binds parameters[0] to the value with name @p0', () => {
+        const expected = { name: '@p0', value: 'joe' };
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'ieq', value: 'joe' }]);
+        const actual = builder.query().parameters?.[0];
+
+        expect(actual).toEqual(expected);
+      });
+    });
+
+    describe('ine', () => {
+      it('emits Not(StringEquals) wrapped in the OR group', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (Not(StringEquals(c.givenName, @p0, true)))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'ine', value: 'joe' }]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+
+      it('binds parameters[0] to the value with name @p0', () => {
+        const expected = { name: '@p0', value: 'joe' };
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([{ field: 'givenName', operator: 'ine', value: 'joe' }]);
+        const actual = builder.query().parameters?.[0];
+
+        expect(actual).toEqual(expected);
+      });
+    });
+
+    describe('counter advancement', () => {
+      it('assigns distinct parameter names to two in conditions', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (ARRAY_CONTAINS(@p0, c.givenName) OR ARRAY_CONTAINS(@p1, c.familyName))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([
+          { field: 'givenName', operator: 'in', value: ['joe'] },
+          { field: 'familyName', operator: 'in', value: ['smith'] },
+        ]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+
+      it('assigns distinct parameter names to two contains conditions', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (ARRAY_CONTAINS(c.givenName, @p0) OR ARRAY_CONTAINS(c.familyName, @p1))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([
+          { field: 'givenName', operator: 'contains', value: 'joe' },
+          { field: 'familyName', operator: 'contains', value: 'smith' },
+        ]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+
+      it('assigns distinct parameter indices across mixed operators', () => {
+        const expected = `SELECT
+  *
+FROM
+  c
+WHERE
+  (ARRAY_CONTAINS(@p0, c.givenName) OR c.familyName = @p1 OR ARRAY_CONTAINS(c.givenName, @p2) OR StringEquals(c.familyName, @p3, true))`;
+
+        const builder = createCosmosQueryBuilder<MyEntity>();
+        builder.whereOr([
+          { field: 'givenName', operator: 'in', value: ['joe'] },
+          { field: 'familyName', operator: 'eq', value: 'smith' },
+          { field: 'givenName', operator: 'contains', value: 'bob' },
+          { field: 'familyName', operator: 'ieq', value: 'JONES' },
+        ]);
+        const actual = builder.query().query;
+
+        expect(actual).toBe(expected);
+      });
+    });
+  });
 });
