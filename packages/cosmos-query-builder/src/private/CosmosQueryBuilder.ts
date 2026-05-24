@@ -179,9 +179,25 @@ export class CosmosQueryBuilder<T extends Record<string, any>> extends ICosmosQu
       if (operator === 'isNull') {
         orClauses.push(`(c.${field} ?? null) = null`);
       } else if (operator === 'contains') {
-        orClauses.push(`ARRAY_CONTAINS(c.${field}, ${parameterName})`);
+        if (value !== undefined) {
+          orClauses.push(`ARRAY_CONTAINS(c.${field}, ${parameterName})`);
+          this._parameters.push({ name: parameterName, value });
+        }
       } else if (operator === 'in') {
-        orClauses.push(`ARRAY_CONTAINS(${parameterName}, c.${field})`);
+        if (value !== undefined) {
+          orClauses.push(`ARRAY_CONTAINS(${parameterName}, c.${field})`);
+          this._parameters.push({ name: parameterName, value });
+        }
+      } else if (operator === 'ieq') {
+        if (value !== undefined) {
+          orClauses.push(`StringEquals(c.${field}, ${parameterName}, true)`);
+          this._parameters.push({ name: parameterName, value });
+        }
+      } else if (operator === 'ine') {
+        if (value !== undefined) {
+          orClauses.push(`Not(StringEquals(c.${field}, ${parameterName}, true))`);
+          this._parameters.push({ name: parameterName, value });
+        }
       } else {
         const sqlOperator = operators[operator];
         if (sqlOperator != null && value !== undefined) {
