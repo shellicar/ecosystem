@@ -5,7 +5,8 @@
   "description": "Azure Application Insights transport for Winston",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "*.md"
   ],
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",

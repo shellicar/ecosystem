@@ -40,7 +40,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "*.md"
   ],
   "scripts": {
     "build": "tsup",
