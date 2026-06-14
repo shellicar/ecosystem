@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.7] - 2026-06-14
+
+### Changed
+
+- Updated esbuild peer dependency from ^0.27 to ^0.28
+
+### Security
+
+- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
+- Fixed GHSA-g7r4-m6w7-qqqr in esbuild ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr))
+
 ## [1.4.6] - 2026-05-17
 
 ### Changed
@@ -148,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[1.4.7]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.7
 [1.4.6]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.6
 [1.4.5]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.5
 [1.4.4]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.4
