@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!!**/dist", "!schema/*.json"]
+    "includes": ["**", "!!**/dist", "!schema/*.json", "!.claude/audit"]
   },
   "formatter": {
     "enabled": true,

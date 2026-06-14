@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/build-azure-local-settings",
   "private": false,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "license": "MIT",
   "author": "Stephen Hellicar",
@@ -91,7 +91,7 @@
     "watch": "tsup --watch"
   },
   "peerDependencies": {
-    "esbuild": "^0.27"
+    "esbuild": "^0.28"
   },
   "peerDependenciesMeta": {
     "esbuild": {
@@ -107,7 +107,7 @@
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
     "@types/regexp.escape": "^2.0.0",
-    "esbuild": "^0.27.7",
+    "esbuild": "^0.28.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.6"

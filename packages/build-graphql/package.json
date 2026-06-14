@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/build-graphql",
   "private": false,
-  "version": "1.4.6",
+  "version": "1.4.7",
   "type": "module",
   "license": "MIT",
   "author": "Stephen Hellicar",
@@ -201,7 +201,7 @@
     "@farmfe/core": ">=1",
     "@nuxt/kit": "^4",
     "@nuxt/schema": "^4",
-    "esbuild": "^0.27",
+    "esbuild": "^0.28",
     "rollup": "^4",
     "vite": "^7",
     "webpack": "^4 || ^5"
