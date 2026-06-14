@@ -59,3 +59,4 @@
 {"description":"Fixed GHSA-gv7w-rqvm-qjhr in esbuild","category":"security","metadata":{"ghsa":"GHSA-gv7w-rqvm-qjhr"}}
 {"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
 {"description":"Updated esbuild peer dependency from ^0.27 to ^0.28","category":"changed"}
+{"type":"release","version":"1.3.10","date":"2026-06-14","tag":"build-version@1.3.10"}

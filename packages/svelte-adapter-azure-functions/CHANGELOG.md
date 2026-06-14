@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2026-06-14
+
+### Security
+
+- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
+- Fixed GHSA-g7r4-m6w7-qqqr in esbuild ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr))
+
 ## [1.0.6] - 2026-05-17
 
 ### Changed
@@ -125,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
+[1.0.7]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.7
 [1.0.6]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.6
 [1.0.5]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.5
 [1.0.4]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.4
