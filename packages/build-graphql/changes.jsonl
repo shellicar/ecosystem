@@ -51,3 +51,6 @@
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.4.6","date":"2026-05-17","tag":"build-graphql@1.4.6"}
 {"description":"Fixed GHSA-w7jw-789q-3m8p in shell-quote","category":"security","metadata":{"ghsa":"GHSA-w7jw-789q-3m8p"}}
+{"description":"Fixed GHSA-gv7w-rqvm-qjhr in esbuild","category":"security","metadata":{"ghsa":"GHSA-gv7w-rqvm-qjhr"}}
+{"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
+{"description":"Updated esbuild peer dependency from ^0.27 to ^0.28","category":"changed"}
