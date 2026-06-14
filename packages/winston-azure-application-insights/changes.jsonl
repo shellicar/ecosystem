@@ -69,3 +69,5 @@
 {"description":"Fixed GHSA-q6x5-8v7m-xcrf in protobufjs","category":"security","metadata":{"ghsa":"GHSA-q6x5-8v7m-xcrf"}}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"6.0.7","date":"2026-05-17","tag":"winston-azure-application-insights@6.0.7"}
+{"description":"Fixed GHSA-5375-pq7m-f5r2 in @grpc/grpc-js","category":"security","metadata":{"ghsa":"GHSA-5375-pq7m-f5r2"}}
+{"description":"Fixed GHSA-99f4-grh7-6pcq in @grpc/grpc-js","category":"security","metadata":{"ghsa":"GHSA-99f4-grh7-6pcq"}}
