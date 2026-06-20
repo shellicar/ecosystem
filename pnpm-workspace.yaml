@@ -2,6 +2,17 @@ packages:
   - packages/*
   - scripts
   - examples/*/*
+
+ignoreScripts: true
+minimumReleaseAge: 1440
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - chokidar@4.0.3
+  - rollup@3.30.0
+  - 'semver@5.7.2 || 6.3.1'
+  - ua-parser-js@1.0.41
+
 overrides:
   '@grpc/grpc-js@<1.14.4': '>=1.14.4'
   '@opentelemetry/exporter-prometheus@<0.217.0': '>=0.217.0'
