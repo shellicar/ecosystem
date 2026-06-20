@@ -69,3 +69,5 @@
 {"description":"Fixed GHSA-q6x5-8v7m-xcrf in protobufjs","category":"security","metadata":{"ghsa":"GHSA-q6x5-8v7m-xcrf"}}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"6.0.7","date":"2026-05-17","tag":"winston-azure-application-insights@6.0.7"}
+{"description":"Don't force both versions of applicationinsights on consumers","category":"fixed"}
+{"type":"release","version":"6.0.8","date":"2026-06-19","tag":"winston-azure-application-insights@6.0.8"}

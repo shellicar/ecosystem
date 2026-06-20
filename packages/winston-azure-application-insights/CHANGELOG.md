@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.8] - 2026-06-19
+
+### Fixed
+
+- Don't force both versions of applicationinsights on consumers
+
 ## [6.0.7] - 2026-05-17
 
 ### Changed
@@ -165,6 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to winston 3.x
 - Use typescript
 
+[6.0.8]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.8
 [6.0.7]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.7
 [6.0.6]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.6
 [6.0.5]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.5
