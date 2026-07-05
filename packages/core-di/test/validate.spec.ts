@@ -22,7 +22,7 @@ describe('validate() as a diagnostic', () => {
 
   it('reports a registration with no declared identity', () => {
     const services = createServiceCollection();
-    services.register(Service); // no as / asSelf / forwardTo
+    services.register(Service); // no as / asSelf / forward
 
     const actual = services.validate().problems.map((p) => p.kind);
 
@@ -31,7 +31,7 @@ describe('validate() as a diagnostic', () => {
 
   it('reports a forward to an unregistered target', () => {
     const services = createServiceCollection();
-    services.register(IService).forwardTo(Dependency);
+    services.forward(IService).to(Dependency);
 
     const actual = services.validate().problems.map((p) => p.kind);
 
@@ -70,7 +70,7 @@ describe('validate() as a diagnostic', () => {
 describe('buildProvider validation', () => {
   it('fails fast when opted in', () => {
     const services = createServiceCollection();
-    services.register(IService).forwardTo(Dependency); // missing target
+    services.forward(IService).to(Dependency); // missing target
 
     const actual = () => services.buildProvider({ validate: true });
 
@@ -79,7 +79,7 @@ describe('buildProvider validation', () => {
 
   it('stays lenient by default, deferring the failure to resolve', () => {
     const services = createServiceCollection();
-    services.register(IService).forwardTo(Dependency); // missing target
+    services.forward(IService).to(Dependency); // missing target
     const provider = services.buildProvider();
 
     const actual = () => provider.resolve(IService);

@@ -3,7 +3,7 @@ import { createServiceCollection } from '../src';
 
 // Problem 2, from the CLI composition root: a factory-built service composes
 // several dependencies, and one instance is shared through a separate contract.
-// forwardTo declares that edge directly, rather than expressing the alias as a
+// forward(...).to(...) declares that edge directly, rather than expressing the alias as a
 // factory body (`register(IToolProvider).to(IToolProvider, x => x.resolve(...))`).
 abstract class IToolProvider {
   abstract tools(): string[];
@@ -25,7 +25,7 @@ describe('Forwarding one declaration to another', () => {
       .using(() => new AppToolsService(++builds))
       .asSelf()
       .singleton();
-    services.register(IToolProvider).forwardTo(AppToolsService);
+    services.forward(IToolProvider).to(AppToolsService);
     const provider = services.buildProvider();
 
     const expected = provider.resolve(AppToolsService);
@@ -42,7 +42,7 @@ describe('Forwarding one declaration to another', () => {
       .using(() => new AppToolsService(++builds))
       .asSelf()
       .singleton();
-    services.register(IToolProvider).forwardTo(AppToolsService);
+    services.forward(IToolProvider).to(AppToolsService);
     const provider = services.buildProvider();
 
     provider.resolve(AppToolsService);
@@ -62,13 +62,32 @@ describe('Multi-hop forwarding (a forward targeting another forward)', () => {
   it('resolves a chain of forwards to the one terminal instance', () => {
     const services = createServiceCollection();
     services.register(Foo).asSelf().singleton();
-    services.register(IBar).forwardTo(Foo);
-    services.register(IFoo).forwardTo(IBar);
+    services.forward(IBar).to(Foo);
+    services.forward(IFoo).to(IBar);
     const provider = services.buildProvider();
 
     const expected = provider.resolve(Foo);
     const actual = provider.resolve(IFoo);
 
     expect(actual).toBe(expected);
+  });
+});
+
+// A forward is a pure redirect: no instance, no key, no lifetime of its own.
+// Caching and lifetime belong entirely to the target's registration, so a
+// lifetime verb on a forward is meaningless and must not be expressible.
+describe('A forward has no lifetime of its own', () => {
+  abstract class IAlias {}
+  class Target implements IAlias {}
+
+  it('does not accept a lifetime verb on a forward', () => {
+    const services = createServiceCollection();
+    services.register(Target).asSelf().singleton();
+
+    services
+      .forward(IAlias)
+      .to(Target)
+      // @ts-expect-error - a forward is a pure redirect and takes no lifetime verb
+      .transient();
   });
 });

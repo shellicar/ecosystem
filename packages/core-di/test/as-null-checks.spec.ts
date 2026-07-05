@@ -4,9 +4,10 @@ import { createServiceCollection, InvalidServiceIdentifierError } from '../src';
 abstract class IService {}
 class Service implements IService {}
 
-// The identity slot (as / forwardTo) now carries the face identifiers, so a
-// null or undefined face is an invalid service identifier.
-describe('as/forwardTo null/undefined identifier checks', () => {
+// The identity slots carry token identifiers: as() the faces, and forward()/to()
+// the source and target of a redirect. A null or undefined identifier is invalid
+// in any of them.
+describe('as/forward null/undefined identifier checks', () => {
   it('throws when as() is passed nothing', () => {
     const services = createServiceCollection();
 
@@ -34,10 +35,18 @@ describe('as/forwardTo null/undefined identifier checks', () => {
     expect(actual).toThrow(InvalidServiceIdentifierError);
   });
 
-  it('throws when forwardTo() is passed an undefined target', () => {
+  it('throws when forward() is passed an undefined source token', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(IService).forwardTo(undefined as any);
+    const actual = () => services.forward(undefined as any).to(IService);
+
+    expect(actual).toThrow(InvalidServiceIdentifierError);
+  });
+
+  it('throws when forward().to() is passed an undefined target', () => {
+    const services = createServiceCollection();
+
+    const actual = () => services.forward(IService).to(undefined as any);
 
     expect(actual).toThrow(InvalidServiceIdentifierError);
   });
