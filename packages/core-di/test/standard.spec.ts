@@ -1,5 +1,4 @@
-import { equal } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, dependsOn } from '../src';
 
 abstract class IDependency {
@@ -25,14 +24,15 @@ class Service implements IService {
 
 describe('Standard dependencies', () => {
   const services = createServiceCollection();
-  services.register(IDependency).to(Dependency);
-  services.register(IService).to(Service);
+  services.register(Dependency).as(IDependency);
+  services.register(Service).as(IService);
 
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('can resolve', () => {
-    const svc = scoped.resolve(IService);
-    equal('got service: hello world', svc.handle());
+  it('resolves a service with its declared dependency', () => {
+    const expected = 'got service: hello world';
+    const actual = scoped.resolve(IService).handle();
+    expect(actual).toBe(expected);
   });
 });

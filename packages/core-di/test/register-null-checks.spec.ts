@@ -1,29 +1,33 @@
-import { throws } from 'node:assert/strict';
-import { describe, it } from 'vitest';
-import { createServiceCollection, InvalidServiceIdentifierError } from '../src';
+import { describe, expect, it } from 'vitest';
+import { createServiceCollection, InvalidImplementationError } from '../src';
 
-abstract class IService {}
-
-describe('Register method null/undefined identifier checks', () => {
+// register() now takes the implementation in its first slot, so a null or
+// undefined subject is an invalid implementation.
+describe('register method null/undefined implementation checks', () => {
   it('throws when passed nothing', () => {
     const services = createServiceCollection();
-    throws(() => {
+
+    const actual = () => {
       // @ts-expect-error
       services.register();
-    }, InvalidServiceIdentifierError);
+    };
+
+    expect(actual).toThrow(InvalidImplementationError);
   });
 
-  it('throws when passed undefined identifier', () => {
+  it('throws when passed an undefined implementation', () => {
     const services = createServiceCollection();
-    throws(() => {
-      services.register(undefined as any);
-    }, InvalidServiceIdentifierError);
+
+    const actual = () => services.register(undefined as any);
+
+    expect(actual).toThrow(InvalidImplementationError);
   });
 
-  it('throws when passed a valid identifier and an undefined identifier', () => {
+  it('throws when passed a null implementation', () => {
     const services = createServiceCollection();
-    throws(() => {
-      services.register(IService, undefined as any);
-    }, InvalidServiceIdentifierError);
+
+    const actual = () => services.register(null as any);
+
+    expect(actual).toThrow(InvalidImplementationError);
   });
 });

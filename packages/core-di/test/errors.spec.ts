@@ -1,5 +1,4 @@
-import { fail, ok, throws } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, ResolveMultipleMode } from '../src';
 import { MultipleRegistrationError, ServiceError, UnregisteredServiceError } from '../src/errors';
 
@@ -8,37 +7,43 @@ class Service implements IService {}
 class OtherService implements IService {}
 
 describe('errors', () => {
-  it('Unregistered', () => {
+  it('throws UnregisteredServiceError for an unregistered face', () => {
     const services = createServiceCollection();
     const provider = services.buildProvider();
-    throws(() => provider.resolve(IService), UnregisteredServiceError);
+
+    const actual = () => provider.resolve(IService);
+
+    expect(actual).toThrow(UnregisteredServiceError);
   });
 
-  it('Multiple registrations', () => {
+  it('throws MultipleRegistrationError when a face has several registrations', () => {
     const services = createServiceCollection();
-    services.register(IService).to(Service);
-    services.register(IService).to(Service);
+    services.register(Service).as(IService);
+    services.register(Service).as(IService);
     const provider = services.buildProvider();
-    throws(() => provider.resolve(IService), MultipleRegistrationError);
+
+    const actual = () => provider.resolve(IService);
+
+    expect(actual).toThrow(MultipleRegistrationError);
   });
 
-  it('Allow configuring registrations', () => {
+  it('resolves the last registration under LastRegistered mode', () => {
     const services = createServiceCollection({ registrationMode: ResolveMultipleMode.LastRegistered });
-    services.register(IService).to(Service);
-    services.register(IService).to(OtherService);
+    services.register(Service).as(IService);
+    services.register(OtherService).as(IService);
     const provider = services.buildProvider();
-    const svc = provider.resolve(IService);
-    ok(svc instanceof OtherService);
+
+    const actual = provider.resolve(IService);
+
+    expect(actual).toBeInstanceOf(OtherService);
   });
 
-  it('Catch errors', () => {
+  it('errors are a ServiceError', () => {
     const services = createServiceCollection();
     const provider = services.buildProvider();
-    try {
-      provider.resolve(IService);
-      fail('no error');
-    } catch (err) {
-      ok(err instanceof ServiceError);
-    }
+
+    const actual = () => provider.resolve(IService);
+
+    expect(actual).toThrow(ServiceError);
   });
 });

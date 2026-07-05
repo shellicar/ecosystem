@@ -1,5 +1,4 @@
-import { equal, throws } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, type ILogger } from '../src';
 
 abstract class IAbstract {}
@@ -33,47 +32,54 @@ class TestLogger implements ILogger {
 describe('Debug registration', () => {
   it('Logs on registration', () => {
     const logger = new TestLogger();
-    const services = createServiceCollection({
-      logger,
-    });
-    services.register(IAbstract).to(Concrete).transient();
-    equal(1, logger.infoLogs.length);
+    const services = createServiceCollection({ logger });
+    services.register(Concrete).as(IAbstract).transient();
+
+    const actual = logger.infoLogs.length;
+
+    expect(actual).toBe(1);
   });
 
   it('Logs on resolution', () => {
     const logger = new TestLogger();
-    const services = createServiceCollection({
-      logger,
-    });
-    services.register(IAbstract).to(Concrete).transient();
-
+    const services = createServiceCollection({ logger });
+    services.register(Concrete).as(IAbstract).transient();
     const provider = services.buildProvider();
     using scope = provider.createScope();
 
     scope.resolve(IAbstract);
 
-    equal(1, logger.debugLogs.length);
+    const actual = logger.debugLogs.length;
+
+    expect(actual).toBe(1);
   });
 
   it('Logs error for creation failure', () => {
     const logger = new TestLogger();
-    const services = createServiceCollection({
-      logger,
-    });
-    services.register(IAbstract).to(ErrorOnCreation);
+    const services = createServiceCollection({ logger });
+    services.register(ErrorOnCreation).as(IAbstract);
     const provider = services.buildProvider();
-    throws(() => provider.resolve(IAbstract));
-    equal(1, logger.errorLogs.length);
+
+    expect(() => provider.resolve(IAbstract)).toThrow();
+
+    const actual = logger.errorLogs.length;
+
+    expect(actual).toBe(1);
   });
 
   it('Logs error for factory creation failure', () => {
     const logger = new TestLogger();
-    const services = createServiceCollection({
-      logger,
-    });
-    services.register(IAbstract).to(ErrorOnCreation, () => new ErrorOnCreation());
+    const services = createServiceCollection({ logger });
+    services
+      .register(ErrorOnCreation)
+      .using(() => new ErrorOnCreation())
+      .as(IAbstract);
     const provider = services.buildProvider();
-    throws(() => provider.resolve(IAbstract));
-    equal(1, logger.errorLogs.length);
+
+    expect(() => provider.resolve(IAbstract)).toThrow();
+
+    const actual = logger.errorLogs.length;
+
+    expect(actual).toBe(1);
   });
 });

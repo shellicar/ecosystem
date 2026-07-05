@@ -1,4 +1,3 @@
-import { throws } from 'node:assert/strict';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection, dependsOn, ServiceCreationError } from '../src';
 
@@ -46,28 +45,22 @@ describe('Dependency Resolution Error Handling', () => {
 
     const resolve = () => provider.resolve(IUserService);
 
-    throws(resolve, ServiceCreationError);
+    expect(resolve).toThrow(ServiceCreationError);
   });
 
-  it('contains error hierarchy', () => {
+  it('identifies the requested service and wraps the inner failure', () => {
     const provider = createProvider();
 
-    const resolve = () => provider.resolve(IUserService);
-
     try {
-      resolve();
+      provider.resolve(IUserService);
+      throw new Error('Expected resolution to fail');
     } catch (err) {
+      expect(err).toBeInstanceOf(ServiceCreationError);
       if (err instanceof ServiceCreationError) {
         expect(err.identifier).toBe(IUserService);
         expect(err.implementation).toBe(UserService);
-        console.log('outer', err);
-        if (err.innerError instanceof ServiceCreationError) {
-          const inner = err.innerError;
-          console.log('inner', inner);
-          return true;
-        }
+        expect(err.innerError).toBeInstanceOf(ServiceCreationError);
       }
-      return false;
     }
   });
 
@@ -86,7 +79,7 @@ describe('Dependency Resolution Error Handling', () => {
       doSomething(): void {}
     }
 
-    services.register(IDirectFailingService).to(DirectFailingService);
+    services.register(DirectFailingService).as(IDirectFailingService);
     const provider = services.buildProvider();
 
     try {
@@ -162,11 +155,11 @@ describe('Dependency Resolution Error Handling', () => {
       }
     }
 
-    services.register(ILevel5).to(Level5);
-    services.register(ILevel4).to(Level4);
-    services.register(ILevel3).to(Level3);
-    services.register(ILevel2).to(Level2);
-    services.register(ILevel1).to(Level1);
+    services.register(Level5).as(ILevel5);
+    services.register(Level4).as(ILevel4);
+    services.register(Level3).as(ILevel3);
+    services.register(Level2).as(ILevel2);
+    services.register(Level1).as(ILevel1);
 
     const provider = services.buildProvider();
 
@@ -209,9 +202,9 @@ describe('Dependency Resolution Error Handling', () => {
 
 const createProvider = () => {
   const services = createServiceCollection();
-  services.register(IConfigOptions).to(ConfigOptions);
-  services.register(IDatabaseService).to(DatabaseService);
-  services.register(IUserService).to(UserService);
+  services.register(ConfigOptions).as(IConfigOptions);
+  services.register(DatabaseService).as(IDatabaseService);
+  services.register(UserService).as(IUserService);
   const provider = services.buildProvider();
   return provider;
 };

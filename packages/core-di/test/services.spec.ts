@@ -1,5 +1,4 @@
-import { equal, notEqual } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 import { Lifetime } from '../src/enums';
 
@@ -9,18 +8,26 @@ class Concrete implements IAbstract {}
 describe('Service collection', () => {
   it('Cloning services isolates changes', () => {
     const services = createServiceCollection();
-    const builder = services.register(IAbstract).to(Concrete).transient();
-
-    const provider = services.buildProvider();
-    using _scope = provider.createScope();
+    const builder = services.register(Concrete).as(IAbstract).transient();
 
     const cloned = services.clone();
-    // modify original lifetime
+    // mutate the original registration after cloning
     builder.singleton();
-    const clonedDescriptor = cloned.get(IAbstract)[0];
-    equal(clonedDescriptor.lifetime, Lifetime.Transient);
-    // sanity check
-    const descriptor = services.get(IAbstract)[0];
-    notEqual(descriptor.lifetime, Lifetime.Transient);
+
+    const actual = cloned.get(IAbstract)[0].lifetime;
+
+    expect(actual).toBe(Lifetime.Transient);
+  });
+
+  it('mutating the builder updates the original collection', () => {
+    const services = createServiceCollection();
+    const builder = services.register(Concrete).as(IAbstract).transient();
+
+    services.clone();
+    builder.singleton();
+
+    const actual = services.get(IAbstract)[0].lifetime;
+
+    expect(actual).toBe(Lifetime.Singleton);
   });
 });

@@ -11,14 +11,15 @@ class Concrete implements IAbstract {
 
 describe('can change lifetime of registration', () => {
   const services = createServiceCollection({ logLevel: LogLevel.Debug });
-  services.register(IAbstract).to(Concrete).singleton();
+  services.register(Concrete).as(IAbstract).singleton();
   const sp = services.buildProvider();
 
   it('uses updated lifetime', () => {
     sp.Services.overrideLifetime(IAbstract, Lifetime.Transient);
 
-    const a1 = sp.resolve(IAbstract);
-    const a2 = sp.resolve(IAbstract);
-    expect(a1).not.toBe(a2);
+    const first = sp.resolve(IAbstract);
+    const actual = sp.resolve(IAbstract);
+
+    expect(actual).not.toBe(first);
   });
 });

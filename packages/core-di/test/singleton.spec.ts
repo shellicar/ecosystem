@@ -1,11 +1,10 @@
-import { equal, ok } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, type IDisposable } from '../src';
 
 abstract class IAbstract {
   abstract get disposed(): boolean;
 }
-class Concreate implements IAbstract, IDisposable {
+class Concrete implements IAbstract, IDisposable {
   #disposed = false;
   public get disposed() {
     return this.#disposed;
@@ -17,25 +16,25 @@ class Concreate implements IAbstract, IDisposable {
 
 describe('Singleton lifetime', () => {
   const services = createServiceCollection();
-  services.register(IAbstract).to(Concreate).singleton();
+  services.register(Concrete).as(IAbstract).singleton();
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('created service once', () => {
-    const svc1 = scoped.resolve(IAbstract);
-    const svc2 = scoped.resolve(IAbstract);
-    equal(svc1, svc2);
+  it('resolves the same instance on repeat resolves', () => {
+    const expected = scoped.resolve(IAbstract);
+    const actual = scoped.resolve(IAbstract);
+    expect(actual).toBe(expected);
   });
 
-  it('scoped version is same', () => {
-    const svc1 = provider.resolve(IAbstract);
-    const svc2 = scoped.resolve(IAbstract);
-    equal(svc1, svc2);
+  it('shares one instance between root and scope', () => {
+    const expected = provider.resolve(IAbstract);
+    const actual = scoped.resolve(IAbstract);
+    expect(actual).toBe(expected);
   });
 
-  it('does not dispose singletons', () => {
-    const svc2 = scoped.resolve(IAbstract);
+  it('does not dispose the singleton when a scope is disposed', () => {
+    const instance = scoped.resolve(IAbstract);
     scoped[Symbol.dispose]();
-    ok(!svc2.disposed);
+    expect(instance.disposed).toBe(false);
   });
 });

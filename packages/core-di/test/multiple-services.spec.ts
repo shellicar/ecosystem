@@ -13,45 +13,27 @@ class Concrete implements IAbstract1, IAbstract2 {
   public func2(): void {}
 }
 
-describe('can use multiple interfaces for singleton', () => {
+describe('multiple faces for singleton', () => {
   const services = createServiceCollection();
-  services.register(IAbstract1, IAbstract2).to(Concrete).singleton();
+  services.register(Concrete).as(IAbstract1).as(IAbstract2).singleton();
   const sp = services.buildProvider();
 
-  it('resolves with first interface', () => {
-    sp.resolve(IAbstract1);
-  });
-
-  it('resolves with second interface', () => {
-    sp.resolve(IAbstract2);
-  });
-
-  it('resolves to same instance', () => {
-    const i1 = sp.resolve(IAbstract1);
-    const i2 = sp.resolve(IAbstract2);
-
-    expect(i1).toBe(i2);
+  it('resolves the same instance across faces', () => {
+    const expected = sp.resolve(IAbstract1);
+    const actual = sp.resolve(IAbstract2);
+    expect(actual).toBe(expected);
   });
 });
 
-describe('can use multiple interfaces for scoped', () => {
+describe('multiple faces for scoped', () => {
   const services = createServiceCollection();
-  services.register(IAbstract1, IAbstract2).to(Concrete).scoped();
+  services.register(Concrete).as(IAbstract1).as(IAbstract2).scoped();
   const sp = services.buildProvider();
 
-  it('resolves with first interface', () => {
-    sp.resolve(IAbstract1);
-  });
-
-  it('resolves with second interface', () => {
-    sp.resolve(IAbstract2);
-  });
-
-  it('resolves to same instance', () => {
+  it('resolves the same instance across faces within a scope', () => {
     using scope = sp.createScope();
-    const i1 = scope.resolve(IAbstract1);
-    const i2 = scope.resolve(IAbstract2);
-
-    expect(i1).toBe(i2);
+    const expected = scope.resolve(IAbstract1);
+    const actual = scope.resolve(IAbstract2);
+    expect(actual).toBe(expected);
   });
 });

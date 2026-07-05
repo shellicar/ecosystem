@@ -1,5 +1,4 @@
-import { equal, throws } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 import { UnregisteredServiceError } from '../src/errors';
 
@@ -16,17 +15,22 @@ describe('Registration inside scope', () => {
   const scoped = provider.createScope();
 
   it('can register in scope', () => {
-    scoped.Services.register(IContext).to(Context, () => new Context('Mr Magoo'));
+    scoped.Services.register(Context)
+      .using(() => new Context('Mr Magoo'))
+      .as(IContext);
 
-    const context = scoped.resolve(IContext);
-    equal(context.user, 'Mr Magoo');
+    const actual = scoped.resolve(IContext).user;
+
+    expect(actual).toBe('Mr Magoo');
   });
 
   it('does not affect parent registrations', () => {
-    scoped.Services.register(IContext).to(Context, () => new Context('Mr Magoo'));
+    scoped.Services.register(Context)
+      .using(() => new Context('Mr Magoo'))
+      .as(IContext);
 
-    throws(() => {
-      provider.resolve(IContext);
-    }, UnregisteredServiceError);
+    const actual = () => provider.resolve(IContext);
+
+    expect(actual).toThrow(UnregisteredServiceError);
   });
 });

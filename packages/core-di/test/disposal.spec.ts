@@ -19,7 +19,7 @@ describe('Disposal', () => {
   describe('Singleton lifetime', () => {
     it('does not dispose singleton when scoped provider is disposed', () => {
       const services = createServiceCollection();
-      services.register(IDisposableService).to(DisposableService).singleton();
+      services.register(DisposableService).as(IDisposableService).singleton();
       const provider = services.buildProvider();
       const scoped = provider.createScope();
 
@@ -31,7 +31,7 @@ describe('Disposal', () => {
 
     it('disposes singleton when root provider is disposed', () => {
       const services = createServiceCollection();
-      services.register(IDisposableService).to(DisposableService).singleton();
+      services.register(DisposableService).as(IDisposableService).singleton();
       const provider = services.buildProvider();
 
       const instance = provider.resolve(IDisposableService);
@@ -44,7 +44,7 @@ describe('Disposal', () => {
   describe('Scoped lifetime', () => {
     it('disposes scoped instance when scoped provider is disposed', () => {
       const services = createServiceCollection();
-      services.register(IDisposableService).to(DisposableService).scoped();
+      services.register(DisposableService).as(IDisposableService).scoped();
       const provider = services.buildProvider();
       const scoped = provider.createScope();
 
@@ -58,7 +58,7 @@ describe('Disposal', () => {
   describe('Transient lifetime', () => {
     it('disposes transient instance when provider is disposed', () => {
       const services = createServiceCollection();
-      services.register(IDisposableService).to(DisposableService).transient();
+      services.register(DisposableService).as(IDisposableService).transient();
       const provider = services.buildProvider();
 
       const instance = provider.resolve(IDisposableService);

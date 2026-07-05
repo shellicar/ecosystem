@@ -1,5 +1,4 @@
-import { equal } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, dependsOn, IScopedProvider } from '../src';
 
 abstract class ICheckHealth {
@@ -7,23 +6,12 @@ abstract class ICheckHealth {
 }
 
 class HealthCheck1 implements ICheckHealth {
-  #checked = false;
-  public get checked() {
-    return this.#checked;
-  }
-
   check(): Promise<boolean> {
-    this.#checked = true;
     return Promise.resolve(true);
   }
 }
 class HealthCheck2 implements ICheckHealth {
-  #checked = false;
-  public get checked() {
-    return this.#checked;
-  }
   check(): Promise<boolean> {
-    this.#checked = true;
     return Promise.resolve(true);
   }
 }
@@ -33,8 +21,7 @@ class CheckAllHealth {
 
   async health() {
     const all = this.scope.resolveAll(ICheckHealth);
-    const promises = all.map((x) => x.check());
-    const results = await Promise.all(promises);
+    const results = await Promise.all(all.map((x) => x.check()));
     return {
       healthy: results.every((x) => x),
       count: all.length,
@@ -43,35 +30,39 @@ class CheckAllHealth {
 }
 
 describe('No implementations', () => {
-  it('doesnt throw', () => {
+  it('resolveAll returns an empty array', () => {
     const services = createServiceCollection();
     const provider = services.buildProvider();
-    const result = provider.resolveAll(ICheckHealth);
-    equal(0, result.length);
+
+    const actual = provider.resolveAll(ICheckHealth).length;
+
+    expect(actual).toBe(0);
   });
 });
 
 describe('Multiple implementations', () => {
   const services = createServiceCollection();
-  services.register(ICheckHealth).to(HealthCheck1).singleton();
-  services.register(ICheckHealth).to(HealthCheck2).singleton();
-  services.register(CheckAllHealth).to(CheckAllHealth);
+  services.register(HealthCheck1).as(ICheckHealth).singleton();
+  services.register(HealthCheck2).as(ICheckHealth).singleton();
+  services.register(CheckAllHealth).asSelf();
 
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('can resolve', async () => {
-    const svc = scoped.resolve(CheckAllHealth);
-    const result = await svc.health();
-    equal(true, result.healthy);
-    equal(2, result.count);
+  it('resolveAll returns every registration for the face', () => {
+    const actual = scoped.resolveAll(ICheckHealth).length;
+    expect(actual).toBe(2);
   });
 
-  it('resolves both', async () => {
-    const health = scoped.resolveAll(ICheckHealth);
-    const h1 = health[0] as HealthCheck1;
-    const h2 = health[0] as HealthCheck2;
-    equal(true, h1.checked);
-    equal(true, h2.checked);
+  it('reports healthy across all implementations', async () => {
+    const svc = scoped.resolve(CheckAllHealth);
+    const actual = (await svc.health()).healthy;
+    expect(actual).toBe(true);
+  });
+
+  it('counts all implementations', async () => {
+    const svc = scoped.resolve(CheckAllHealth);
+    const actual = (await svc.health()).count;
+    expect(actual).toBe(2);
   });
 });
