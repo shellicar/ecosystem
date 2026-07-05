@@ -17,3 +17,10 @@ export enum ResolveMultipleMode {
   Error = 'ERROR',
   LastRegistered = 'LAST_REGISTERED',
 }
+
+export enum ValidationProblemKind {
+  NoIdentity = 'NO_IDENTITY',
+  MissingTarget = 'MISSING_TARGET',
+  CaptiveDependency = 'CAPTIVE_DEPENDENCY',
+  Cycle = 'CYCLE',
+}

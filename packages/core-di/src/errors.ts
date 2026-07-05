@@ -1,4 +1,4 @@
-import type { ServiceIdentifier, ServiceImplementation, ServiceRegistration } from './types';
+import type { ServiceIdentifier, ServiceImplementation, ServiceRegistration, ValidationProblem } from './types';
 
 export abstract class ServiceError extends Error {}
 
@@ -75,5 +75,18 @@ export class InvalidImplementationError<T extends object> extends ServiceError {
   constructor(identifier: ServiceIdentifier<T> | undefined) {
     super(`Invalid implementation provided for service: ${identifier?.name ?? 'undefined'}`);
     Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+export class ValidationError extends ServiceError {
+  name = 'ValidationError';
+  constructor(public readonly problems: ValidationProblem[]) {
+    super(ValidationError.getErrorMessage(problems));
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+
+  static getErrorMessage(problems: ValidationProblem[]): string {
+    const detail = problems.map((problem) => `- ${problem.kind}: ${problem.message}`).join('\n');
+    return `Service wiring validation failed with ${problems.length} problem(s):\n${detail}`;
   }
 }

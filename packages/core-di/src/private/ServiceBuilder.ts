@@ -1,63 +1,83 @@
 import { Lifetime } from '../enums';
-import { InvalidImplementationError, ScopedSingletonRegistrationError } from '../errors';
-import type { ILifetimeBuilder, IServiceBuilder } from '../interfaces';
-import type { InstanceFactory, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, ServiceRegistration, SourceType } from '../types';
+import { InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
+import type { IAbstractServiceBuilder, INewableServiceBuilder } from '../interfaces';
+import type { InstanceFactory, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, SourceType } from '../types';
 
-export class ServiceBuilder<T extends SourceType> implements IServiceBuilder<T> {
-  private descriptor: ServiceDescriptor<T> | undefined;
+type AddService = (identifier: ServiceIdentifier<SourceType>, descriptor: ServiceDescriptor<SourceType>) => void;
+
+/**
+ * Concrete-first registration builder. `register(Impl)` builds one descriptor
+ * with a fresh identity token; each `.as()` / `.asSelf()` adds that same
+ * descriptor under a face, so all faces of one call share one instance. The
+ * builder implements both the newable and abstract surfaces; the newable /
+ * abstract split (and thus whether `asSelf` is offered) is made at the return
+ * type of `register`, not here.
+ */
+export class ServiceBuilder<T extends SourceType> implements INewableServiceBuilder<T>, IAbstractServiceBuilder<T> {
+  private readonly descriptor: ServiceDescriptor<T>;
+  private declaredIdentity = false;
 
   constructor(
-    private readonly identifiers: ServiceIdentifier<T>[],
+    private readonly implementation: ServiceImplementation<T>,
     private readonly isScoped: boolean,
-    private readonly addService: (identifier: ServiceIdentifier<T>, descriptor: ServiceDescriptor<T>) => void,
-  ) {}
+    private readonly addService: AddService,
+  ) {
+    this.descriptor = {
+      implementation,
+      cacheKey: Symbol(implementation.name),
+      lifetime: Lifetime.Resolve,
+      createInstance: () => new (implementation as ServiceImplementation<T>)(),
+      usesFactory: false,
+    };
+  }
 
-  public to(implementation: ServiceImplementation<T>): ILifetimeBuilder;
-  public to(implementation: ServiceIdentifier<T>, factory?: InstanceFactory<T>): ILifetimeBuilder;
-  public to(implementation: ServiceRegistration<T>, factory?: InstanceFactory<T> | undefined): ILifetimeBuilder {
-    if (implementation == null) {
-      throw new InvalidImplementationError<T>(this.identifiers[0]);
+  public get hasIdentity(): boolean {
+    return this.declaredIdentity;
+  }
+
+  public get registeredImplementation(): ServiceImplementation<T> {
+    return this.implementation;
+  }
+
+  public as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): this {
+    if (identifier == null) {
+      throw new InvalidServiceIdentifierError();
     }
-
-    this.descriptor = this.createDescriptor(factory, implementation);
-
-    for (const identifier of this.identifiers) {
-      this.addService(identifier, this.descriptor);
-    }
+    this.addFace(identifier as ServiceIdentifier<SourceType>);
     return this;
   }
 
-  private createDescriptor(factory: InstanceFactory<T> | undefined, implementation: ServiceRegistration<T>): ServiceDescriptor<T> {
-    return {
-      implementation,
-      cacheKey: factory ?? implementation,
-      lifetime: Lifetime.Resolve,
-      createInstance: factory ?? (() => new (implementation as ServiceImplementation<T>)()),
-    };
+  public asSelf(): this {
+    this.addFace(this.implementation as ServiceIdentifier<SourceType>);
+    return this;
+  }
+
+  public using(factory: InstanceFactory<T>): this {
+    this.descriptor.createInstance = factory;
+    this.descriptor.usesFactory = true;
+    return this;
   }
 
   public singleton(): this {
     if (this.isScoped) {
       throw new ScopedSingletonRegistrationError();
     }
-    this.ensureDescriptor().lifetime = Lifetime.Singleton;
+    this.descriptor.lifetime = Lifetime.Singleton;
     return this;
   }
 
   public scoped(): this {
-    this.ensureDescriptor().lifetime = Lifetime.Scoped;
+    this.descriptor.lifetime = Lifetime.Scoped;
     return this;
   }
 
   public transient(): this {
-    this.ensureDescriptor().lifetime = Lifetime.Transient;
+    this.descriptor.lifetime = Lifetime.Transient;
     return this;
   }
 
-  private ensureDescriptor(): ServiceDescriptor<T> {
-    if (!this.descriptor) {
-      throw new Error('Must call to() before setting lifetime');
-    }
-    return this.descriptor;
+  private addFace(identifier: ServiceIdentifier<SourceType>): void {
+    this.declaredIdentity = true;
+    this.addService(identifier, this.descriptor as ServiceDescriptor<SourceType>);
   }
 }

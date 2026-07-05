@@ -35,6 +35,9 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   private resolveInternal<T extends SourceType>(descriptor: ServiceDescriptor<T>, context: ResolutionContext, serviceIdentifier?: ServiceIdentifier<T>): T {
+    if (descriptor.forwardTarget != null) {
+      return this.resolve(descriptor.forwardTarget, context);
+    }
     const existing = context.getFromLifetime<T>(descriptor.cacheKey, descriptor.lifetime);
     if (existing != null) {
       return existing;
@@ -71,7 +74,7 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   private wrapDependencyResolutionError<T extends SourceType>(err: unknown, requestedIdentifier: ServiceIdentifier<T>, descriptor: ServiceDescriptor<T>, context: ResolutionContext): never {
-    if (err instanceof ServiceCreationError && err.identifier !== requestedIdentifier) {
+    if (descriptor.forwardTarget == null && err instanceof ServiceCreationError && err.identifier !== requestedIdentifier) {
       throw new ServiceCreationError(requestedIdentifier, err, descriptor.implementation);
     }
     throw err;
