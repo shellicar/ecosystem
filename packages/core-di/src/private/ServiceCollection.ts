@@ -9,9 +9,14 @@ import { getMetadata } from './metadata';
 import { ServiceBuilder } from './ServiceBuilder';
 import { ServiceProvider } from './ServiceProvider';
 
-/** One node of the dependency graph `validate()` derives by probe-construction. */
+/**
+ * One node of the dependency graph `validate()` derives. A probe-constructed
+ * class carries its declared `lifetime` and its `@dependsOn` edges; a forward
+ * carries an `undefined` lifetime (it has none of its own — resolving it is
+ * resolving the target) and a single edge to its target.
+ */
 type DependencyNode = {
-  readonly lifetime: Lifetime;
+  readonly lifetime: Lifetime | undefined;
   readonly deps: ServiceIdentifier<SourceType>[];
 };
 
@@ -115,17 +120,26 @@ export class ServiceCollection implements IServiceCollection {
    * touched. Construction records the edge without resolving it (the field
    * initializer only tags metadata), so a cyclic `@dependsOn` does not loop here.
    *
-   * Forwards have no implementation to probe; factory-built (`using()`)
+   * A forward is declared data, not an instance, so its edge (source → target)
+   * is added to the graph directly, without probe-construction — `Cycle` and
+   * `CaptiveDependency` traverse through it. Factory-built (`using()`)
    * registrations have opted out of declarative `@dependsOn` wiring and their
-   * factory is opaque user code that must not run at validate time — neither is
-   * probed or included in the graph.
+   * factory is opaque user code that must not run at validate time, so they are
+   * neither probed nor included in the graph.
    */
   private buildDependencyGraph(): Map<ServiceIdentifier<SourceType>, DependencyNode> {
     const graph = new Map<ServiceIdentifier<SourceType>, DependencyNode>();
     const probed = new Set<object>();
     for (const [identifier, descriptors] of this.services) {
       const descriptor = descriptors[descriptors.length - 1];
-      if (descriptor.forwardTarget != null || descriptor.usesFactory) {
+      // A forward carries no instance and no lifetime of its own — record its
+      // declared edge to the target so the walk passes through to the target.
+      if (descriptor.forwardTarget != null) {
+        graph.set(identifier, { lifetime: undefined, deps: [descriptor.forwardTarget] });
+        continue;
+      }
+      // A factory body is opaque and must not run at validate time.
+      if (descriptor.usesFactory) {
         continue;
       }
       const implementation = descriptor.implementation;
@@ -139,24 +153,44 @@ export class ServiceCollection implements IServiceCollection {
     return graph;
   }
 
-  // CaptiveDependency: a singleton that depends on a shorter-lived scoped service
-  // (the singleton would capture and outlive it).
+  // CaptiveDependency: a singleton that holds a shorter-lived scoped service
+  // anywhere in its dependency tree — matching MS-DI's ValidateScopes, which
+  // validates the whole resolution chain, not just direct dependencies. The walk
+  // follows @dependsOn and forward edges; a forward has no lifetime of its own,
+  // so the walk passes through it to the target. One problem per reachable scoped.
   private collectCaptiveDependencies(graph: Map<ServiceIdentifier<SourceType>, DependencyNode>, problems: ValidationProblem[]): void {
     for (const [identifier, node] of graph) {
       if (node.lifetime !== Lifetime.Singleton) {
         continue;
       }
-      for (const dep of node.deps) {
-        const depDescriptors = this.get(dep);
-        const depDescriptor = depDescriptors[depDescriptors.length - 1];
-        if (depDescriptor?.lifetime === Lifetime.Scoped) {
-          problems.push({
-            kind: ValidationProblemKind.CaptiveDependency,
-            message: `${identifier.name} (singleton) depends on ${dep.name} (scoped) — a captive dependency`,
-          });
-        }
+      for (const scoped of this.reachableScoped(identifier, graph)) {
+        problems.push({
+          kind: ValidationProblemKind.CaptiveDependency,
+          message: `${identifier.name} (singleton) captures ${scoped.name} (scoped) in its dependency tree — a captive dependency`,
+        });
       }
     }
+  }
+
+  // Every scoped service reachable from `start` through @dependsOn and forward
+  // edges (deduped). `seen` also guards the walk against cycles in the graph.
+  private reachableScoped(start: ServiceIdentifier<SourceType>, graph: Map<ServiceIdentifier<SourceType>, DependencyNode>): ServiceIdentifier<SourceType>[] {
+    const found: ServiceIdentifier<SourceType>[] = [];
+    const seen = new Set<ServiceIdentifier<SourceType>>([start]);
+    const walk = (current: ServiceIdentifier<SourceType>): void => {
+      for (const dep of graph.get(current)?.deps ?? []) {
+        if (seen.has(dep)) {
+          continue;
+        }
+        seen.add(dep);
+        if (graph.get(dep)?.lifetime === Lifetime.Scoped) {
+          found.push(dep);
+        }
+        walk(dep);
+      }
+    };
+    walk(start);
+    return found;
   }
 
   // Cycle: a dependency cycle over the graph. Reports one problem per distinct
