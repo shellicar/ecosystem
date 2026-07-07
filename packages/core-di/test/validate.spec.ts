@@ -124,6 +124,107 @@ describe('validate() as a diagnostic', () => {
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
+
+  it('reports a dependency cycle that runs through a declared-deps factory', () => {
+    abstract class IA {}
+    abstract class IB {}
+    class A implements IA {}
+    class B implements IB {
+      @dependsOn(IA) private readonly a!: IA;
+    }
+    const services = createServiceCollection();
+    // A is built by a declared-deps factory that declares IB; B @dependsOn IA.
+    // The factory's declared dep is a graph edge read statically (no probe),
+    // so the cycle IA -> IB -> IA is caught through the transparent factory.
+    services
+      .register(A)
+      .using([IB], (_b) => new A())
+      .as(IA);
+    services.register(B).as(IB);
+
+    const actual = services.validate().problems.map((p) => p.kind);
+
+    expect(actual).toEqual([ValidationProblemKind.Cycle]);
+  });
+
+  it('reports a transitive captive dependency through a declared-deps factory', () => {
+    abstract class IScopedLeaf {}
+    abstract class IMiddle {}
+    abstract class IRoot {}
+    class ScopedLeaf implements IScopedLeaf {}
+    class Middle implements IMiddle {
+      constructor(readonly leaf: IScopedLeaf) {}
+    }
+    class Root implements IRoot {
+      @dependsOn(IMiddle) private readonly middle!: IMiddle;
+    }
+    const services = createServiceCollection();
+    // Root (singleton) -> Middle (transient, declared-deps factory) -> ScopedLeaf.
+    // Middle is transient so it is not itself a captive; the capture is only
+    // reachable through the factory's declared dep edge.
+    services.register(ScopedLeaf).as(IScopedLeaf).scoped();
+    services
+      .register(Middle)
+      .using([IScopedLeaf], (leaf) => new Middle(leaf))
+      .as(IMiddle)
+      .transient();
+    services.register(Root).as(IRoot).singleton();
+
+    const actual = services.validate().problems.map((p) => p.kind);
+
+    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+  });
+
+  it('does not flag a scoped dependency hidden behind an opaque factory (the chain terminates)', () => {
+    abstract class IScopedThing {}
+    abstract class IOpaque {}
+    abstract class IHolder {}
+    class ScopedThing implements IScopedThing {}
+    class Opaque implements IOpaque {
+      constructor(readonly thing: IScopedThing) {}
+    }
+    class Holder implements IHolder {
+      @dependsOn(IOpaque) private readonly opaque!: IOpaque;
+    }
+    const services = createServiceCollection();
+    // The opaque factory's dependency on the scoped service is invisible, so the
+    // dependency chain terminates at the opaque node: the scoped service is not
+    // reached transitively.
+    services.register(ScopedThing).as(IScopedThing).scoped();
+    services
+      .register(Opaque)
+      .using((scope) => new Opaque(scope.resolve(IScopedThing)))
+      .as(IOpaque)
+      .singleton();
+    services.register(Holder).as(IHolder).singleton();
+
+    const actual = services.validate().valid;
+
+    expect(actual).toBe(true);
+  });
+
+  it('flags a singleton depending directly on an opaque scoped factory', () => {
+    abstract class IOpaqueScoped {}
+    abstract class IHolder {}
+    class OpaqueScoped implements IOpaqueScoped {}
+    class Holder implements IHolder {
+      @dependsOn(IOpaqueScoped) private readonly dep!: IOpaqueScoped;
+    }
+    const services = createServiceCollection();
+    // The opaque node carries its declared (scoped) lifetime, so a singleton
+    // holding it directly is still flagged — you just cannot see through it.
+    services
+      .register(OpaqueScoped)
+      .using(() => new OpaqueScoped())
+      .as(IOpaqueScoped)
+      .scoped();
+    services.register(Holder).as(IHolder).singleton();
+
+    const actual = services.validate().problems.map((p) => p.kind);
+
+    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+  });
+
 });
 
 describe('buildProvider validation', () => {

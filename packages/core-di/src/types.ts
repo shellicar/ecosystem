@@ -23,6 +23,14 @@ export type CacheKey<T extends SourceType> = ServiceRegistration<T> | InstanceFa
 
 export type InstanceFactory<T extends SourceType> = (x: IResolutionScope) => T;
 
+/** The instance type a service identifier resolves to. */
+export type ResolvedDep<I> = I extends ServiceIdentifier<infer T> ? T : never;
+/**
+ * The resolved instance types of a tuple of declared dependencies, in order.
+ * A declared-deps factory's parameters line up with this positionally.
+ */
+export type ResolvedDeps<D extends readonly unknown[]> = { [K in keyof D]: ResolvedDep<D[K]> };
+
 export type ServiceModuleType = Newable<IServiceModule>;
 
 /**
@@ -42,10 +50,17 @@ export type ServiceDescriptor<T extends SourceType> = {
   /**
    * Whether a user factory (`using()`) supplies the instance, rather than the
    * default zero-arg `new`. A factory-built registration has opted out of
-   * declarative `@dependsOn` wiring, so `validate()` neither probes it nor
-   * includes it in the dependency graph.
+   * declarative `@dependsOn` wiring, so `validate()` never probe-constructs it.
    */
   usesFactory?: boolean;
+  /**
+   * The dependencies declared by a `using([deps], factory)` registration. The
+   * container resolves them and hands them, positionally, to the factory. Being
+   * declared, they are the node's out-edges in `validate()`'s dependency graph —
+   * read statically, without probe-construction. Absent for the opaque
+   * `using(factory)` form (which terminates the chain) and for `@dependsOn` classes.
+   */
+  declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
 
 export type MetadataType<T extends SourceType> = Record<string | symbol, ServiceIdentifier<T>>;

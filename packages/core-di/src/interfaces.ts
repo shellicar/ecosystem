@@ -1,6 +1,6 @@
 import type { Lifetime } from './enums';
 import { ResolveMultipleMode } from './enums';
-import type { AbstractNewable, BuildProviderOptions, InstanceFactory, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationReport } from './types';
+import type { AbstractNewable, BuildProviderOptions, InstanceFactory, Newable, ResolvedDeps, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationReport } from './types';
 
 export abstract class IDisposable {
   public abstract [Symbol.dispose](): void;
@@ -94,7 +94,14 @@ export abstract class IServiceCollection {
 export abstract class INewableServiceBuilder<T extends SourceType> {
   public abstract as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): INewableServiceBuilder<T>;
   public abstract asSelf(): INewableServiceBuilder<T>;
+  /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
   public abstract using(factory: InstanceFactory<T>): INewableServiceBuilder<T>;
+  /**
+   * Supply a factory with declared dependencies. The container resolves `deps`
+   * and hands them, positionally, to `factory`. Because the deps are declared,
+   * the factory is transparent to `validate()`'s dependency graph.
+   */
+  public abstract using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): INewableServiceBuilder<T>;
   public abstract singleton(): INewableServiceBuilder<T>;
   public abstract scoped(): INewableServiceBuilder<T>;
   public abstract transient(): INewableServiceBuilder<T>;
@@ -109,7 +116,14 @@ export abstract class IAbstractServiceBuilder<T extends SourceType> {
   public abstract as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): IAbstractServiceBuilder<T>;
   // Once a factory supplies the instance, an abstract registration can be built
   // as itself, so `using()` returns the newable-flavoured builder (with asSelf).
+  /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
   public abstract using(factory: InstanceFactory<T>): INewableServiceBuilder<T>;
+  /**
+   * Supply a factory with declared dependencies. The container resolves `deps`
+   * and hands them, positionally, to `factory`. Because the deps are declared,
+   * the factory is transparent to `validate()`'s dependency graph.
+   */
+  public abstract using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): INewableServiceBuilder<T>;
   public abstract singleton(): IAbstractServiceBuilder<T>;
   public abstract scoped(): IAbstractServiceBuilder<T>;
   public abstract transient(): IAbstractServiceBuilder<T>;

@@ -1,7 +1,7 @@
 import { Lifetime } from '../enums';
 import { InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import type { IAbstractServiceBuilder, INewableServiceBuilder } from '../interfaces';
-import type { InstanceFactory, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, SourceType } from '../types';
+import type { InstanceFactory, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, SourceType } from '../types';
 
 type AddService = (identifier: ServiceIdentifier<SourceType>, descriptor: ServiceDescriptor<SourceType>) => void;
 
@@ -52,9 +52,24 @@ export class ServiceBuilder<T extends SourceType> implements INewableServiceBuil
     return this;
   }
 
-  public using(factory: InstanceFactory<T>): this {
-    this.descriptor.createInstance = factory;
+  public using(factory: InstanceFactory<T>): this;
+  public using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): this;
+  public using(depsOrFactory: InstanceFactory<T> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => T): this {
+    if (typeof depsOrFactory === 'function') {
+      // Opaque form: `using((scope) => Impl)`. Dependencies are not declared, so
+      // the factory is opaque and the graph chain terminates at this node.
+      this.descriptor.createInstance = depsOrFactory;
+      this.descriptor.usesFactory = true;
+      return this;
+    }
+    // Declared-deps form: `using([deps], factory)`. The container resolves each
+    // declared dep and hands them, positionally, to the factory. The declared
+    // deps are recorded so validate()'s graph reads them statically (no probe).
+    const deps = depsOrFactory;
+    const build = factory as (...args: SourceType[]) => T;
+    this.descriptor.createInstance = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
     this.descriptor.usesFactory = true;
+    this.descriptor.declaredDeps = deps;
     return this;
   }
 

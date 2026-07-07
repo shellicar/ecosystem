@@ -113,19 +113,21 @@ export class ServiceCollection implements IServiceCollection {
   }
 
   /**
-   * Derives the dependency graph by probe-construction. `@dependsOn` records an
-   * edge only when an instance is constructed, so each `@dependsOn`-wired class
-   * is constructed **once** to harvest its edges. The probe is read and
-   * discarded — never cached as a real instance, and no container state is
-   * touched. Construction records the edge without resolving it (the field
-   * initializer only tags metadata), so a cyclic `@dependsOn` does not loop here.
+   * Derives the one dependency graph `validate()` walks. Every registration is a
+   * node carrying its declared lifetime; what differs is a node's out-edges:
    *
-   * A forward is declared data, not an instance, so its edge (source → target)
-   * is added to the graph directly, without probe-construction — `Cycle` and
-   * `CaptiveDependency` traverse through it. Factory-built (`using()`)
-   * registrations have opted out of declarative `@dependsOn` wiring and their
-   * factory is opaque user code that must not run at validate time, so they are
-   * neither probed nor included in the graph.
+   * - `@dependsOn`-wired class — an edge is only recorded at construction, so
+   *   the class is probe-constructed **once** to harvest its edges. The probe is
+   *   read and discarded, never cached as a real instance, and no container
+   *   state is touched. The field initializer only tags metadata (it does not
+   *   resolve the dep), so a cyclic `@dependsOn` does not loop here.
+   * - `using([deps], factory)` — out-edges are the **declared deps**, read
+   *   statically. The factory body is never run at validate time.
+   * - `using(factory)` opaque — **no out-edges**; the chain terminates. The node
+   *   still carries its declared lifetime, so a singleton holding an opaque
+   *   scoped factory directly is still flagged — you just cannot see through it.
+   * - `forward(Token).to(Target)` — a single edge to the target (declared data,
+   *   no instance), so the walk passes through it. A forward carries no lifetime.
    */
   private buildDependencyGraph(): Map<ServiceIdentifier<SourceType>, DependencyNode> {
     const graph = new Map<ServiceIdentifier<SourceType>, DependencyNode>();
@@ -138,8 +140,11 @@ export class ServiceCollection implements IServiceCollection {
         graph.set(identifier, { lifetime: undefined, deps: [descriptor.forwardTarget] });
         continue;
       }
-      // A factory body is opaque and must not run at validate time.
+      // A factory is a node with its declared lifetime; its out-edges are its
+      // declared deps (transparent) or none (opaque — the chain terminates). The
+      // factory body itself is never run at validate time.
       if (descriptor.usesFactory) {
+        graph.set(identifier, { lifetime: descriptor.lifetime, deps: [...(descriptor.declaredDeps ?? [])] });
         continue;
       }
       const implementation = descriptor.implementation;
