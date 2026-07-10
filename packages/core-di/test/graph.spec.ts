@@ -45,9 +45,10 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
     register(services, ISvc, { implementation: Svc });
 
     const graph = deriveFacts(services);
-    const svcFacts = [...graph.values()].find((facts) => facts.owner === ISvc);
+    const expected = [IDep];
+    const actual = [...graph.values()].find((facts) => facts.owner === ISvc)?.deps;
 
-    expect(svcFacts?.deps).toEqual([IDep]);
+    expect(actual).toEqual(expected);
   });
 
   it('constructs nothing while deriving facts', () => {
@@ -84,9 +85,10 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
     register(services, IA, { implementation: A, usesFactory: true, declaredDeps: [IB] });
 
     const graph = deriveFacts(services);
-    const aFacts = [...graph.entries()].find(([, facts]) => facts.owner === IA)?.[1];
+    const expected = [IB];
+    const actual = [...graph.entries()].find(([, facts]) => facts.owner === IA)?.[1].deps;
 
-    expect(aFacts?.deps).toEqual([IB]);
+    expect(actual).toEqual(expected);
   });
 
   it('an opaque factory carries no out-edges but keeps its declared lifetime', () => {
@@ -124,9 +126,11 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
     register(services, IMulti, { implementation: Second });
 
     const graph = deriveFacts(services);
-    const owners = [...graph.values()].filter((facts) => facts.owner === IMulti);
+    const nodes = [...graph.keys()].filter((node) => graph.get(node)?.owner === IMulti);
+    const expected = [First, Second];
+    const actual = nodes.map((node) => node.implementation);
 
-    expect(owners.length).toBe(2);
+    expect(actual).toEqual(expected);
   });
 });
 
@@ -159,20 +163,19 @@ describe('topologicalOrder: deps-first order, zero construction', () => {
   it('orders every dependency before its dependent', () => {
     const graph = deriveFacts(makeServices());
 
-    const order = topologicalOrder(graph).map((node) => graph.get(node)?.owner);
+    const expected = [ID, IB, IC, IA];
+    const actual = topologicalOrder(graph).map((node) => graph.get(node)?.owner);
 
-    expect(order.indexOf(ID)).toBeLessThan(order.indexOf(IB));
-    expect(order.indexOf(ID)).toBeLessThan(order.indexOf(IC));
-    expect(order.indexOf(IB)).toBeLessThan(order.indexOf(IA));
-    expect(order.indexOf(IC)).toBeLessThan(order.indexOf(IA));
+    expect(actual).toEqual(expected);
   });
 
   it('visits the shared dependency exactly once', () => {
     const graph = deriveFacts(makeServices());
 
-    const order = topologicalOrder(graph).filter((node) => graph.get(node)?.owner === ID);
+    const expected = 1;
+    const actual = topologicalOrder(graph).filter((node) => graph.get(node)?.owner === ID).length;
 
-    expect(order.length).toBe(1);
+    expect(actual).toBe(expected);
   });
 });
 
@@ -220,9 +223,10 @@ describe('buildPlan: the deps-first plan for a token', () => {
     register(services, IMulti, { implementation: Second });
     const graph = deriveFacts(services);
 
-    const plan = buildPlan(graph, IMulti);
+    const expected = [First, Second];
+    const actual = buildPlan(graph, IMulti).map((node) => node.implementation);
 
-    expect(plan.length).toBe(2);
+    expect(actual).toEqual(expected);
   });
 });
 
@@ -242,8 +246,10 @@ describe('detectCycles: pure cycle detection over the graph', () => {
     const graph = deriveFacts(services);
 
     const cycles = detectCycles(graph);
+    const expected = [new Set([IA, IB])];
+    const actual = cycles.map((cycle) => new Set(cycle.map((node) => graph.get(node)?.owner)));
 
-    expect(cycles.length).toBe(1);
+    expect(actual).toEqual(expected);
   });
 
   it('finds a cycle that runs through a forward edge', () => {
@@ -263,8 +269,10 @@ describe('detectCycles: pure cycle detection over the graph', () => {
     const graph = deriveFacts(services);
 
     const cycles = detectCycles(graph);
+    const expected = [new Set([IAlpha, IBeta, IForwarded])];
+    const actual = cycles.map((cycle) => new Set(cycle.map((node) => graph.get(node)?.owner)));
 
-    expect(cycles.length).toBe(1);
+    expect(actual).toEqual(expected);
   });
 
   it('reports no cycles for an acyclic graph', () => {
@@ -310,16 +318,21 @@ describe('findUnregisteredEdges: structural detection of dangling deps', () => {
   it('reports an edge whose target has no registered node', () => {
     abstract class IMissing {}
     abstract class INeedy {}
+    abstract class IOther {}
+    class Other implements IOther {}
     class Needy implements INeedy {
       @dependsOn(IMissing) private readonly missing!: IMissing;
     }
     const services = createDescriptorMap();
+    register(services, IOther, { implementation: Other });
     register(services, INeedy, { implementation: Needy });
     const graph = deriveFacts(services);
 
-    const problems = findUnregisteredEdges(graph);
+    const needyNode = [...graph.keys()].find((node) => graph.get(node)?.owner === INeedy);
+    const expected = [{ from: needyNode, missing: IMissing }];
+    const actual = findUnregisteredEdges(graph);
 
-    expect(problems).toEqual([{ from: [...graph.keys()][0], missing: IMissing }]);
+    expect(actual).toEqual(expected);
   });
 
   it('reports nothing when every dependency resolves to a node', () => {
