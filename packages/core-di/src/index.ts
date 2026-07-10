@@ -1,3 +1,5 @@
+import './polyfill';
+
 export { createServiceCollection } from './createServiceCollection';
 export { DefaultServiceCollectionOptions } from './defaults';
 export { dependsOn } from './dependsOn';

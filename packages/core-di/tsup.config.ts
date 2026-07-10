@@ -5,7 +5,7 @@ const commonOptions = (config: Options) =>
     bundle: true,
     clean: true,
     dts: true,
-    entry: ['src/index.ts'],
+    entry: ['src/index.ts', 'src/dependsOn.ts', 'src/polyfill.ts'],
     esbuildOptions: (options) => {
       options.chunkNames = 'chunks/[name]-[hash]';
       options.entryNames = '[name]';

@@ -1,16 +1,35 @@
-import type { MetadataType, SourceType } from '../types';
+import '../polyfill';
+import type { MetadataType, ServiceIdentifier, SourceType } from '../types';
 
-const store = new WeakMap<object, Map<string, unknown>>();
+// The polyfill import above guarantees this is installed before this module
+// finishes evaluating. Capturing it as a symbol const (rather than reading
+// `Symbol.metadata` inline at each use) is required for tsc: without it, code
+// referencing `Symbol.metadata` passes vitest (the runtime value is there)
+// but fails tsc (the property is not declared on `SymbolConstructor` here).
+const MetadataKey: symbol = ((Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata'));
 
-export const getMetadata = <T extends SourceType>(key: string, obj: object): MetadataType<T> | undefined => {
-  return store.get(obj)?.get(key) as MetadataType<T> | undefined;
+type ClassMetadata = Record<string | symbol, unknown>;
+
+/** Read a class's own metadata record for `key`, off the class constructor — zero construction. */
+export const getMetadata = <T extends SourceType>(key: string, ctor: object): MetadataType<T> | undefined => {
+  return (ctor as unknown as Record<symbol, ClassMetadata | undefined>)[MetadataKey]?.[key] as MetadataType<T> | undefined;
 };
 
-export const defineMetadata = <T extends SourceType>(key: string, metadata: MetadataType<T>, obj: object) => {
-  let inner = store.get(obj);
-  if (inner === undefined) {
-    inner = new Map<string, unknown>();
-    store.set(obj, inner);
+/**
+ * Record one class field's dependency into a class field decorator's
+ * `ctx.metadata`, at class-definition time. `ctx.metadata` inherits
+ * prototypally from the parent class's metadata, so a subclass's first write
+ * must own-check `key` before mutating — otherwise it would mutate the
+ * parent's shared record instead of layering its own edges over it.
+ */
+export const tagFieldMetadata = <T extends SourceType>(key: string, meta: ClassMetadata | undefined, name: string | symbol, identifier: ServiceIdentifier<T>): void => {
+  if (meta === undefined) {
+    throw new Error('Symbol.metadata is not installed');
   }
-  inner.set(key, metadata);
+  const existing = meta[key] as MetadataType<T> | undefined;
+  if (existing === undefined || !Object.hasOwn(meta, key)) {
+    meta[key] = { ...existing };
+  }
+  (meta[key] as MetadataType<T>)[name] = identifier;
 };
+

@@ -37,8 +37,34 @@
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
       }
+    },
+    "./dependsOn": {
+      "require": {
+        "types": "./dist/cjs/dependsOn.d.cts",
+        "default": "./dist/cjs/dependsOn.cjs"
+      },
+      "import": {
+        "types": "./dist/esm/dependsOn.d.ts",
+        "default": "./dist/esm/dependsOn.js"
+      }
+    },
+    "./polyfill": {
+      "require": {
+        "types": "./dist/cjs/polyfill.d.cts",
+        "default": "./dist/cjs/polyfill.cjs"
+      },
+      "import": {
+        "types": "./dist/esm/polyfill.d.ts",
+        "default": "./dist/esm/polyfill.js"
+      }
     }
   },
+  "sideEffects": [
+    "./dist/esm/index.js",
+    "./dist/cjs/index.cjs",
+    "./dist/esm/polyfill.js",
+    "./dist/cjs/polyfill.cjs"
+  ],
   "files": [
     "dist",
     "*.md"
