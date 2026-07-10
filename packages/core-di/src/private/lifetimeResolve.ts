@@ -1,3 +1,4 @@
+import type { ServiceIdentifier, SourceType } from '../types';
 import type { LifetimeFeature } from './lifetimeContracts';
 
 /**
@@ -8,7 +9,7 @@ import type { LifetimeFeature } from './lifetimeContracts';
  */
 export const createResolveLifetime = (): LifetimeFeature => {
   const passKey = Symbol('pass');
-  const tables = new WeakMap<object, Map<object, unknown>>();
+  const tables = new WeakMap<object, Map<ServiceIdentifier<SourceType>, unknown>>();
   return {
     facts: { owner: 'pass' },
     contribute: (env) => ({ ...env, [passKey]: {} }),

@@ -1,3 +1,4 @@
+import type { ServiceIdentifier, SourceType } from '../types';
 import type { LifetimeFeature } from './lifetimeContracts';
 
 /**
@@ -6,7 +7,7 @@ import type { LifetimeFeature } from './lifetimeContracts';
  * life, so no boundary handle is needed at all.
  */
 export const createSingletonLifetime = (): LifetimeFeature => {
-  const table = new Map<object, unknown>();
+  const table = new Map<ServiceIdentifier<SourceType>, unknown>();
   return {
     facts: { owner: 'provider' },
     getInstance: (token, _env, build) => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ServiceIdentifier, SourceType } from '../src/types';
 import type { Env, Resolver } from '../src/private/lifetimeContracts';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
 
@@ -12,15 +13,17 @@ const makeCounter = () => {
 };
 
 const wrapResolver = (feature: ReturnType<typeof createScopedLifetime>['feature'], build: () => unknown): Resolver => ({
-  resolve<T>(token: object, extraEnv?: Env): T {
+  resolve<T extends SourceType>(token: ServiceIdentifier<T>, extraEnv?: Env): T {
     return feature.getInstance(token, extraEnv ?? {}, build) as T;
   },
 });
 
+abstract class IThing {}
+
 describe('createScopedLifetime', () => {
   it('throws when resolved with no scope handle in env', () => {
     const { feature } = createScopedLifetime();
-    const token = {};
+    const token = IThing;
     const { build } = makeCounter();
 
     const actual = () => feature.getInstance(token, {}, build);
@@ -30,7 +33,7 @@ describe('createScopedLifetime', () => {
 
   it('shares one instance across resolves within the same scope', () => {
     const { feature, createScope } = createScopedLifetime();
-    const token = {};
+    const token = IThing;
     const { build } = makeCounter();
     const scope = createScope(wrapResolver(feature, build));
 
@@ -42,7 +45,7 @@ describe('createScopedLifetime', () => {
 
   it('builds a fresh instance for a different scope', () => {
     const { feature, createScope } = createScopedLifetime();
-    const token = {};
+    const token = IThing;
     const { build, getCount } = makeCounter();
     const resolver = wrapResolver(feature, build);
     const scope1 = createScope(resolver);

@@ -1,8 +1,9 @@
+import type { ServiceIdentifier, SourceType } from '../types';
 import type { Env, LifetimeFeature, Resolver } from './lifetimeContracts';
 
 export type ScopedLifetime = {
   readonly feature: LifetimeFeature;
-  readonly createScope: (resolver: Resolver) => { resolve<T>(token: object): T };
+  readonly createScope: (resolver: Resolver) => { resolve<T extends SourceType>(token: ServiceIdentifier<T>): T };
 };
 
 /**
@@ -13,7 +14,7 @@ export type ScopedLifetime = {
  */
 export const createScopedLifetime = (): ScopedLifetime => {
   const scopeKey = Symbol('scope');
-  const tables = new WeakMap<object, Map<object, unknown>>();
+  const tables = new WeakMap<object, Map<ServiceIdentifier<SourceType>, unknown>>();
   const feature: LifetimeFeature = {
     facts: { owner: 'scope' },
     getInstance: (token, env, build) => {
@@ -35,7 +36,7 @@ export const createScopedLifetime = (): ScopedLifetime => {
   const createScope = (resolver: Resolver) => {
     const handle = {};
     const extraEnv: Env = { [scopeKey]: handle };
-    return { resolve: <T>(token: object): T => resolver.resolve<T>(token, extraEnv) };
+    return { resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolver.resolve<T>(token, extraEnv) };
   };
   return { feature, createScope };
 };

@@ -10,10 +10,12 @@ const makeCounter = () => {
   return { build, getCount: () => count };
 };
 
+abstract class IThing {}
+
 describe('createSingletonLifetime', () => {
   it('reuses the same instance for the same token', () => {
     const feature = createSingletonLifetime();
-    const token = {};
+    const token = IThing;
     const { build } = makeCounter();
 
     const expected = feature.getInstance(token, {}, build);
@@ -24,7 +26,7 @@ describe('createSingletonLifetime', () => {
 
   it('calls build exactly once for the same token', () => {
     const feature = createSingletonLifetime();
-    const token = {};
+    const token = IThing;
     const { build, getCount } = makeCounter();
     const expected = 1;
 
@@ -37,8 +39,9 @@ describe('createSingletonLifetime', () => {
 
   it('builds separately for two distinct tokens', () => {
     const feature = createSingletonLifetime();
-    const tokenA = {};
-    const tokenB = {};
+    abstract class IOther {}
+    const tokenA = IThing;
+    const tokenB = IOther;
     const { build, getCount } = makeCounter();
     const expected = 2;
 

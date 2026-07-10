@@ -7,6 +7,8 @@
  * feature removes them with it (decisions.md §8).
  */
 
+import type { ServiceIdentifier, SourceType } from '../types';
+
 /** A per-resolution bag of opaque handles, threaded down one resolve call. */
 export type Env = Readonly<Record<symbol, object>>;
 
@@ -20,7 +22,7 @@ export type LifetimeFeature = {
    * The feature's logic and storage: reuse a cached instance for `token`, or
    * call `build` and cache what it returns.
    */
-  readonly getInstance: (token: object, env: Env, build: BuildFn) => unknown;
+  readonly getInstance: (token: ServiceIdentifier<SourceType>, env: Env, build: BuildFn) => unknown;
   /**
    * Contribute a handle at the top-level resolve boundary. Called once per
    * top-level resolve — minting a fresh handle here is what gives a feature
@@ -31,5 +33,5 @@ export type LifetimeFeature = {
 
 /** The minimal resolver surface a feature may wrap (e.g. scoped's `createScope`). */
 export type Resolver = {
-  resolve<T>(token: object, extraEnv?: Env): T;
+  resolve<T extends SourceType>(token: ServiceIdentifier<T>, extraEnv?: Env): T;
 };

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Lifetime } from '../src/enums';
 import { createCollection } from '../src/private/composableBuilder';
 
 abstract class IThing {}
@@ -7,7 +8,7 @@ class Thing {}
 
 describe('createCollection: the composed set generates the verbs', () => {
   it('exposes a runtime verb for a composed lifetime', () => {
-    const services = createCollection(['singleton']);
+    const services = createCollection([Lifetime.Singleton]);
     const expected = 'function';
 
     const builder = services.register(Thing).as(IThing) as Record<string, unknown>;
@@ -17,7 +18,7 @@ describe('createCollection: the composed set generates the verbs', () => {
   });
 
   it('has no runtime verb for a lifetime that was not composed', () => {
-    const services = createCollection(['singleton']);
+    const services = createCollection([Lifetime.Singleton]);
 
     const builder = services.register(Thing).as(IThing) as Record<string, unknown>;
     const actual = builder.scoped;
@@ -26,7 +27,7 @@ describe('createCollection: the composed set generates the verbs', () => {
   });
 
   it('always exposes transient — the floor, not a composed member', () => {
-    const services = createCollection(['singleton']);
+    const services = createCollection([Lifetime.Singleton]);
     const expected = 'function';
 
     const builder = services.register(Thing).as(IThing) as Record<string, unknown>;
@@ -36,7 +37,7 @@ describe('createCollection: the composed set generates the verbs', () => {
   });
 
   it('rejects an uncomposed verb at compile time', () => {
-    const services = createCollection(['singleton']);
+    const services = createCollection([Lifetime.Singleton]);
 
     services
       .register(Thing)
@@ -46,7 +47,7 @@ describe('createCollection: the composed set generates the verbs', () => {
   });
 
   it('composing without a lifetime leaves the other composed verbs unaffected', () => {
-    const services = createCollection(['singleton', 'scoped']);
+    const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
     const expected = { singleton: 'function', scoped: 'function', resolve: 'undefined' };
 
     const builder = services.register(Thing).as(IThing) as Record<string, unknown>;
@@ -56,8 +57,8 @@ describe('createCollection: the composed set generates the verbs', () => {
   });
 
   it('records the chosen lifetime against the registered node', () => {
-    const services = createCollection(['singleton', 'scoped', 'resolve']);
-    const expected = 'scoped';
+    const services = createCollection([Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve]);
+    const expected = Lifetime.Scoped;
 
     services.register(Thing).as(IThing).scoped();
     const actual = services.regs.get(IThing)?.lifetime;
@@ -66,7 +67,7 @@ describe('createCollection: the composed set generates the verbs', () => {
   });
 
   it('shares one node across every face a single register() call declares', () => {
-    const services = createCollection(['singleton']);
+    const services = createCollection([Lifetime.Singleton]);
 
     services.register(Thing).as(IThing).as(IOther).singleton();
     const expected = services.regs.get(IThing);

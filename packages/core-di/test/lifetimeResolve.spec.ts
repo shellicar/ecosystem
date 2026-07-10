@@ -10,10 +10,12 @@ const makeCounter = () => {
   return { build, getCount: () => count };
 };
 
+abstract class IThing {}
+
 describe('createResolveLifetime', () => {
   it('throws when resolved with no pass handle in env', () => {
     const feature = createResolveLifetime();
-    const token = {};
+    const token = IThing;
     const { build } = makeCounter();
 
     const actual = () => feature.getInstance(token, {}, build);
@@ -23,7 +25,7 @@ describe('createResolveLifetime', () => {
 
   it('shares one instance within a single contributed pass', () => {
     const feature = createResolveLifetime();
-    const token = {};
+    const token = IThing;
     const { build } = makeCounter();
     const env = feature.contribute?.({}) ?? {};
 
@@ -35,7 +37,7 @@ describe('createResolveLifetime', () => {
 
   it('builds a fresh instance on the next contributed pass', () => {
     const feature = createResolveLifetime();
-    const token = {};
+    const token = IThing;
     const { build, getCount } = makeCounter();
     const passOne = feature.contribute?.({}) ?? {};
     const passTwo = feature.contribute?.({}) ?? {};
