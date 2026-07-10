@@ -29,7 +29,7 @@ import type { ServiceIdentifier, SourceType } from '../src/types';
 // V8 does not ship Symbol.metadata yet; must exist before any decorated class
 // is evaluated. In the real library this line lives in the dependsOn module,
 // so importing the decorator installs it — no consumer action needed.
-(Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata');
+const MetadataKey: symbol = ((Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata'));
 
 const DepsKey = Symbol.for('design:dependencies');
 
@@ -39,11 +39,17 @@ type DepsRecord = Record<string | symbol, ServiceIdentifier<SourceType>>;
 // depends-on-definition-time-experiment.spec.ts.
 const dependsOn = <T extends SourceType>(identifier: ServiceIdentifier<T>) => {
   return (_value: undefined, ctx: ClassFieldDecoratorContext): void => {
-    const existing = ctx.metadata[DepsKey] as DepsRecord | undefined;
-    if (existing === undefined || !Object.hasOwn(ctx.metadata, DepsKey)) {
-      ctx.metadata[DepsKey] = { ...existing };
+    // ctx.metadata is typed optional (undefined when Symbol.metadata is
+    // missing at class-evaluation time); the polyfill above guarantees it here.
+    const meta = ctx.metadata;
+    if (meta === undefined) {
+      throw new Error('Symbol.metadata is not installed');
     }
-    (ctx.metadata[DepsKey] as DepsRecord)[ctx.name] = identifier;
+    const existing = meta[DepsKey] as DepsRecord | undefined;
+    if (existing === undefined || !Object.hasOwn(meta, DepsKey)) {
+      meta[DepsKey] = { ...existing };
+    }
+    (meta[DepsKey] as DepsRecord)[ctx.name] = identifier;
   };
 };
 
@@ -54,12 +60,12 @@ type Node = { readonly impl: Impl; readonly lifetime: Lifetime };
 type OnConstruct = (name: string) => void;
 
 const getDeclaredDeps = (impl: Impl): Token[] => {
-  const record = (impl as { [Symbol.metadata]?: Record<symbol, unknown> })[Symbol.metadata]?.[DepsKey] as DepsRecord | undefined;
+  const record = (impl as unknown as Record<symbol, Record<symbol, unknown> | undefined>)[MetadataKey]?.[DepsKey] as DepsRecord | undefined;
   return Object.values(record ?? {}) as unknown as Token[];
 };
 
 const getDeclaredEdges = (impl: Impl): [string, Token][] => {
-  const record = (impl as { [Symbol.metadata]?: Record<symbol, unknown> })[Symbol.metadata]?.[DepsKey] as DepsRecord | undefined;
+  const record = (impl as unknown as Record<symbol, Record<symbol, unknown> | undefined>)[MetadataKey]?.[DepsKey] as DepsRecord | undefined;
   return Object.entries(record ?? {}) as unknown as [string, Token][];
 };
 

@@ -9,8 +9,9 @@ import type { Impl, Token } from './types';
 
 // V8 does not ship Symbol.metadata yet; must exist before any decorated class
 // is evaluated. In the real library this lives in the dependsOn module, so
-// importing the decorator installs it.
-(Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata');
+// importing the decorator installs it. Captured as a const because the lib
+// types do not declare Symbol.metadata.
+const MetadataKey: symbol = ((Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata'));
 
 const DepsKey = Symbol.for('design:dependencies');
 
@@ -18,15 +19,25 @@ type DepsRecord = Record<string | symbol, ServiceIdentifier<SourceType>>;
 
 export const dependsOn = <T extends SourceType>(identifier: ServiceIdentifier<T>) => {
   return (_value: undefined, ctx: ClassFieldDecoratorContext): void => {
-    const existing = ctx.metadata[DepsKey] as DepsRecord | undefined;
-    if (existing === undefined || !Object.hasOwn(ctx.metadata, DepsKey)) {
-      ctx.metadata[DepsKey] = { ...existing };
+    // ctx.metadata is typed optional because it is undefined when
+    // Symbol.metadata is missing at class-evaluation time; the polyfill
+    // above guarantees it here.
+    const meta = ctx.metadata;
+    if (meta === undefined) {
+      throw new Error('Symbol.metadata is not installed');
     }
-    (ctx.metadata[DepsKey] as DepsRecord)[ctx.name] = identifier;
+    const existing = meta[DepsKey] as DepsRecord | undefined;
+    // ctx.metadata inherits prototypically from the parent class's metadata.
+    // Own-check so a subclass gets its own record layered over the parent's
+    // rather than mutating the parent's edges.
+    if (existing === undefined || !Object.hasOwn(meta, DepsKey)) {
+      meta[DepsKey] = { ...existing };
+    }
+    (meta[DepsKey] as DepsRecord)[ctx.name] = identifier;
   };
 };
 
 export const getDeclaredEdges = (impl: Impl): [string, Token][] => {
-  const record = (impl as { [Symbol.metadata]?: Record<symbol, unknown> })[Symbol.metadata]?.[DepsKey] as DepsRecord | undefined;
+  const record = (impl as unknown as Record<symbol, Record<symbol, unknown> | undefined>)[MetadataKey]?.[DepsKey] as DepsRecord | undefined;
   return Object.entries(record ?? {}) as unknown as [string, Token][];
 };

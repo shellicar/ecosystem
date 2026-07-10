@@ -15,7 +15,7 @@ import type { ServiceIdentifier, SourceType } from '../src/types';
 
 // V8 does not ship Symbol.metadata yet; TS's emitted decorator plumbing
 // looks it up, so it must exist before any decorated class is evaluated.
-(Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata');
+const MetadataKey: symbol = ((Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata'));
 
 const DepsKey = Symbol.for('design:dependencies');
 
@@ -28,20 +28,26 @@ type DepsRecord = Record<string | symbol, ServiceIdentifier<SourceType>>;
  */
 const dependsOn = <T extends SourceType>(identifier: ServiceIdentifier<T>) => {
   return (_value: undefined, ctx: ClassFieldDecoratorContext): void => {
-    const existing = ctx.metadata[DepsKey] as DepsRecord | undefined;
+    // ctx.metadata is typed optional (undefined when Symbol.metadata is
+    // missing at class-evaluation time); the polyfill above guarantees it here.
+    const meta = ctx.metadata;
+    if (meta === undefined) {
+      throw new Error('Symbol.metadata is not installed');
+    }
+    const existing = meta[DepsKey] as DepsRecord | undefined;
     // ctx.metadata inherits prototypically from the parent class's metadata.
     // Own-check so a subclass gets its own record layered over the parent's
     // rather than mutating the parent's edges.
-    if (existing === undefined || !Object.hasOwn(ctx.metadata, DepsKey)) {
-      ctx.metadata[DepsKey] = { ...existing };
+    if (existing === undefined || !Object.hasOwn(meta, DepsKey)) {
+      meta[DepsKey] = { ...existing };
     }
-    (ctx.metadata[DepsKey] as DepsRecord)[ctx.name] = identifier;
+    (meta[DepsKey] as DepsRecord)[ctx.name] = identifier;
   };
 };
 
 /** Read a class's declared edges — no instance anywhere near this. */
 const getDeclaredDeps = (ctor: abstract new (...args: never[]) => unknown): DepsRecord | undefined => {
-  return (ctor as { [Symbol.metadata]?: Record<symbol, unknown> })[Symbol.metadata]?.[DepsKey] as DepsRecord | undefined;
+  return (ctor as unknown as Record<symbol, Record<symbol, unknown> | undefined>)[MetadataKey]?.[DepsKey] as DepsRecord | undefined;
 };
 
 // ---------------------------------------------------------------------------
