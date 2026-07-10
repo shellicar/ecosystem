@@ -181,6 +181,32 @@ export const topologicalOrder = (graph: Graph): GraphNode[] => {
 };
 
 /**
+ * Every node transitively reachable from `start` by following declared
+ * out-edges (deduped). Used by graph policies (e.g. captive-dependency
+ * checks) to walk a node's dependency tree without re-deriving edge lookups.
+ */
+export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
+  const index = indexByOwner(graph);
+  const found: GraphNode[] = [];
+  const seen = new Set<GraphNode>([start]);
+
+  const walk = (node: GraphNode): void => {
+    for (const dep of graph.get(node)?.deps ?? []) {
+      for (const depNode of index.get(dep) ?? []) {
+        if (seen.has(depNode)) {
+          continue;
+        }
+        seen.add(depNode);
+        found.push(depNode);
+        walk(depNode);
+      }
+    }
+  };
+  walk(start);
+  return found;
+};
+
+/**
  * The flat, deps-first plan a later engine executes by table lookup to
  * resolve `token`: every node registered under `token`, plus everything
  * transitively needed to construct them, in dependency order. A later engine
