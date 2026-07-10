@@ -1,4 +1,4 @@
-import type { Lifetime, LogLevel, ResolveMultipleMode, ValidationProblemKind } from './enums';
+import type { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, ValidationProblemKind } from './enums';
 import type { IResolutionScope, IServiceModule } from './interfaces';
 import type { ILogger } from './logger';
 import type { ConsoleLogger } from './private/consoleLogger';
@@ -82,6 +82,13 @@ export type ServiceCollectionOptions = {
    * @defaultValue {@link ConsoleLogger}
    */
   logger?: ILogger;
+  /**
+   * How captive dependencies (a singleton reaching a shorter-lived service) are
+   * reported by {@link IServiceCollection.validate}. The only configurable
+   * policy — the others always run.
+   * @default CaptivePolicy.Disposal
+   */
+  captivePolicy: CaptivePolicy;
 };
 
 /**

@@ -1,4 +1,4 @@
-import { Lifetime, ValidationProblemKind } from '../enums';
+import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
 import type { ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, type Graph, reachableFrom } from './graph';
 
@@ -63,6 +63,17 @@ export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !
 
 /** The MS-DI-style rule: flags only deps whose table is torn down before the singleton is — scope-owned deps. */
 export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped);
+
+/**
+ * Maps each {@link CaptivePolicy} option to its graph policy. Total over the
+ * enum, so a new enum member without an entry here is a compile error rather
+ * than a silent fall-through.
+ */
+export const captivePolicyFor: Record<CaptivePolicy, GraphPolicy> = {
+  [CaptivePolicy.Disposal]: disposalCaptive,
+  [CaptivePolicy.Strict]: strictCaptive,
+  [CaptivePolicy.None]: () => [],
+};
 
 /** Runs a composed set of graph policies and flattens their problems. */
 export const runGraphPolicies = (graph: Graph, policies: readonly GraphPolicy[]): ValidationProblem[] => policies.flatMap((policy) => policy(graph));

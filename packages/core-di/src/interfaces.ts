@@ -71,12 +71,12 @@ export abstract class IServiceCollection {
    * Runs the wiring diagnostics (intended for CI). Reports problems without
    * throwing; {@link buildProvider} stays lenient unless opted in.
    *
-   * To derive the dependency graph for the `Cycle` and `CaptiveDependency`
-   * checks, `validate()` **constructs each `@dependsOn`-wired registered class
-   * once** (an edge is only recorded at construction). Run it against a
-   * throwaway container (e.g. in CI), not one you rely on for lazy or single
-   * construction. Factory-built (`using()`) registrations are not constructed
-   * and are excluded from the graph checks.
+   * Reads the static dependency graph — declared `@dependsOn` edges, forward
+   * targets, and declared-deps factories — with no construction of any kind,
+   * so it is cheap to run anywhere, not just against a throwaway container.
+   * `Cycle` and `MissingTarget` always run; `CaptiveDependency` runs the policy
+   * chosen by {@link ServiceCollectionOptions.captivePolicy} (default
+   * {@link CaptivePolicy.Disposal}).
    */
   public abstract validate(): ValidationReport;
   public abstract registerModules(...modules: ServiceModuleType[]): void;

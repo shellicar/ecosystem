@@ -18,6 +18,12 @@ export enum ResolveMultipleMode {
   LastRegistered = 'LAST_REGISTERED',
 }
 
+export enum CaptivePolicy {
+  Disposal = 'DISPOSAL',
+  Strict = 'STRICT',
+  None = 'NONE',
+}
+
 export enum ValidationProblemKind {
   NoIdentity = 'NO_IDENTITY',
   MissingTarget = 'MISSING_TARGET',

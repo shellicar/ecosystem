@@ -5,7 +5,7 @@ import type { ILogger } from '../logger';
 import { type AbstractNewable, type BuildProviderOptions, createDescriptorMap, type DescriptorMap, type Newable, type ServiceCollectionOptions, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type ServiceModuleType, type SourceType, type ValidationProblem, type ValidationReport } from '../types';
 import { ForwardBuilder } from './ForwardBuilder';
 import { deriveFacts } from './graph';
-import { cyclePolicy, disposalCaptive, missingTargetPolicy, runGraphPolicies } from './policies';
+import { captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
 import { ServiceBuilder } from './ServiceBuilder';
 import { ServiceProvider } from './ServiceProvider';
 
@@ -70,7 +70,7 @@ export class ServiceCollection implements IServiceCollection {
     const problems: ValidationProblem[] = [];
     this.collectNoIdentity(problems);
     const graph = deriveFacts(this.services);
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, disposalCaptive]));
+    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, captivePolicyFor[this.options.captivePolicy]]));
     return { valid: problems.length === 0, problems };
   }
 
