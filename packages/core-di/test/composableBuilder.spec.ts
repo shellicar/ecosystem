@@ -4,6 +4,10 @@ import { createCollection } from '../src/private/composableBuilder';
 
 abstract class IThing {}
 abstract class IOther {}
+abstract class IShape {}
+abstract class IDistinguishable {
+  abstract distinguishingMember(): void;
+}
 class Thing {}
 
 describe('createCollection: the composed set generates the verbs', () => {
@@ -46,6 +50,15 @@ describe('createCollection: the composed set generates the verbs', () => {
       .scoped;
   });
 
+  it('rejects .as(Face) when the implementation does not satisfy it at compile time', () => {
+    const services = createCollection([Lifetime.Singleton]);
+
+    services
+      .register(Thing)
+      // @ts-expect-error - Thing has no distinguishingMember, so it does not satisfy IDistinguishable
+      .as(IDistinguishable);
+  });
+
   it('composing without a lifetime leaves the other composed verbs unaffected', () => {
     const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
     const expected = { singleton: 'function', scoped: 'function', resolve: 'undefined' };
@@ -76,3 +89,59 @@ describe('createCollection: the composed set generates the verbs', () => {
     expect(actual).toBe(expected);
   });
 });
+
+describe('createCollection: the builder carries the register-side surface', () => {
+  it('asSelf registers the implementation under its own token', () => {
+    const services = createCollection([Lifetime.Singleton]);
+    const expected = true;
+
+    services.register(Thing).asSelf();
+    const actual = services.regs.has(Thing);
+
+    expect(actual).toBe(expected);
+  });
+
+  it('rejects asSelf on an abstract registration at compile time', () => {
+    const services = createCollection([Lifetime.Singleton]);
+
+    services
+      .register(IShape)
+      // @ts-expect-error - IShape is abstract; an abstract registration has no asSelf
+      .asSelf;
+  });
+
+  it('using registers a factory on both a newable and an abstract registration', () => {
+    const services = createCollection([Lifetime.Singleton]);
+    const expected = { newable: true, abstract: true };
+
+    services.register(Thing).using(() => new Thing()).asSelf();
+    services.register(IShape).using(() => new Thing()).as(IShape);
+    const actual = {
+      newable: services.regs.get(Thing)?.usesFactory === true,
+      abstract: services.regs.get(IShape)?.usesFactory === true,
+    };
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('using on an abstract registration returns a newable-flavoured builder whose asSelf actually registers', () => {
+    const services = createCollection([Lifetime.Singleton]);
+    const expected = true;
+
+    services.register(IShape).using(() => new Thing()).asSelf();
+    const actual = services.regs.has(IShape);
+
+    expect(actual).toBe(expected);
+  });
+
+  it('lifetime verbs remain composed on the register-side surface', () => {
+    const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
+    const expected = Lifetime.Scoped;
+
+    services.register(Thing).asSelf().scoped();
+    const actual = services.regs.get(Thing)?.lifetime;
+
+    expect(actual).toBe(expected);
+  });
+});
+
