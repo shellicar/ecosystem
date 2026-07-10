@@ -1,17 +1,14 @@
+import type { LifetimeFeature } from './lifetimeContracts';
+
 /**
- * Layer 3 — the resolve lifetime. Depends on: types, contracts.
- *
- * The "pass" belongs HERE, not to the engine: this feature's contributor mints
- * a fresh handle at each top-level resolve boundary, and its policy keys its
- * storage on that handle. Compose this feature out and no pass handle is ever
+ * Resolve: one instance per top-level resolve ("pass"), fresh on the next.
+ * The contributor mints a fresh handle at each boundary; storage keys on
+ * that handle, so composing this feature out means no pass handle is ever
  * created anywhere.
  */
-import type { LifetimeFeature } from './contracts';
-import type { Token } from './types';
-
 export const createResolveLifetime = (): LifetimeFeature => {
   const passKey = Symbol('pass');
-  const tables = new WeakMap<object, Map<Token, unknown>>();
+  const tables = new WeakMap<object, Map<object, unknown>>();
   return {
     facts: { owner: 'pass' },
     contribute: (env) => ({ ...env, [passKey]: {} }),
