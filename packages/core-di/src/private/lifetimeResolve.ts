@@ -1,5 +1,4 @@
-import type { ServiceIdentifier, SourceType } from '../types';
-import type { LifetimeFeature } from './lifetimeContracts';
+import type { CacheKey, LifetimeFeature } from './lifetimeContracts';
 
 /**
  * Resolve: one instance per top-level resolve ("pass"), fresh on the next.
@@ -9,11 +8,11 @@ import type { LifetimeFeature } from './lifetimeContracts';
  */
 export const createResolveLifetime = (): LifetimeFeature => {
   const passKey = Symbol('pass');
-  const tables = new WeakMap<object, Map<ServiceIdentifier<SourceType>, unknown>>();
+  const tables = new WeakMap<object, Map<CacheKey, unknown>>();
   return {
     facts: { owner: 'pass' },
     contribute: (env) => ({ ...env, [passKey]: {} }),
-    getInstance: (token, env, build) => {
+    getInstance: (key, env, build) => {
       const handle = env[passKey];
       if (handle === undefined) {
         throw new Error('resolve lifetime: no pass handle in env');
@@ -23,10 +22,10 @@ export const createResolveLifetime = (): LifetimeFeature => {
         table = new Map();
         tables.set(handle, table);
       }
-      if (!table.has(token)) {
-        table.set(token, build());
+      if (!table.has(key)) {
+        table.set(key, build());
       }
-      return table.get(token);
+      return table.get(key);
     },
   };
 };

@@ -1,9 +1,16 @@
 import type { ServiceIdentifier, SourceType } from '../types';
-import type { Env, LifetimeFeature, Resolver } from './lifetimeContracts';
+import type { CacheKey, Env, LifetimeFeature, Resolver } from './lifetimeContracts';
 
 export type ScopedLifetime = {
   readonly feature: LifetimeFeature;
   readonly createScope: (resolver: Resolver) => { resolve<T extends SourceType>(token: ServiceIdentifier<T>): T };
+  /**
+   * Mint a fresh scope handle as an env fragment. The engine threads this as
+   * the base env of every resolve in the scope, so the scoped feature keys its
+   * table on it — one table per scope. This is the scope boundary as a value
+   * the engine can hold, alongside `createScope`'s bound-resolver form.
+   */
+  readonly beginScope: () => Env;
 };
 
 /**
@@ -14,10 +21,10 @@ export type ScopedLifetime = {
  */
 export const createScopedLifetime = (): ScopedLifetime => {
   const scopeKey = Symbol('scope');
-  const tables = new WeakMap<object, Map<ServiceIdentifier<SourceType>, unknown>>();
+  const tables = new WeakMap<object, Map<CacheKey, unknown>>();
   const feature: LifetimeFeature = {
     facts: { owner: 'scope' },
-    getInstance: (token, env, build) => {
+    getInstance: (key, env, build) => {
       const handle = env[scopeKey];
       if (handle === undefined) {
         throw new Error('scoped lifetime: resolution outside a scope');
@@ -27,10 +34,10 @@ export const createScopedLifetime = (): ScopedLifetime => {
         table = new Map();
         tables.set(handle, table);
       }
-      if (!table.has(token)) {
-        table.set(token, build());
+      if (!table.has(key)) {
+        table.set(key, build());
       }
-      return table.get(token);
+      return table.get(key);
     },
   };
   const createScope = (resolver: Resolver) => {
@@ -38,5 +45,6 @@ export const createScopedLifetime = (): ScopedLifetime => {
     const extraEnv: Env = { [scopeKey]: handle };
     return { resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolver.resolve<T>(token, extraEnv) };
   };
-  return { feature, createScope };
+  const beginScope = (): Env => ({ [scopeKey]: {} });
+  return { feature, createScope, beginScope };
 };

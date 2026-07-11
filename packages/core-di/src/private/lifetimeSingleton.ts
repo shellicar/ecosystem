@@ -1,5 +1,4 @@
-import type { ServiceIdentifier, SourceType } from '../types';
-import type { LifetimeFeature } from './lifetimeContracts';
+import type { CacheKey, LifetimeFeature } from './lifetimeContracts';
 
 /**
  * Singleton: one instance for the whole provider. Storage is a closure
@@ -7,14 +6,14 @@ import type { LifetimeFeature } from './lifetimeContracts';
  * life, so no boundary handle is needed at all.
  */
 export const createSingletonLifetime = (): LifetimeFeature => {
-  const table = new Map<ServiceIdentifier<SourceType>, unknown>();
+  const table = new Map<CacheKey, unknown>();
   return {
     facts: { owner: 'provider' },
-    getInstance: (token, _env, build) => {
-      if (!table.has(token)) {
-        table.set(token, build());
+    getInstance: (key, _env, build) => {
+      if (!table.has(key)) {
+        table.set(key, build());
       }
-      return table.get(token);
+      return table.get(key);
     },
   };
 };

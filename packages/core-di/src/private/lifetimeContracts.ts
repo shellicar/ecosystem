@@ -15,6 +15,13 @@ export type Env = Readonly<Record<symbol, object>>;
 /** Constructs the instance for a node that has no cached value to reuse yet. */
 export type BuildFn = () => unknown;
 
+/**
+ * What a feature caches an instance under. The engine keys on the graph node —
+ * one per registration, so two registrations sharing a token never collide in
+ * one cache slot — hence a bare object, not the shared service identifier.
+ */
+export type CacheKey = object;
+
 export type LifetimeFeature = {
   /** Read-only facts for graph policies (decisions.md §8). Never read by the engine itself. */
   readonly facts: { readonly owner: string };
@@ -22,7 +29,7 @@ export type LifetimeFeature = {
    * The feature's logic and storage: reuse a cached instance for `token`, or
    * call `build` and cache what it returns.
    */
-  readonly getInstance: (token: ServiceIdentifier<SourceType>, env: Env, build: BuildFn) => unknown;
+  readonly getInstance: (key: CacheKey, env: Env, build: BuildFn) => unknown;
   /**
    * Contribute a handle at the top-level resolve boundary. Called once per
    * top-level resolve — minting a fresh handle here is what gives a feature
