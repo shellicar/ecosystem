@@ -1,10 +1,11 @@
 import './polyfill';
 
-export { createServiceCollection } from './createServiceCollection';
+export { createServiceCollection, type CreateServiceCollectionOptions } from './createServiceCollection';
 export { DefaultServiceCollectionOptions } from './defaults';
 export { dependsOn } from './dependsOn';
 export { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, ValidationProblemKind } from './enums';
 export { CircularDependencyError, InvalidImplementationError, InvalidServiceIdentifierError, MultipleRegistrationError, ScopedSingletonRegistrationError, SelfDependencyError, ServiceCreationError, ServiceError, UnregisteredServiceError, ValidationError } from './errors';
-export { IAbstractServiceBuilder, IDisposable, IForwardBuilder, IForwardResult, INewableServiceBuilder, IResolutionScope, IScopedProvider, IServiceCollection, IServiceModule, IServiceProvider } from './interfaces';
+export { IAsyncDisposable, IDisposable, IForwardBuilder, IForwardResult, IResolutionScope, IScopedProvider, IServiceCollection, IServiceModule, IServiceProvider } from './interfaces';
+export type { IAbstractServiceBuilder, IAsyncServiceCollection, INewableServiceBuilder } from './interfaces';
 export { ILogger } from './logger';
-export type { AbstractNewable, BuildProviderOptions, InstanceFactory, MetadataType, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, ServiceModuleType, ServiceRegistration, SourceType, ValidationProblem, ValidationReport } from './types';
+export type { AbstractNewable, AsyncInstanceFactory, BuildProviderOptions, InstanceFactory, MetadataType, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, ServiceModuleType, ServiceRegistration, SourceType, ValidationProblem, ValidationReport } from './types';

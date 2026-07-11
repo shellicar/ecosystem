@@ -10,5 +10,5 @@ class Context implements IContext {
 }
 
 using scope = provider.createScope();
-scope.Services.register(IContext).to(Context);
+scope.Services.register(Context).as(IContext);
 const ctx = scope.resolve(IContext);

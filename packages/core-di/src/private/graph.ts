@@ -232,6 +232,12 @@ export type PlanStep =
       readonly kind: 'error';
       readonly token: ServiceIdentifier<SourceType>;
       readonly error: unknown;
+    }
+  | {
+      readonly kind: 'surface';
+      readonly token: ServiceIdentifier<SourceType>;
+      /** Which boundary's surface the token resolves to: the root, or the boundary resolving this plan. */
+      readonly at: 'root' | 'boundary';
     };
 
 /**
@@ -279,9 +285,22 @@ export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceT
  * this module free of lifetime interpretation: `lifetimeOf` yields a node's
  * effective lifetime (an un-verbed node resolves under the engine's
  * `defaultLifetime`), and `isCached` reports whether that lifetime is memoised
- * by a composed feature.
+ * by a composed feature. Two further engine-supplied hooks keep the module free
+ * of surface knowledge: `surfaceAt` names the tokens that resolve to a boundary
+ * surface rather than a registration (the self-tokens — emitted as `surface`
+ * steps, never constructed, never announced to disposal), and `guardToken`
+ * turns a token's registration multiplicity into a policy error (the
+ * `registrationMode` seam) held as an `error` step.
  */
-export const buildPlan = (graph: Graph, index: OwnerIndex, rootNode: GraphNode, lifetimeOf: (node: GraphNode) => Lifetime, isCached: (lifetime: Lifetime) => boolean): Plan => {
+export const buildPlan = (
+  graph: Graph,
+  index: OwnerIndex,
+  rootNode: GraphNode,
+  lifetimeOf: (node: GraphNode) => Lifetime,
+  isCached: (lifetime: Lifetime) => boolean,
+  surfaceAt?: (token: ServiceIdentifier<SourceType>) => 'root' | 'boundary' | undefined,
+  guardToken?: (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]) => unknown | undefined,
+): Plan => {
   const steps: PlanStep[] = [];
   const sharedSlot = new Map<GraphNode, number>();
 
@@ -293,6 +312,14 @@ export const buildPlan = (graph: Graph, index: OwnerIndex, rootNode: GraphNode, 
   };
 
   const emitToken = (identifier: ServiceIdentifier<SourceType>, path: ReadonlySet<GraphNode>): number => {
+    const at = surfaceAt?.(identifier);
+    if (at !== undefined) {
+      return push({ kind: 'surface', token: identifier, at });
+    }
+    const guardError = guardToken?.(identifier, index.get(identifier) ?? []);
+    if (guardError !== undefined) {
+      return push({ kind: 'error', token: identifier, error: guardError });
+    }
     const node = concreteNode(index, identifier);
     if (node === undefined) {
       return push({ kind: 'error', token: identifier, error: new UnregisteredServiceError(identifier) });

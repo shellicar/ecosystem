@@ -30,7 +30,7 @@ import { createServiceCollection } from '@shellicar/core-di';
 abstract class IAbstract {}
 class Concrete implements IAbstract {}
 const services = createServiceCollection();
-services.register(IAbstract).to(Concrete);
+services.register(Concrete).as(IAbstract);
 const provider = services.buildProvider();
 const svc = provider.resolve(IAbstract);
 ```
@@ -86,9 +86,9 @@ See [readme examples](../../examples/core-di/readme/src) for example source code
 ```ts
 const services = createServiceCollection();
 abstract class IAbstract { abstract method(): void; }
-abstract class Concrete {}
-services.register(IAbstract).to(Concrete);
-//                              ^ Error
+class Concrete {}
+services.register(Concrete).as(IAbstract);
+//                              ^ Error — Concrete does not implement IAbstract
 ```
 
 * Type-safe resolution.
@@ -102,13 +102,16 @@ const svc = provider.resolve(IMyService);
 * Provide factory methods for instantiating classes.
 
 ```ts
-services.register(Redis).to(Redis, x => {
-  const options = x.resolve(IRedisOptions);
-  return new Redis({
-    port: options.port,
-    host: options.host,
-  });
-});
+services
+  .register(Redis)
+  .using(x => {
+    const options = x.resolve(IRedisOptions);
+    return new Redis({
+      port: options.port,
+      host: options.host,
+    });
+  })
+  .asSelf();
 ```
 
 * Use property injection with decorators for simple dependency definition.
@@ -124,7 +127,7 @@ class Service implements IService {
 * Define instance lifetime with simple builder pattern.
 
 ```ts
-services.register(IAbstract).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract).singleton();
 ```
 
 * Create scopes to allow "per-request" lifetimes.
@@ -139,13 +142,13 @@ using scope = provider.createScope();
 
 ```ts
 using scope = provider.createScope();
-scope.Services.register(IContext).to(Context);
+scope.Services.register(Context).as(IContext);
 ```
 
 * Multiple registrations
 
 ```ts
-services.register(IAbstract1, IAbstract2).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract1).as(IAbstract2).singleton();
 const provider = services.buildProvider();
 provider.resolve(IAbstract1) === provider.resolve(IAbstract2);
 ```
@@ -155,9 +158,9 @@ provider.resolve(IAbstract1) === provider.resolve(IAbstract2);
 ```ts
 import { ok } from 'node:assert/strict';
 const services = createServiceCollection({ registrationMode: ResolveMultipleMode.LastRegistered });
-services.register(IOptions).to(Options);
+services.register(Options).as(IOptions);
 // Later
-services.register(IOptions).to(MockOptions);
+services.register(MockOptions).as(IOptions);
 const provider = services.buildProvider();
 const options = provider.resolve(IOptions);
 ok(options instanceof MockOptions);
@@ -167,9 +170,11 @@ ok(options instanceof MockOptions);
 
 ```ts
 const services = createServiceCollection({ logLevel: LogLevel.Debug });
-services.register(IAbstract).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract).singleton();
+// Pre-build only: the provider derives its plans at buildProvider(),
+// so overriding after building throws.
+services.overrideLifetime(IAbstract, Lifetime.Transient);
 const provider = services.buildProvider();
-provider.Services.overrideLifetime(IAbstract, Lifetime.Transient);
 provider.resolve(IAbstract) !== provider.resolve(IAbstract);
 ```
 
@@ -195,7 +200,7 @@ class Concrete extends IAbstract {}
 
 class MyModule implements IServiceModule {
   public registerServices(services: IServiceCollection): void {
-    services.register(IAbstract).to(Concrete);
+    services.register(Concrete).as(IAbstract);
   }
 }
 
@@ -238,14 +243,14 @@ class DatePrinter implements IDatePrinter {
 
 class TimeModule extends IServiceModule {
   public registerServices(services: IServiceCollection): void {
-    services.register(IClock).to(DefaultClock).singleton();
-    services.register(IDatePrinter).to(DatePrinter).scoped();
+    services.register(DefaultClock).as(IClock).singleton();
+    services.register(DatePrinter).as(IDatePrinter).scoped();
   }
 }
 
 // Register and build provider
 const services = createServiceCollection();
-services.registerModules([TimeModule]);
+services.registerModules(TimeModule);
 const sp = services.buildProvider();
 
 // Optionally create a scope

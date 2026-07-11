@@ -4,7 +4,7 @@ import { Concrete, IAbstract } from './helpers/examples';
 
 const services = createServiceCollection();
 
-services.register(IAbstract).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract).singleton();
 const provider = services.buildProvider();
 const svc1 = provider.resolve(IAbstract);
 const svc2 = provider.resolve(IAbstract);

@@ -147,8 +147,6 @@ export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) ex
 
 export type EnsureObject<T> = T extends object ? T : never;
 
-export type RegistrationMap<T extends SourceType = any> = Map<CacheKey<T>, T>;
-
 /**
  * A phantom brand recording whether a descriptor map came from an async
  * collection (decisions.md §8). It exists only in the type system — never at
@@ -167,10 +165,6 @@ declare const asyncBrand: unique symbol;
  */
 export type DescriptorMap<T extends SourceType = any, Async extends boolean = false> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]> & {
   readonly [asyncBrand]?: Async;
-};
-
-export const createRegistrationMap = <T extends SourceType = any>(): RegistrationMap<T> => {
-  return new Map<CacheKey<T>, T>();
 };
 
 export const createDescriptorMap = <T extends SourceType = any>(): DescriptorMap<T> => {

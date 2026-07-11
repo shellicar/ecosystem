@@ -5,7 +5,7 @@ const services = createServiceCollection();
 
 class MyModule implements IServiceModule {
   public registerServices(services: IServiceCollection): void {
-    services.register(IAbstract).to(Concrete);
+    services.register(Concrete).as(IAbstract);
   }
 }
 

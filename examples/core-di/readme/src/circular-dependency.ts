@@ -34,7 +34,7 @@ class ServiceB implements IServiceB {
 // Self-dependency throws SelfDependencyError
 {
   const services = createServiceCollection();
-  services.register(ISelfDep).to(SelfDep);
+  services.register(SelfDep).as(ISelfDep);
   const provider = services.buildProvider();
   try {
     provider.resolve(ISelfDep);
@@ -49,8 +49,8 @@ class ServiceB implements IServiceB {
 // Circular dependency throws CircularDependencyError
 {
   const services = createServiceCollection();
-  services.register(IServiceA).to(ServiceA);
-  services.register(IServiceB).to(ServiceB);
+  services.register(ServiceA).as(IServiceA);
+  services.register(ServiceB).as(IServiceB);
   const provider = services.buildProvider();
   try {
     provider.resolve(IServiceA);
@@ -65,8 +65,8 @@ class ServiceB implements IServiceB {
 // Both errors extend ServiceError for catch-all handling
 {
   const services = createServiceCollection();
-  services.register(IServiceA).to(ServiceA);
-  services.register(IServiceB).to(ServiceB);
+  services.register(ServiceA).as(IServiceA);
+  services.register(ServiceB).as(IServiceB);
   const provider = services.buildProvider();
   try {
     provider.resolve(IServiceA);

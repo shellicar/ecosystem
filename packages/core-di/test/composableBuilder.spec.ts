@@ -74,7 +74,7 @@ describe('createCollection: the composed set generates the verbs', () => {
     const expected = Lifetime.Scoped;
 
     services.register(Thing).as(IThing).scoped();
-    const actual = services.regs.get(IThing)?.lifetime;
+    const actual = services.regs.get(IThing)?.[0]?.lifetime;
 
     expect(actual).toBe(expected);
   });
@@ -83,8 +83,8 @@ describe('createCollection: the composed set generates the verbs', () => {
     const services = createCollection([Lifetime.Singleton]);
 
     services.register(Thing).as(IThing).as(IOther).singleton();
-    const expected = services.regs.get(IThing);
-    const actual = services.regs.get(IOther);
+    const expected = services.regs.get(IThing)?.[0];
+    const actual = services.regs.get(IOther)?.[0];
 
     expect(actual).toBe(expected);
   });
@@ -117,8 +117,8 @@ describe('createCollection: the builder carries the register-side surface', () =
     services.register(Thing).using(() => new Thing()).asSelf();
     services.register(IShape).using(() => new Thing()).as(IShape);
     const actual = {
-      newable: services.regs.get(Thing)?.usesFactory === true,
-      abstract: services.regs.get(IShape)?.usesFactory === true,
+      newable: services.regs.get(Thing)?.[0]?.usesFactory === true,
+      abstract: services.regs.get(IShape)?.[0]?.usesFactory === true,
     };
 
     expect(actual).toEqual(expected);
@@ -139,7 +139,7 @@ describe('createCollection: the builder carries the register-side surface', () =
     const expected = Lifetime.Scoped;
 
     services.register(Thing).asSelf().scoped();
-    const actual = services.regs.get(Thing)?.lifetime;
+    const actual = services.regs.get(Thing)?.[0]?.lifetime;
 
     expect(actual).toBe(expected);
   });
@@ -156,7 +156,7 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
     const expected = true;
 
     services.register(Thing).asSelf().singleton().eager();
-    const actual = services.regs.get(Thing)?.eager;
+    const actual = services.regs.get(Thing)?.[0]?.eager;
 
     expect(actual).toBe(expected);
   });
@@ -166,7 +166,7 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
     const expected = true;
 
     services.register(Thing).singleton().asSelf().eager();
-    const actual = services.regs.get(Thing)?.eager;
+    const actual = services.regs.get(Thing)?.[0]?.eager;
 
     expect(actual).toBe(expected);
   });
@@ -175,7 +175,7 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
     const services = createCollection([Lifetime.Singleton]);
 
     services.register(Thing).asSelf().singleton();
-    const actual = services.regs.get(Thing)?.eager;
+    const actual = services.regs.get(Thing)?.[0]?.eager;
 
     expect(actual).toBeUndefined();
   });
@@ -255,7 +255,7 @@ describe('createCollection: usingAsync declares async intent at the call site', 
       .usingAsync(async () => new Resource())
       .asSelf()
       .singleton();
-    const actual = services.regs.get(Resource)?.isAsync;
+    const actual = services.regs.get(Resource)?.[0]?.isAsync;
 
     expect(actual).toBe(expected);
   });
@@ -268,7 +268,7 @@ describe('createCollection: usingAsync declares async intent at the call site', 
       .register(Resource)
       .usingAsync(async () => new Resource())
       .asSelf();
-    const actual = services.regs.get(Resource)?.usesFactory;
+    const actual = services.regs.get(Resource)?.[0]?.usesFactory;
 
     expect(actual).toBe(expected);
   });
@@ -281,7 +281,7 @@ describe('createCollection: usingAsync declares async intent at the call site', 
       .register(Widget)
       .usingAsync([IResource], async (_resource: IResource) => new Widget())
       .asSelf();
-    const actual = services.regs.get(Widget)?.declaredDeps;
+    const actual = services.regs.get(Widget)?.[0]?.declaredDeps;
 
     expect(actual).toEqual(expected);
   });

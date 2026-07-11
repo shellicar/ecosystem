@@ -1,4 +1,3 @@
-import { Lifetime } from '../enums';
 import { InvalidServiceIdentifierError } from '../errors';
 import type { IForwardBuilder, IForwardResult } from '../interfaces';
 import type { ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
@@ -37,10 +36,11 @@ export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S> 
     if (target == null) {
       throw new InvalidServiceIdentifierError();
     }
+    // No lifetime: a forward is a pure redirect, and the engine resolves the
+    // target's own registration — this descriptor's lifetime is never read.
     const descriptor: ServiceDescriptor<SourceType> = {
       implementation: this.source,
       cacheKey: Symbol(`forward:${this.source.name}`),
-      lifetime: Lifetime.Resolve,
       createInstance: (scope) => scope.resolve(target),
       forwardTarget: target,
     };
