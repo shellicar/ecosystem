@@ -8,16 +8,17 @@ import { createDescriptorMap, type DescriptorMap, type ServiceDescriptor, type S
 // graph — the same off-container discipline as the other graph policies. Wiring
 // it into the composed validate() set is Phase 17.
 
-// The policy is purely static: it reads only facts.isAsync and facts.lifetime,
-// never the factory body — so a plain sync createInstance with isAsync flagged
-// models an async registration faithfully for this test.
+// The policy is purely static: it reads only facts.isAsync and facts.lifetime.
+// facts.isAsync is DERIVED from the presence of createInstanceAsync (decisions.md
+// §8), so an async registration is modelled by populating that field — an async
+// factory here need only be shaped like one (returns a Promise); it is never run.
 const asyncDescriptor = <T extends SourceType>(implementation: ServiceImplementation<T>, lifetime?: Lifetime): ServiceDescriptor<T> => ({
   implementation,
   cacheKey: Symbol(implementation.name),
   lifetime,
   createInstance: () => new implementation(),
+  createInstanceAsync: async () => new implementation(),
   usesFactory: true,
-  isAsync: true,
 });
 
 const syncDescriptor = <T extends SourceType>(implementation: ServiceImplementation<T>, lifetime?: Lifetime): ServiceDescriptor<T> => ({
@@ -26,7 +27,6 @@ const syncDescriptor = <T extends SourceType>(implementation: ServiceImplementat
   lifetime,
   createInstance: () => new implementation(),
   usesFactory: true,
-  isAsync: false,
 });
 
 const mapOf = (...entries: readonly [ServiceIdentifier<SourceType>, ServiceDescriptor<SourceType>][]): DescriptorMap => {

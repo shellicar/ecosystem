@@ -246,18 +246,34 @@ describe('createCollection: usingAsync exists only on an async collection (decis
 });
 
 describe('createCollection: usingAsync declares async intent at the call site', () => {
-  it('records the registration as async', () => {
+  it('lands the async factory on its own createInstanceAsync field', () => {
     const services = createCollection([Lifetime.Singleton], { async: true });
-    const expected = true;
+    const expected = 'function';
 
     services
       .register(Resource)
       .usingAsync(async () => new Resource())
       .asSelf()
       .singleton();
-    const actual = services.regs.get(Resource)?.[0]?.isAsync;
+    const actual = typeof services.regs.get(Resource)?.[0]?.createInstanceAsync;
 
     expect(actual).toBe(expected);
+  });
+
+  // The field split (decisions.md §8): the async factory has its OWN field, so it
+  // cannot occupy the sync createInstance slot — the sync execution path reads
+  // createInstance alone and could never cache a returned Promise.
+  it('leaves createInstance the default sync factory when an async factory is supplied', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+    const asyncFactory = async () => new Resource();
+
+    services
+      .register(Resource)
+      .usingAsync(asyncFactory)
+      .asSelf();
+    const actual = services.regs.get(Resource)?.[0]?.createInstance;
+
+    expect(actual).not.toBe(asyncFactory);
   });
 
   it('records the registration as a factory', () => {

@@ -67,13 +67,18 @@ export type ServiceDescriptor<T extends SourceType> = {
    */
   usesFactory?: boolean;
   /**
-   * Whether the factory is async (`usingAsync`) — it returns a `Promise<T>` whose
-   * instance is awaited at the build boundary (`buildProviderAsync`), in
-   * topological order, so a later synchronous `resolve()` reads the settled
-   * instance. Only a singleton can be pre-baked this way; an async factory
-   * reachable through a sync path is a `validate()` problem (decisions.md §8).
+   * The async factory (`usingAsync`) supplying this registration's instance: it
+   * returns a `Promise<T>` awaited at the build boundary (`buildProviderAsync`),
+   * in topological order, so a later synchronous `resolve()` reads the settled
+   * instance. It lives on its own field, physically separate from the sync
+   * `createInstance`, so an async factory has no path into the sync slot: the
+   * sync execution path reads `createInstance` alone and can never cache a
+   * `Promise` (decisions.md §8). Async-ness is *derived* from this field's
+   * presence (`createInstanceAsync != null`), never hand-set. Only a singleton
+   * is pre-baked this way; an async factory reachable through a sync path is a
+   * `validate()` problem.
    */
-  isAsync?: boolean;
+  createInstanceAsync?: AsyncInstanceFactory<T>;
   /**
    * Whether this registration constructs at build (`.eager()`) rather than
    * lazily at first resolve (decisions.md §8). Eager is a *choice*, distinct
@@ -161,7 +166,7 @@ declare const asyncBrand: unique symbol;
  * async-branded map is a type error against it and the consumer is pushed to
  * `buildEngineAsync` (decisions.md §8). A hand-built {@link createDescriptorMap}
  * is sync-branded and so slips past this at the type level — which is why the
- * engine also refuses an `isAsync` node at build, a runtime backstop.
+ * engine also refuses an async-factory node at build, a runtime backstop.
  */
 export type DescriptorMap<T extends SourceType = any, Async extends boolean = false> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]> & {
   readonly [asyncBrand]?: Async;

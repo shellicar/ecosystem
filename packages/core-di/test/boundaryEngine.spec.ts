@@ -7,7 +7,7 @@ import { createDisposal } from '../src/private/disposal';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
-import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '../src/types';
+import { type AsyncInstanceFactory, createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '../src/types';
 
 // The engine is proven standalone, against hand-built descriptor maps and the
 // Phase 12 lifetime features — the same off-container discipline as graph.ts
@@ -23,7 +23,7 @@ const composition = (): EngineComposition => ({
 type DescriptorOptions<T extends SourceType> = {
   readonly lifetime?: Lifetime;
   readonly factory?: InstanceFactory<T>;
-  readonly isAsync?: boolean;
+  readonly asyncFactory?: AsyncInstanceFactory<T>;
   readonly eager?: boolean;
   readonly declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
@@ -36,8 +36,8 @@ const descriptor = <T extends SourceType>(implementation: ServiceImplementation<
   cacheKey: Symbol(implementation.name),
   lifetime: options.lifetime,
   createInstance: options.factory ?? (() => new implementation()),
-  usesFactory: options.factory != null,
-  isAsync: options.isAsync,
+  createInstanceAsync: options.asyncFactory,
+  usesFactory: options.factory != null || options.asyncFactory != null,
   eager: options.eager,
   declaredDeps: options.declaredDeps,
 });
@@ -715,8 +715,8 @@ describe('boundaryEngine: async at the build boundary — buildEngineAsync (deci
   abstract class IAsyncHolder {}
   class AsyncHolder implements IAsyncHolder {}
 
-  const asyncSingleton = () => descriptor(AsyncResource, { lifetime: Lifetime.Singleton, isAsync: true, factory: () => Promise.resolve(new AsyncResource()) });
-  const rejectingSingleton = () => descriptor(AsyncResource, { lifetime: Lifetime.Singleton, isAsync: true, factory: () => Promise.reject(new Error('async boom')) });
+  const asyncSingleton = () => descriptor(AsyncResource, { lifetime: Lifetime.Singleton, asyncFactory: () => Promise.resolve(new AsyncResource()) });
+  const rejectingSingleton = () => descriptor(AsyncResource, { lifetime: Lifetime.Singleton, asyncFactory: () => Promise.reject(new Error('async boom')) });
 
   it('awaits an async singleton factory so a synchronous resolve returns the settled instance', async () => {
     const engine = await buildEngineAsync(mapOf([IAsyncResource, asyncSingleton()]), composition());
@@ -749,8 +749,7 @@ describe('boundaryEngine: async at the build boundary — buildEngineAsync (deci
     let captured: unknown;
     const holder = descriptor(AsyncHolder, {
       lifetime: Lifetime.Singleton,
-      isAsync: true,
-      factory: (scope) => {
+      asyncFactory: (scope) => {
         captured = scope.resolve(ISyncDep);
         return Promise.resolve(new AsyncHolder());
       },
@@ -812,7 +811,7 @@ describe('boundaryEngine: async at the build boundary — buildEngineAsync (deci
   });
 
   // The sync build boundary refuses an async factory outright (decisions.md §8): a raw
-  // DescriptorMap can carry an isAsync node past the type-level guard, so the engine
+  // DescriptorMap can carry an async-factory node past the type-level guard, so the engine
   // backstops it at build, naming the token and pointing to the async builder.
   it('refuses an async singleton at build under the synchronous buildEngine', () => {
     const actual = () => buildEngine(mapOf([IAsyncResource, asyncSingleton()]), composition());

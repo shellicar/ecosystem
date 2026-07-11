@@ -238,20 +238,20 @@ export const createCollection = <const L extends ComposableLifetime, const Async
       // flag the collection type is marked with, so runtime and type cannot disagree.
       builder.usingAsync = (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => {
         if (typeof depsOrFactory === 'function') {
-          // Opaque async form: `usingAsync((scope) => Promise<Impl>)`. Awaited at
-          // the build boundary; the graph chain terminates at this node.
-          node.createInstance = depsOrFactory;
+          // Opaque async form: `usingAsync((scope) => Promise<Impl>)`. The async
+          // factory lands on its own field, physically apart from the sync
+          // `createInstance`, so it can never occupy the sync slot (decisions.md
+          // §8). Awaited at the build boundary; the graph chain terminates here.
+          node.createInstanceAsync = depsOrFactory;
           node.usesFactory = true;
-          node.isAsync = true;
           return builder;
         }
         // Declared-deps async form: `usingAsync([deps], asyncFactory)`. Each dep is
         // resolved synchronously and handed, positionally, to the async factory.
         const deps = depsOrFactory;
         const build = factory as (...args: SourceType[]) => Promise<SourceType>;
-        node.createInstance = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
+        node.createInstanceAsync = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
         node.usesFactory = true;
-        node.isAsync = true;
         node.declaredDeps = deps;
         return builder;
       };

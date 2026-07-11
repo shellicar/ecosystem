@@ -68,7 +68,7 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
         graph.set(descriptor, { ...existing, owner, owners: [...existing.owners, owner] });
         continue;
       }
-      const isAsync = descriptor.isAsync === true;
+      const isAsync = descriptor.createInstanceAsync != null;
       if (descriptor.forwardTarget != null) {
         graph.set(descriptor, { lifetime: undefined, owner, owners: [owner], deps: [descriptor.forwardTarget], isAsync });
         continue;

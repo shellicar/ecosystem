@@ -1,10 +1,21 @@
 import { Lifetime, ResolveMultipleMode } from '../enums';
 import { MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
-import type { DescriptorMap, ServiceDescriptor, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
+import type { AsyncInstanceFactory, DescriptorMap, ServiceDescriptor, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { buildPlan, concreteNode, deriveFacts, followForward, type Graph, type GraphNode, indexByOwner, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import type { Env, LifetimeFeature } from './lifetimeContracts';
 import type { ScopedLifetime } from './lifetimeScoped';
+
+/** A node whose instance comes from an async factory (`usingAsync`) — its own field, physically apart from the sync `createInstance` (decisions.md §8). */
+type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceType> };
+
+/**
+ * Whether a node is async — *derived* from the presence of its async factory
+ * field, never a hand-set flag (decisions.md §8). The narrowing return type lets
+ * the async build path read `createInstanceAsync` without a cast: the sync path
+ * reads only `createInstance`, so an async factory is structurally unreachable there.
+ */
+const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
 
 /**
  * The lifetime features an engine composes (decisions.md §8). Each is
@@ -353,7 +364,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
    * (decisions.md §8). Eager on a non-singleton has no build-time boundary to hold
    * it, so nothing is pre-baked for it.
    */
-  const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (node.eager === true || node.isAsync === true));
+  const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (node.eager === true || isAsyncNode(node)));
 
   /** Hold a failed pre-bake as that node's resolution — lenient by default, thrown at build under validate. */
   const hold = (node: GraphNode, outcome: Outcome): void => {
@@ -371,11 +382,11 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
    * instances. `resolve()` never awaits. The failure path mirrors `runStep`'s —
    * the factory's throw (or rejection) is wrapped as this token's creation error.
    */
-  const constructAsyncSingleton = async (node: GraphNode): Promise<Outcome> => {
+  const constructAsyncSingleton = async (node: AsyncNode): Promise<Outcome> => {
     const env = freshPass(rootBase);
     const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
     try {
-      const value = await Promise.resolve(node.createInstance(inPassScope(rootView, env, rootBoundary)));
+      const value = await Promise.resolve(node.createInstanceAsync(inPassScope(rootView, env, rootBoundary)));
       const seeded = composition.singleton === undefined ? value : composition.singleton.getInstance(node, env, () => value);
       disposal?.announce(seeded, rootBoundary);
       return ok(seeded);
@@ -388,10 +399,10 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const prebakeSync = (): void => {
     for (const node of prebakedNodes()) {
       // The sync build boundary refuses an async factory: only buildEngineAsync can
-      // await its instance. A raw DescriptorMap can carry an isAsync node past the
+      // await its instance. A raw DescriptorMap can carry an async-factory node past the
       // type-level guard (hand-built descriptors), so this backstops it at build,
       // naming the token and pointing to the async builder (decisions.md §8).
-      if (node.isAsync === true) {
+      if (isAsyncNode(node)) {
         const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
         throw new Error(`Cannot build '${token.name}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`);
       }
@@ -402,7 +413,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   /** Pre-bake deps-first, awaiting each async singleton's factory in turn (the async build boundary). */
   const prebakeAsync = async (): Promise<void> => {
     for (const node of prebakedNodes()) {
-      hold(node, node.isAsync === true ? await constructAsyncSingleton(node) : execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
+      hold(node, isAsyncNode(node) ? await constructAsyncSingleton(node) : execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
     }
   };
 
