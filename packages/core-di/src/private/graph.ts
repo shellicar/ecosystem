@@ -12,7 +12,10 @@ import { getMetadata } from './metadata';
  */
 export type GraphFacts = {
   readonly lifetime: Lifetime | undefined;
+  /** The last face this node is registered under — the one `resolve(token)` lands on. */
   readonly owner: ServiceIdentifier<SourceType>;
+  /** Every face this node is registered under, in registration order. A multi-face node (one `register()` call, several `as`/`asSelf`) is one descriptor reachable through each of these. */
+  readonly owners: readonly ServiceIdentifier<SourceType>[];
   readonly deps: readonly ServiceIdentifier<SourceType>[];
   /** Whether this node's factory is async (`usingAsync`) — read by the async-through-sync-path policy (decisions.md §8). */
   readonly isAsync: boolean;
@@ -56,30 +59,41 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
   const graph = new Map<GraphNode, GraphFacts>();
   for (const [owner, descriptors] of services) {
     for (const descriptor of descriptors) {
+      // A multi-face node is the SAME descriptor under several tokens — the map
+      // key collides, so a plain set() would keep only the last face. Accumulate
+      // every face instead (the Phase 17 repro: an edge naming an earlier face
+      // was invisible to validate()/detectCycles).
+      const existing = graph.get(descriptor);
+      if (existing !== undefined) {
+        graph.set(descriptor, { ...existing, owner, owners: [...existing.owners, owner] });
+        continue;
+      }
       const isAsync = descriptor.isAsync === true;
       if (descriptor.forwardTarget != null) {
-        graph.set(descriptor, { lifetime: undefined, owner, deps: [descriptor.forwardTarget], isAsync });
+        graph.set(descriptor, { lifetime: undefined, owner, owners: [owner], deps: [descriptor.forwardTarget], isAsync });
         continue;
       }
       if (descriptor.usesFactory) {
-        graph.set(descriptor, { lifetime: descriptor.lifetime, owner, deps: [...(descriptor.declaredDeps ?? [])], isAsync });
+        graph.set(descriptor, { lifetime: descriptor.lifetime, owner, owners: [owner], deps: [...(descriptor.declaredDeps ?? [])], isAsync });
         continue;
       }
-      graph.set(descriptor, { lifetime: descriptor.lifetime, owner, deps: declaredDeps(descriptor.implementation), isAsync });
+      graph.set(descriptor, { lifetime: descriptor.lifetime, owner, owners: [owner], deps: declaredDeps(descriptor.implementation), isAsync });
     }
   }
   return graph;
 };
 
-/** Every node registered under `identifier` — a dependency edge fans out to all of them (multiplicity-aware). */
+/** Every node registered under `identifier` — a dependency edge fans out to all of them (multiplicity-aware). A multi-face node appears under every one of its faces. */
 export const indexByOwner = (graph: Graph): Map<ServiceIdentifier<SourceType>, GraphNode[]> => {
   const index = new Map<ServiceIdentifier<SourceType>, GraphNode[]>();
   for (const [node, facts] of graph) {
-    const bucket = index.get(facts.owner);
-    if (bucket === undefined) {
-      index.set(facts.owner, [node]);
-    } else {
-      bucket.push(node);
+    for (const owner of facts.owners) {
+      const bucket = index.get(owner);
+      if (bucket === undefined) {
+        index.set(owner, [node]);
+      } else {
+        bucket.push(node);
+      }
     }
   }
   return index;

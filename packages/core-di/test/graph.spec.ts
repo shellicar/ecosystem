@@ -100,7 +100,7 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
     const graph = deriveFacts(services);
     const facts = [...graph.values()][0];
 
-    expect(facts).toEqual({ lifetime: Lifetime.Scoped, owner: IOpaque, deps: [], isAsync: false });
+    expect(facts).toEqual({ lifetime: Lifetime.Scoped, owner: IOpaque, owners: [IOpaque], deps: [], isAsync: false });
   });
 
   it('a forward carries no lifetime of its own and one out-edge to its target', () => {
@@ -114,7 +114,7 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
     const graph = deriveFacts(services);
     const sourceFacts = [...graph.entries()].find(([, facts]) => facts.owner === ISource)?.[1];
 
-    expect(sourceFacts).toEqual({ lifetime: undefined, owner: ISource, deps: [ITarget], isAsync: false });
+    expect(sourceFacts).toEqual({ lifetime: undefined, owner: ISource, owners: [ISource], deps: [ITarget], isAsync: false });
   });
 
   it('respects multiplicity: one node per descriptor, not one per token', () => {
