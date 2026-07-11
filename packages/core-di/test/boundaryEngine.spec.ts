@@ -24,6 +24,7 @@ type DescriptorOptions<T extends SourceType> = {
   readonly lifetime?: Lifetime;
   readonly factory?: InstanceFactory<T>;
   readonly isAsync?: boolean;
+  readonly eager?: boolean;
   readonly declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
 
@@ -37,6 +38,7 @@ const descriptor = <T extends SourceType>(implementation: ServiceImplementation<
   createInstance: options.factory ?? (() => new implementation()),
   usesFactory: options.factory != null,
   isAsync: options.isAsync,
+  eager: options.eager,
   declaredDeps: options.declaredDeps,
 });
 
@@ -130,9 +132,13 @@ class Level1 implements ILevel1 {
 
 abstract class IUnregistered {}
 
-describe('boundaryEngine: singletons pre-baked at build', () => {
-  it('constructs a singleton once, at build, before any resolve', () => {
-    const expected = 1;
+// Singleton construction timing is design (A) (decisions.md §8): lazy by default,
+// `.eager()` the opt-in that pre-bakes at build. A plain singleton constructs on
+// its first resolve; an `.eager()` one constructs at build. Identity (one instance
+// for the provider) holds regardless of which.
+describe('boundaryEngine: singleton construction timing (lazy by default, eager opt-in)', () => {
+  it('does not construct a plain singleton at build — it is lazy', () => {
+    const expected = 0;
     buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton })]), composition());
 
     const actual = countOf('Dep');
@@ -140,8 +146,38 @@ describe('boundaryEngine: singletons pre-baked at build', () => {
     expect(actual).toBe(expected);
   });
 
-  it('resolves the pre-baked singleton as a pure lookup, constructing nothing more', () => {
+  it('constructs a plain singleton on its first resolve', () => {
+    const expected = 1;
     const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton })]), composition());
+
+    engine.resolve(IDep);
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('resolves a warm plain singleton as a pure lookup, constructing nothing more', () => {
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton })]), composition());
+    engine.resolve(IDep);
+    const expected = countOf('Dep');
+
+    engine.resolve(IDep);
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('constructs an eager singleton at build, before any resolve', () => {
+    const expected = 1;
+    buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton, eager: true })]), composition());
+
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('resolves an eager singleton as a pure lookup, constructing nothing more', () => {
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton, eager: true })]), composition());
     const expected = countOf('Dep');
 
     engine.resolve(IDep);
@@ -155,6 +191,33 @@ describe('boundaryEngine: singletons pre-baked at build', () => {
     const expected = engine.createScope().resolve(IDep);
 
     const actual = engine.createScope().resolve(IDep);
+
+    expect(actual).toBe(expected);
+  });
+});
+
+// The builder forbids `.eager()` on a non-singleton at the type level (see
+// composableBuilder.spec) — construct-at-build only makes sense for a singleton, the
+// sole build-time boundary that holds an instance (decisions.md §8). These engine
+// tests are the safety net for a hand-built DescriptorMap that carries eager on a
+// non-singleton anyway: the engine pre-bakes only singletons, so it constructs
+// nothing at build for them (the phase-8 experiment grounds that neither scoped nor
+// transient is pre-built).
+describe('boundaryEngine: eager on a non-singleton has no build-time construction', () => {
+  it('does not construct an eager transient at build — no build-time boundary holds it', () => {
+    const expected = 0;
+    buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Transient, eager: true })]), composition());
+
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('does not construct an eager scoped service at build — no build-time boundary holds it', () => {
+    const expected = 0;
+    buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Scoped, eager: true })]), composition());
+
+    const actual = countOf('Dep');
 
     expect(actual).toBe(expected);
   });
@@ -265,14 +328,14 @@ describe('boundaryEngine: circular and self dependencies', () => {
     expect(actual).toThrow(CircularDependencyError);
   });
 
-  it('does not throw at build for a singleton cycle (held, lenient)', () => {
-    const actual = () => buildEngine(mapOf([ICycleA, descriptor(CycleA, { lifetime: Lifetime.Singleton })], [ICycleB, descriptor(CycleB, { lifetime: Lifetime.Singleton })]), composition());
+  it('does not throw at build for an eager singleton cycle (held, lenient)', () => {
+    const actual = () => buildEngine(mapOf([ICycleA, descriptor(CycleA, { lifetime: Lifetime.Singleton, eager: true })], [ICycleB, descriptor(CycleB, { lifetime: Lifetime.Singleton, eager: true })]), composition());
 
     expect(actual).not.toThrow();
   });
 
-  it('throws the held CircularDependencyError when the singleton cycle is resolved', () => {
-    const engine = buildEngine(mapOf([ICycleA, descriptor(CycleA, { lifetime: Lifetime.Singleton })], [ICycleB, descriptor(CycleB, { lifetime: Lifetime.Singleton })]), composition());
+  it('throws the held CircularDependencyError when the eager singleton cycle is resolved', () => {
+    const engine = buildEngine(mapOf([ICycleA, descriptor(CycleA, { lifetime: Lifetime.Singleton, eager: true })], [ICycleB, descriptor(CycleB, { lifetime: Lifetime.Singleton, eager: true })]), composition());
 
     const actual = () => engine.resolve(ICycleA);
 
@@ -344,15 +407,18 @@ describe('boundaryEngine: creation-error wrapping', () => {
   });
 });
 
+// Held-error-at-build is now a property of a *pre-baked* singleton — an `.eager()`
+// (or async) one — since only those construct at build (design (A)). A failed eager
+// construction is held: lenient by default, thrown at build under validate.
 describe('boundaryEngine: held singleton errors and validate', () => {
-  it('leaves a lenient build unthrown when a singleton fails to construct', () => {
-    const actual = () => buildEngine(mapOf([IBoom, descriptor(Boom, { lifetime: Lifetime.Singleton })]), composition());
+  it('leaves a lenient build unthrown when an eager singleton fails to construct', () => {
+    const actual = () => buildEngine(mapOf([IBoom, descriptor(Boom, { lifetime: Lifetime.Singleton, eager: true })]), composition());
 
     expect(actual).not.toThrow();
   });
 
-  it('throws the held error when the failed singleton is resolved', () => {
-    const engine = buildEngine(mapOf([IBoom, descriptor(Boom, { lifetime: Lifetime.Singleton })]), composition());
+  it('throws the held error when the failed eager singleton is resolved', () => {
+    const engine = buildEngine(mapOf([IBoom, descriptor(Boom, { lifetime: Lifetime.Singleton, eager: true })]), composition());
 
     const actual = () => engine.resolve(IBoom);
 
@@ -360,7 +426,7 @@ describe('boundaryEngine: held singleton errors and validate', () => {
   });
 
   it('throws the held error at build when validate is set', () => {
-    const actual = () => buildEngine(mapOf([IBoom, descriptor(Boom, { lifetime: Lifetime.Singleton })]), composition(), { validate: true });
+    const actual = () => buildEngine(mapOf([IBoom, descriptor(Boom, { lifetime: Lifetime.Singleton, eager: true })]), composition(), { validate: true });
 
     expect(actual).toThrow(ServiceCreationError);
   });
@@ -697,9 +763,18 @@ describe('boundaryEngine: async at the build boundary — buildEngineAsync (deci
     expect(actual).toBe(expected);
   });
 
-  it('pre-bakes a synchronous singleton alongside an async one', async () => {
-    const expected = 1;
+  it('does not pre-bake a plain synchronous singleton in an async build — only the async node bakes', async () => {
+    const expected = 0;
     await buildEngineAsync(mapOf([ISyncDep, descriptor(SyncDep, { lifetime: Lifetime.Singleton })], [IAsyncResource, asyncSingleton()]), composition());
+
+    const actual = countOf('SyncDep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('pre-bakes an eager synchronous singleton alongside an async one', async () => {
+    const expected = 1;
+    await buildEngineAsync(mapOf([ISyncDep, descriptor(SyncDep, { lifetime: Lifetime.Singleton, eager: true })], [IAsyncResource, asyncSingleton()]), composition());
 
     const actual = countOf('SyncDep');
 

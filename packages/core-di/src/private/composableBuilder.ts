@@ -41,14 +41,34 @@ type VerbName<L extends Lifetime> = (typeof lifetimeVerbNames)[L];
 /** The lifetimes a composition may opt into. `Lifetime.Transient` is always available as the floor. */
 export type ComposableLifetime = Exclude<Lifetime, Lifetime.Transient>;
 
-/** The verbs generated for a newable-flavoured composition, one per composed lifetime. */
-type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L, Async>;
+/**
+ * The `.eager()` verb. Construct-at-build only makes sense for a singleton — the sole
+ * build-time boundary that holds an instance (decisions.md §8) — so the verb rides on
+ * a *property of the registration*: the `Eager` type flag, set `true` by `.singleton()`
+ * and `false` by any other lifetime verb, and preserved across `.as()`/`.asSelf()`/
+ * `.using()`. It is intersected onto the builder only while that flag is `true`, so it
+ * is order-independent — `register(X).singleton().as(Y).eager()` and
+ * `register(X).as(Y).singleton().eager()` both type-check — while `.scoped().eager()`
+ * and `.singleton().scoped().eager()` (a later verb overriding the lifetime) are
+ * compile errors, not silent no-ops. Explicit and local.
+ */
+type EagerVerb<B> = {
+  /**
+   * Construct at build rather than lazily at first resolve (decisions.md §8). Present
+   * while the chosen lifetime is singleton. Returns the plain builder (the eager flag
+   * is already recorded on the node), which also keeps the builder type non-recursive.
+   */
+  eager(): B;
 };
 
-/** The verbs generated for an abstract-flavoured composition, one per composed lifetime. */
+/** The verbs generated for a newable-flavoured composition. `.singleton()` sets the `Eager` flag `true`; every other lifetime `false`. */
+type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
+  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false>;
+};
+
+/** The verbs generated for an abstract-flavoured composition. `.singleton()` sets the `Eager` flag `true`; every other lifetime `false`. */
 type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async>;
+  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false>;
 };
 
 /**
@@ -59,7 +79,7 @@ type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime, Async exten
  * §8). A newable-flavoured builder is returned either way, since a factory can
  * build the implementation as itself.
  */
-type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean> = Async extends true
+type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean> = Async extends true
   ? {
       /**
        * Supply an async factory (returns `Promise<T>`). A separate verb from `using`
@@ -67,9 +87,9 @@ type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean> 
        * `usingAsync(syncFactory)` are each a local type error (decisions.md §8). Its
        * instance is awaited at the build boundary (`buildProviderAsync`).
        */
-      usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async>;
+      usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
       /** Supply an async factory with declared dependencies, resolved and handed to it positionally. */
-      usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async>;
+      usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async, Eager>;
     }
   : unknown;
 
@@ -80,14 +100,14 @@ type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean> 
  * be built as itself. `usingAsync` is present only on an async composition (see
  * {@link AsyncVerb}).
  */
-export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async>;
-  asSelf(): ComposableNewableBuilder<T, L, Async>;
+export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false> = {
+  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async, Eager>;
+  asSelf(): ComposableNewableBuilder<T, L, Async, Eager>;
   /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async>;
+  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async>;
-} & NewableLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async>;
+  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager>;
+} & NewableLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async>> : unknown);
 
 /**
  * The builder for an abstract registration. It has no `.asSelf()` — an
@@ -97,13 +117,13 @@ export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, A
  * newable-flavoured builder (with `asSelf`). `usingAsync` is present only on an
  * async composition (see {@link AsyncVerb}).
  */
-export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async>;
+export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false> = {
+  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async, Eager>;
   /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async>;
+  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async>;
-} & AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async>;
+  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager>;
+} & AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async>> : unknown);
 
 /** One registration: the shared node every face of a `register()` call points at. */
 export type ComposableNode = {
@@ -113,6 +133,8 @@ export type ComposableNode = {
   usesFactory?: boolean;
   /** Whether the factory is async (`usingAsync`) — awaited at the build boundary (decisions.md §8). */
   isAsync?: boolean;
+  /** Whether the registration constructs at build (`.eager()`) rather than lazily at first resolve (decisions.md §8). */
+  eager?: boolean;
   declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
 
@@ -192,6 +214,14 @@ export const createCollection = <const L extends ComposableLifetime, const Async
         return builder;
       };
     }
+    // `.eager()` is folded on at runtime like every other verb; the type surfaces it
+    // only while the chosen lifetime is singleton (the `Eager` builder flag — see
+    // {@link EagerVerb}), reachable there in any chain order but nowhere else. One
+    // object carries every method; the type is the gate (as with asSelf and usingAsync).
+    builder.eager = () => {
+      node.eager = true;
+      return builder;
+    };
     // The verbs are folded on from the same array the type derives from, so
     // the composed type and the composed runtime methods cannot disagree.
     for (const lifetime of [...lifetimes, Lifetime.Transient]) {
@@ -223,6 +253,7 @@ export const toDescriptorMap = <L extends Lifetime, Async extends boolean>(colle
       createInstance: node.createInstance ?? (() => new (node.impl as Newable<SourceType>)()),
       usesFactory: node.usesFactory,
       isAsync: node.isAsync,
+      eager: node.eager,
       declaredDeps: node.declaredDeps,
     };
     map.set(token, [descriptor]);

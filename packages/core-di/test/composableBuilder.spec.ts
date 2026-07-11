@@ -145,6 +145,65 @@ describe('createCollection: the builder carries the register-side surface', () =
   });
 });
 
+// `.eager()` rides on a property of the registration — whether the chosen lifetime is
+// singleton — carried on the builder type and preserved across .as()/.asSelf()/.using()
+// in any order. It is available whenever the current lifetime is singleton, and gone
+// once a later verb overrides it: `.scoped().eager()` and `.singleton().scoped().eager()`
+// are compile errors, not silent no-ops (decisions.md §8).
+describe('createCollection: eager rides on the singleton lifetime, order-independently', () => {
+  it('records eager when identity is declared before the singleton verb', () => {
+    const services = createCollection([Lifetime.Singleton]);
+    const expected = true;
+
+    services.register(Thing).asSelf().singleton().eager();
+    const actual = services.regs.get(Thing)?.eager;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('records eager when identity is declared after the singleton verb', () => {
+    const services = createCollection([Lifetime.Singleton]);
+    const expected = true;
+
+    services.register(Thing).singleton().asSelf().eager();
+    const actual = services.regs.get(Thing)?.eager;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('leaves a registration not marked eager by default', () => {
+    const services = createCollection([Lifetime.Singleton]);
+
+    services.register(Thing).asSelf().singleton();
+    const actual = services.regs.get(Thing)?.eager;
+
+    expect(actual).toBeUndefined();
+  });
+
+  it('rejects eager on a non-singleton lifetime at compile time', () => {
+    const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
+
+    services
+      .register(Thing)
+      .asSelf()
+      .scoped()
+      // @ts-expect-error - the chosen lifetime is scoped, not singleton, so there is no eager verb
+      .eager;
+  });
+
+  it('rejects eager once a later lifetime verb overrides singleton at compile time', () => {
+    const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
+
+    services
+      .register(Thing)
+      .asSelf()
+      .singleton()
+      .scoped()
+      // @ts-expect-error - scoped() overrode the singleton choice, so eager is no longer available
+      .eager;
+  });
+});
+
 
 abstract class IResource {}
 class Resource implements IResource {}

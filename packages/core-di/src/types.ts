@@ -75,6 +75,16 @@ export type ServiceDescriptor<T extends SourceType> = {
    */
   isAsync?: boolean;
   /**
+   * Whether this registration constructs at build (`.eager()`) rather than
+   * lazily at first resolve (decisions.md §8). Eager is a *choice*, distinct
+   * from async's *fact*: the author opts a registration into build-time
+   * construction. Only a build-time boundary can hold an instance at build, and
+   * the singleton table is the only one — so `.eager()` materialises a singleton
+   * at build; on a scoped or transient registration, which no build-time
+   * boundary holds, it has no build-time construction to perform.
+   */
+  eager?: boolean;
+  /**
    * The dependencies declared by a `using([deps], factory)` registration. The
    * container resolves them and hands them, positionally, to the factory. Being
    * declared, they are the node's out-edges in `validate()`'s dependency graph —

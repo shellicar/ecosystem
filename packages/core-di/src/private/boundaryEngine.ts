@@ -102,9 +102,12 @@ const failed = (error: unknown): Outcome => ({ ok: false, error });
  * A cached lifetime (singleton, scoped, resolve) is one slot in the plan, shared
  * across its injection points and memoised by its feature; transient — the floor,
  * no feature — is a fresh slot per injection edge, so each injection point gets a
- * distinct instance. Singletons are constructed once here, in topological order;
- * a singleton whose construction throws has that error *held* as its resolution:
- * lenient by default, thrown at build when `validate` is set.
+ * distinct instance. A singleton is lazy by default — constructed on first resolve
+ * and memoised by its feature; `.eager()` opts one into construction at build, and
+ * an async (`usingAsync`) singleton must bake at build since `resolve()` cannot
+ * await (decisions.md §8). Those pre-baked singletons are constructed once here, in
+ * topological order; one whose construction throws has that error *held* as its
+ * resolution: lenient by default, thrown at build when `validate` is set.
  */
 const setupEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions) => {
   const graph = deriveFacts(services);
@@ -190,13 +193,16 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       for (const { field, slot } of step.fields) {
         (instance as Record<string, unknown>)[field] = (locals[slot] as { value: unknown }).value;
       }
-      // Announce the construction against the boundary that resolved it — the seam
-      // the disposal tracker composes onto (decisions.md §8), inert unless composed.
-      // Every constructed disposable is announced, no lifetime exempt: it dies at its
-      // resolving boundary's end (root-resolved at provider dispose, scope-resolved at
-      // scope dispose). "The pass never disposes" means pass exit is not a disposal
-      // event — the caller holds the result — not that resolve-lifetime is never tracked.
-      disposal?.announce(instance, boundary);
+      // Announce the construction to the seam the disposal tracker composes onto
+      // (decisions.md §8), inert unless composed. Every constructed disposable is
+      // announced, no lifetime exempt. A singleton belongs to the provider however it
+      // was first reached — a lazy singleton constructed *through* a scope still dies at
+      // provider dispose, not the scope's — so it is announced against the root boundary;
+      // every other lifetime dies at the boundary that resolved it (scope-resolved at
+      // scope dispose, root-resolved at provider dispose). "The pass never disposes"
+      // means pass exit is not a disposal event — the caller holds the result — not that
+      // resolve-lifetime is never tracked.
+      disposal?.announce(instance, step.lifetime === Lifetime.Singleton ? rootBoundary : boundary);
       return instance;
     };
     try {
@@ -259,8 +265,15 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const rootBase: Env = composition.scoped?.beginScope() ?? {};
 
-  /** Singletons in deps-first order — the nodes pre-baked at build (forwards excluded). */
-  const singletonNodes = (): GraphNode[] => topologicalOrder(graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton);
+  /**
+   * The singletons pre-baked at build, deps-first (forwards excluded). Design (A):
+   * a plain singleton is lazy — it falls through to the feature's own memoisation
+   * on first resolve — so only `.eager()` (an explicit build-time choice) and an
+   * async `usingAsync` singleton (which `resolve()` cannot await) bake here
+   * (decisions.md §8). Eager on a non-singleton has no build-time boundary to hold
+   * it, so nothing is pre-baked for it.
+   */
+  const prebakedNodes = (): GraphNode[] => topologicalOrder(graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (node.eager === true || node.isAsync === true));
 
   /** Hold a failed pre-bake as that node's resolution — lenient by default, thrown at build under validate. */
   const hold = (node: GraphNode, outcome: Outcome): void => {
@@ -293,7 +306,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   /** Pre-bake every singleton synchronously by executing its plan (the sync build boundary). */
   const prebakeSync = (): void => {
-    for (const node of singletonNodes()) {
+    for (const node of prebakedNodes()) {
       // The sync build boundary refuses an async factory: only buildEngineAsync can
       // await its instance. A raw DescriptorMap can carry an isAsync node past the
       // type-level guard (hand-built descriptors), so this backstops it at build,
@@ -308,7 +321,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   /** Pre-bake deps-first, awaiting each async singleton's factory in turn (the async build boundary). */
   const prebakeAsync = async (): Promise<void> => {
-    for (const node of singletonNodes()) {
+    for (const node of prebakedNodes()) {
       hold(node, node.isAsync === true ? await constructAsyncSingleton(node) : execute(planFor(node), freshPass(rootBase), rootBoundary));
     }
   };
@@ -347,10 +360,12 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 };
 
 /**
- * Renders a registration map into a running engine, synchronously. Singletons
- * are pre-baked at build in topological order; a singleton whose construction
- * throws has that error held as its resolution — lenient by default, thrown here
- * under `validate`. `resolve` executes a static plan and never re-enters itself.
+ * Renders a registration map into a running engine, synchronously. Eager
+ * (`.eager()`) singletons are pre-baked at build in topological order — a plain
+ * singleton stays lazy until first resolve (decisions.md §8); one whose
+ * construction throws has that error held as its resolution, lenient by default,
+ * thrown here under `validate`. `resolve` executes a static plan and never
+ * re-enters itself.
  */
 export const buildEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions = {}): Engine => {
   const engine = setupEngine(services, composition, options);
