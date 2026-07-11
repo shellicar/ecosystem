@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 import { Lifetime } from '../src/enums';
-import { buildPlan, deriveFacts, detectCycles, findUnregisteredEdges, topologicalOrder } from '../src/private/graph';
+import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '../src/private/graph';
 import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type SourceType } from '../src/types';
 
 // A minimal, direct-to-map registration helper — deliberately bypassing
@@ -179,52 +179,86 @@ describe('topologicalOrder: deps-first order, zero construction', () => {
   });
 });
 
-describe('buildPlan: the deps-first plan for a token', () => {
-  abstract class IShared {}
-  abstract class IPerScope {}
-  abstract class IPerCall {}
-  class Shared implements IShared {}
-  class PerScope implements IPerScope {
-    @dependsOn(IShared) public readonly shared!: IShared;
+describe('buildPlan: a flat plan of per-injection steps', () => {
+  // Diamond: A -> B, A -> C, B -> D, C -> D. D is the shared dependency, reached
+  // through two injection sites (B.d and C.d).
+  abstract class ID {}
+  abstract class IB {}
+  abstract class IC {}
+  abstract class IA {}
+  class D implements ID {}
+  class B implements IB {
+    @dependsOn(ID) public readonly d!: ID;
   }
-  class PerCall implements IPerCall {
-    @dependsOn(IPerScope) public readonly perScope!: IPerScope;
+  class C implements IC {
+    @dependsOn(ID) public readonly d!: ID;
   }
-  const makeServices = (): DescriptorMap => {
+  class A implements IA {
+    @dependsOn(IB) public readonly b!: IB;
+    @dependsOn(IC) public readonly c!: IC;
+  }
+
+  const notTransient = (lifetime: Lifetime): boolean => lifetime !== Lifetime.Transient;
+  // The engine supplies effective lifetime; here every descriptor carries a concrete one.
+  const lifetimeOf = (node: ServiceDescriptor<SourceType>): Lifetime => node.lifetime ?? Lifetime.Resolve;
+  const buildSteps = (plan: Plan): readonly PlanStep[] => plan.filter((step) => step.kind === 'build');
+
+  const planFor = (services: DescriptorMap, token: ServiceIdentifier<SourceType>): Plan => {
+    const graph = deriveFacts(services);
+    const index = indexByOwner(graph);
+    const root = concreteNode(index, token);
+    if (root === undefined) {
+      throw new Error('token has no registration');
+    }
+    return buildPlan(graph, index, root, lifetimeOf, notTransient);
+  };
+
+  const diamond = (sharedLifetime: Lifetime): DescriptorMap => {
     const services = createDescriptorMap();
-    register(services, IShared, { implementation: Shared });
-    register(services, IPerScope, { implementation: PerScope });
-    register(services, IPerCall, { implementation: PerCall });
+    register(services, ID, { implementation: D, lifetime: sharedLifetime });
+    register(services, IB, { implementation: B });
+    register(services, IC, { implementation: C });
+    register(services, IA, { implementation: A });
     return services;
   };
 
-  it('includes only the transitive deps a leaf token needs', () => {
-    const graph = deriveFacts(makeServices());
+  it('emits a construction step per injection site for a transient shared dependency', () => {
+    const plan = planFor(diamond(Lifetime.Transient), IA);
 
-    const plan = buildPlan(graph, IShared).map((node) => graph.get(node)?.owner);
+    const expected = 2;
+    const actual = buildSteps(plan).filter((step) => step.token === ID).length;
 
-    expect(plan).toEqual([IShared]);
+    expect(actual).toBe(expected);
   });
 
-  it('orders a token\'s full plan deps-first', () => {
-    const graph = deriveFacts(makeServices());
+  it('emits one shared construction step for a cached shared dependency', () => {
+    const plan = planFor(diamond(Lifetime.Scoped), IA);
 
-    const plan = buildPlan(graph, IPerCall).map((node) => graph.get(node)?.owner);
+    const expected = 1;
+    const actual = buildSteps(plan).filter((step) => step.token === ID).length;
 
-    expect(plan).toEqual([IShared, IPerScope, IPerCall]);
+    expect(actual).toBe(expected);
   });
 
-  it('includes every descriptor registered under a multiply-registered token', () => {
-    abstract class IMulti {}
-    class First implements IMulti {}
-    class Second implements IMulti {}
+  it('collapses a multi-hop forward chain to its terminal node', () => {
+    abstract class ITarget {}
+    abstract class IMid {}
+    abstract class ISource {}
+    abstract class INeedy {}
+    class Target implements ITarget {}
+    class Needy implements INeedy {
+      @dependsOn(ISource) public readonly source!: ISource;
+    }
     const services = createDescriptorMap();
-    register(services, IMulti, { implementation: First });
-    register(services, IMulti, { implementation: Second });
-    const graph = deriveFacts(services);
+    register(services, ITarget, { implementation: Target });
+    register(services, IMid, { implementation: Target, forwardTarget: ITarget });
+    register(services, ISource, { implementation: Target, forwardTarget: IMid });
+    register(services, INeedy, { implementation: Needy });
 
-    const expected = [First, Second];
-    const actual = buildPlan(graph, IMulti).map((node) => node.implementation);
+    const plan = planFor(services, INeedy);
+
+    const expected = [ITarget, INeedy];
+    const actual = buildSteps(plan).map((step) => step.token);
 
     expect(actual).toEqual(expected);
   });

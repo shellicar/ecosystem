@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 import { Lifetime } from '../src/enums';
 import { CircularDependencyError, SelfDependencyError, ServiceCreationError, UnregisteredServiceError } from '../src/errors';
-import { buildEngine, type EngineComposition } from '../src/private/boundaryEngine';
+import { type Boundary, buildEngine, type DisposalSink, type EngineComposition } from '../src/private/boundaryEngine';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
@@ -24,10 +24,13 @@ type DescriptorOptions<T extends SourceType> = {
   readonly factory?: InstanceFactory<T>;
 };
 
+// An un-verbed registration carries no lifetime on its descriptor; the engine's
+// composed defaultLifetime supplies one. Only an explicit `options.lifetime`
+// stamps a concrete lifetime here, mirroring a lifetime verb at the call site.
 const descriptor = <T extends SourceType>(implementation: ServiceImplementation<T>, options: DescriptorOptions<T> = {}): ServiceDescriptor<T> => ({
   implementation,
   cacheKey: Symbol(implementation.name),
-  lifetime: options.lifetime ?? Lifetime.Resolve,
+  lifetime: options.lifetime,
   createInstance: options.factory ?? (() => new implementation()),
   usesFactory: options.factory != null,
 });
@@ -393,5 +396,80 @@ describe('boundaryEngine: composition', () => {
     const actual = () => engine.createScope();
 
     expect(actual).toThrow();
+  });
+});
+
+describe('boundaryEngine: default lifetime is an engine composition parameter', () => {
+  // An un-verbed registration (no lifetime on its descriptor) resolves under the
+  // engine's composed defaultLifetime — not a register-layer default.
+  it('resolves an un-verbed registration under the composed default (resolve) — shared within a pass', () => {
+    const composed: EngineComposition = { ...composition(), defaultLifetime: Lifetime.Resolve };
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep)], [ITwoFields, descriptor(TwoFields)]), composed);
+    const parent = engine.resolve(ITwoFields);
+    const expected = parent.a;
+
+    const actual = parent.b;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('honours a different composed default — transient gives a distinct instance per injection point', () => {
+    const composed: EngineComposition = { ...composition(), defaultLifetime: Lifetime.Transient };
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep)], [ITwoFields, descriptor(TwoFields)]), composed);
+    const parent = engine.resolve(ITwoFields);
+
+    const actual = parent.a;
+
+    expect(actual).not.toBe(parent.b);
+  });
+});
+
+describe('boundaryEngine: disposal seam (surface — Phase 14 supplies the tracker)', () => {
+  type Announcement = { readonly instance: unknown; readonly boundary: Boundary };
+  const recordingSink = (): { readonly sink: DisposalSink; readonly announced: Announcement[]; readonly ended: Boundary[] } => {
+    const announced: Announcement[] = [];
+    const ended: Boundary[] = [];
+    const sink: DisposalSink = {
+      announce: (instance, boundary) => {
+        announced.push({ instance, boundary });
+      },
+      end: (boundary) => {
+        ended.push(boundary);
+      },
+    };
+    return { sink, announced, ended };
+  };
+
+  it('announces a constructed instance to the composed disposal sink', () => {
+    const { sink, announced } = recordingSink();
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Transient })]), { ...composition(), disposal: sink });
+    const expected = engine.resolve(IDep);
+
+    const actual = announced[announced.length - 1].instance;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('announces a scope-resolved construction against the boundary that scope later ends', () => {
+    const { sink, announced, ended } = recordingSink();
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Scoped })]), { ...composition(), disposal: sink });
+    const scope = engine.createScope();
+    scope.resolve(IDep);
+    const boundary = announced[announced.length - 1].boundary;
+
+    scope[Symbol.dispose]();
+
+    expect(ended).toContain(boundary);
+  });
+
+  it('ends the root boundary when the engine is disposed', () => {
+    const { sink, announced, ended } = recordingSink();
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Transient })]), { ...composition(), disposal: sink });
+    engine.resolve(IDep);
+    const rootBoundary = announced[announced.length - 1].boundary;
+
+    engine[Symbol.dispose]();
+
+    expect(ended).toContain(rootBoundary);
   });
 });

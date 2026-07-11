@@ -1,4 +1,5 @@
 import type { Lifetime } from '../enums';
+import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError } from '../errors';
 import type { DescriptorMap, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 import { DesignDependenciesKey } from './constants';
 import { getMetadata } from './metadata';
@@ -68,7 +69,7 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
 };
 
 /** Every node registered under `identifier` — a dependency edge fans out to all of them (multiplicity-aware). */
-const indexByOwner = (graph: Graph): Map<ServiceIdentifier<SourceType>, GraphNode[]> => {
+export const indexByOwner = (graph: Graph): Map<ServiceIdentifier<SourceType>, GraphNode[]> => {
   const index = new Map<ServiceIdentifier<SourceType>, GraphNode[]>();
   for (const [node, facts] of graph) {
     const bucket = index.get(facts.owner);
@@ -206,33 +207,124 @@ export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
   return found;
 };
 
+/** Every node registered under an identifier, in registration order — the owner-index the plan functions look edges up through. */
+export type OwnerIndex = ReadonlyMap<ServiceIdentifier<SourceType>, readonly GraphNode[]>;
+
 /**
- * The flat, deps-first plan a later engine executes by table lookup to
- * resolve `token`: every node registered under `token`, plus everything
- * transitively needed to construct them, in dependency order. A later engine
- * (not this module) decides which node(s) in the plan a given resolve call
- * actually returns — this is purely the construction order.
+ * One pre-computed step of a node's execution plan. A `build` step constructs a
+ * node, wiring each `@dependsOn` field from an earlier slot in the same plan. An
+ * `error` step is a fault determined statically here (a cycle, a self-dependency,
+ * an unregistered edge), held as a slot value to surface at execution.
  */
-export const buildPlan = (graph: Graph, token: ServiceIdentifier<SourceType>): GraphNode[] => {
-  const index = indexByOwner(graph);
-  const order = topologicalOrder(graph);
-  const orderIndex = new Map(order.map((node, i) => [node, i] as const));
+export type PlanStep =
+  | {
+      readonly kind: 'build';
+      readonly node: GraphNode;
+      readonly token: ServiceIdentifier<SourceType>;
+      readonly lifetime: Lifetime;
+      readonly usesFactory: boolean;
+      readonly fields: readonly { readonly field: string; readonly slot: number }[];
+    }
+  | {
+      readonly kind: 'error';
+      readonly token: ServiceIdentifier<SourceType>;
+      readonly error: unknown;
+    };
 
-  const needed = new Set<GraphNode>();
-  const collect = (node: GraphNode): void => {
-    if (needed.has(node)) {
-      return;
+/**
+ * A flat, deps-first plan: executing it top to bottom fills a `locals` table,
+ * and the last slot is the requested node's resolution. Every edge and every
+ * static fault is decided here; execution only looks up and constructs.
+ */
+export type Plan = readonly PlanStep[];
+
+/** Follow a forward chain to the concrete node it redirects to (guarding a forward loop). */
+export const followForward = (index: OwnerIndex, descriptor: GraphNode): GraphNode | undefined => {
+  let node: GraphNode | undefined = descriptor;
+  const seen = new Set<GraphNode>();
+  while (node?.forwardTarget != null) {
+    if (seen.has(node)) {
+      return undefined;
     }
-    needed.add(node);
-    for (const dep of graph.get(node)?.deps ?? []) {
-      for (const depNode of index.get(dep) ?? []) {
-        collect(depNode);
-      }
-    }
-  };
-  for (const node of index.get(token) ?? []) {
-    collect(node);
+    seen.add(node);
+    const bucket: readonly GraphNode[] = index.get(node.forwardTarget) ?? [];
+    node = bucket[bucket.length - 1];
   }
+  return node;
+};
 
-  return [...needed].sort((a, b) => (orderIndex.get(a) ?? 0) - (orderIndex.get(b) ?? 0));
+/** The concrete node a single `resolve(token)` lands on — the last registration, forwards followed. */
+export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceType>): GraphNode | undefined => {
+  const bucket = index.get(token) ?? [];
+  const last = bucket[bucket.length - 1];
+  return last === undefined ? undefined : followForward(index, last);
+};
+
+/**
+ * Compiles the flat {@link Plan} that resolves `rootNode` — zero construction.
+ *
+ * Field edges are read from definition-time `@dependsOn` metadata. A dependency
+ * `isCached` reports as cached (singleton, scoped, resolve — a feature memoises
+ * it) is emitted once and its slot shared across its injection points; a
+ * transient dependency (the floor, no feature) is emitted once per injection
+ * edge, so each injection point constructs a distinct instance. A dependency
+ * already on the compile path is a cycle, a field naming its own owner is a
+ * self-dependency, an edge with no registered node is unregistered — each held
+ * as an `error` step.
+ *
+ * Two things the graph cannot decide alone are supplied by the engine, keeping
+ * this module free of lifetime interpretation: `lifetimeOf` yields a node's
+ * effective lifetime (an un-verbed node resolves under the engine's
+ * `defaultLifetime`), and `isCached` reports whether that lifetime is memoised
+ * by a composed feature.
+ */
+export const buildPlan = (graph: Graph, index: OwnerIndex, rootNode: GraphNode, lifetimeOf: (node: GraphNode) => Lifetime, isCached: (lifetime: Lifetime) => boolean): Plan => {
+  const steps: PlanStep[] = [];
+  const sharedSlot = new Map<GraphNode, number>();
+
+  const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+
+  const push = (step: PlanStep): number => {
+    steps.push(step);
+    return steps.length - 1;
+  };
+
+  const emitToken = (identifier: ServiceIdentifier<SourceType>, path: ReadonlySet<GraphNode>): number => {
+    const node = concreteNode(index, identifier);
+    if (node === undefined) {
+      return push({ kind: 'error', token: identifier, error: new UnregisteredServiceError(identifier) });
+    }
+    return emitNode(node, path);
+  };
+
+  const emitNode = (node: GraphNode, path: ReadonlySet<GraphNode>): number => {
+    const token = ownerOf(node);
+    const lifetime = lifetimeOf(node);
+    const cached = isCached(lifetime);
+    const existing = sharedSlot.get(node);
+    if (cached && existing !== undefined) {
+      return existing;
+    }
+    if (path.has(node)) {
+      return push({ kind: 'error', token, error: new CircularDependencyError(token) });
+    }
+    const nextPath = new Set(path).add(node);
+    const fields: { field: string; slot: number }[] = [];
+    const dependencies = getMetadata(DesignDependenciesKey, node.implementation) ?? {};
+    for (const [field, identifier] of Object.entries(dependencies)) {
+      if (identifier === token) {
+        fields.push({ field, slot: push({ kind: 'error', token, error: new SelfDependencyError() }) });
+        continue;
+      }
+      fields.push({ field, slot: emitToken(identifier, nextPath) });
+    }
+    const slot = push({ kind: 'build', node, token, lifetime, usesFactory: node.usesFactory === true, fields });
+    if (cached) {
+      sharedSlot.set(node, slot);
+    }
+    return slot;
+  };
+
+  emitNode(rootNode, new Set());
+  return steps;
 };

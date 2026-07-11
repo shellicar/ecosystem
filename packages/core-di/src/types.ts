@@ -37,6 +37,10 @@ export type ServiceModuleType = Newable<IServiceModule>;
  * A registration descriptor. A normal registration carries the implementation,
  * its identity token (the cache key), a lifetime, and the factory that builds it.
  *
+ * `lifetime` is optional: an un-verbed registration declares none, and the
+ * engine resolves it under its composed `defaultLifetime` (decisions.md §8).
+ * A concrete lifetime here is the registration's own explicit choice.
+ *
  * When `forwardTarget` is set the descriptor is a pure redirect: resolving it is
  * resolving the target, so the instance/key/lifetime fields are inert — caching
  * and lifetime belong entirely to the target's registration.
@@ -44,7 +48,7 @@ export type ServiceModuleType = Newable<IServiceModule>;
 export type ServiceDescriptor<T extends SourceType> = {
   readonly implementation: ServiceRegistration<T>;
   readonly cacheKey: CacheKey<T>;
-  lifetime: Lifetime;
+  lifetime?: Lifetime;
   createInstance: InstanceFactory<T>;
   readonly forwardTarget?: ServiceIdentifier<T>;
   /**
