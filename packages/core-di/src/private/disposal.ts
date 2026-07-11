@@ -8,8 +8,11 @@ import type { Boundary, DisposalSink } from './boundaryEngine';
  * nearest-boundary rule — a scope-resolved transient is announced against the
  * scope and files under it, a root-resolved one files under the root, and a
  * singleton (pre-baked at the root) files under the root however it is later
- * reached. "The pass never disposes" needs nothing here: the engine does not
- * announce a resolve-lifetime construction, so a pass instance is never filed.
+ * reached. "The pass never disposes" means only that pass exit is not a disposal
+ * event (the caller holds the result), not that a resolve-lifetime instance goes
+ * untracked: every constructed disposable is announced to its resolving boundary,
+ * no lifetime exempt, and dies at that boundary's end (scope-resolved at scope
+ * dispose, root-resolved at provider dispose).
  *
  * Sync and async disposables share the one list; only the end differs. `end`
  * (sync, `Symbol.dispose`) refuses a boundary that holds an async-only
