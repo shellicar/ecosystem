@@ -3,6 +3,7 @@ import { dependsOn } from '../src/dependsOn';
 import { Lifetime } from '../src/enums';
 import { CircularDependencyError, SelfDependencyError, ServiceCreationError, UnregisteredServiceError } from '../src/errors';
 import { type Boundary, buildEngine, type DisposalSink, type EngineComposition } from '../src/private/boundaryEngine';
+import { createDisposal } from '../src/private/disposal';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
@@ -471,5 +472,155 @@ describe('boundaryEngine: disposal seam (surface — Phase 14 supplies the track
     engine[Symbol.dispose]();
 
     expect(ended).toContain(rootBoundary);
+  });
+});
+
+// Phase 14 (P6a): the disposal feature composed onto the engine's seam. Promotes
+// the shapes from disposal-nearest-boundary-experiment.spec.ts onto the shipped
+// surface — proven now through buildEngine + createDisposal, not a toy provider.
+describe('boundaryEngine: disposal feature — nearest-boundary tracker (decisions.md §8)', () => {
+  abstract class IResource {
+    abstract readonly disposed: boolean;
+  }
+  class Resource implements IResource {
+    #disposed = false;
+    get disposed() {
+      return this.#disposed;
+    }
+    [Symbol.dispose]() {
+      this.#disposed = true;
+    }
+  }
+
+  abstract class IAsyncResource {
+    abstract readonly disposed: boolean;
+  }
+  class AsyncResource implements IAsyncResource {
+    #disposed = false;
+    get disposed() {
+      return this.#disposed;
+    }
+    async [Symbol.asyncDispose]() {
+      this.#disposed = true;
+    }
+  }
+
+  const withDisposal = (lifetime: Lifetime) => buildEngine(mapOf([IResource, descriptor(Resource, { lifetime })]), { ...composition(), disposal: createDisposal() });
+
+  const withAsyncDisposal = () => buildEngine(mapOf([IAsyncResource, descriptor(AsyncResource, { lifetime: Lifetime.Transient })]), { ...composition(), disposal: createDisposal() });
+
+  it('disposes a scope-resolved transient at scope dispose', () => {
+    const engine = withDisposal(Lifetime.Transient);
+    const scope = engine.createScope();
+    const instance = scope.resolve(IResource);
+
+    scope[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('does not dispose a scope-resolved transient when the provider is disposed first', () => {
+    const engine = withDisposal(Lifetime.Transient);
+    const scope = engine.createScope();
+    const instance = scope.resolve(IResource);
+
+    engine[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(false);
+  });
+
+  it('does not dispose a root-resolved transient when a scope ends', () => {
+    const engine = withDisposal(Lifetime.Transient);
+    const scope = engine.createScope();
+    const instance = engine.resolve(IResource);
+
+    scope[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(false);
+  });
+
+  it('disposes a root-resolved transient at provider dispose', () => {
+    const engine = withDisposal(Lifetime.Transient);
+    const instance = engine.resolve(IResource);
+
+    engine[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('disposes a scoped instance at scope dispose', () => {
+    const engine = withDisposal(Lifetime.Scoped);
+    const scope = engine.createScope();
+    const instance = scope.resolve(IResource);
+
+    scope[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('does not dispose a singleton at scope dispose even when a scope reached it', () => {
+    const engine = withDisposal(Lifetime.Singleton);
+    const scope = engine.createScope();
+    const instance = scope.resolve(IResource);
+
+    scope[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(false);
+  });
+
+  it('disposes a singleton at provider dispose', () => {
+    const engine = withDisposal(Lifetime.Singleton);
+    const instance = engine.resolve(IResource);
+
+    engine[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('disposes a root-resolved resolve-lifetime instance at provider dispose', () => {
+    const engine = withDisposal(Lifetime.Resolve);
+    const instance = engine.resolve(IResource);
+
+    engine[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('disposes a scope-resolved resolve-lifetime instance at scope dispose', () => {
+    const engine = withDisposal(Lifetime.Resolve);
+    const scope = engine.createScope();
+    const instance = scope.resolve(IResource);
+
+    scope[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('does not dispose a scope-resolved resolve-lifetime instance when the provider is disposed first', () => {
+    const engine = withDisposal(Lifetime.Resolve);
+    const scope = engine.createScope();
+    const instance = scope.resolve(IResource);
+
+    engine[Symbol.dispose]();
+
+    expect(instance.disposed).toBe(false);
+  });
+
+  it('disposes an async disposable through asynchronous disposal', async () => {
+    const engine = withAsyncDisposal();
+    const instance = engine.resolve(IAsyncResource);
+
+    await engine[Symbol.asyncDispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
+
+  it('throws when a boundary holding an async-only disposable is disposed synchronously', () => {
+    const engine = withAsyncDisposal();
+    engine.resolve(IAsyncResource);
+
+    const actual = () => engine[Symbol.dispose]();
+
+    expect(actual).toThrow();
   });
 });

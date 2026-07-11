@@ -42,6 +42,8 @@ export type Boundary = { readonly id: symbol };
 export type DisposalSink = {
   announce(instance: unknown, boundary: Boundary): void;
   end(boundary: Boundary): void;
+  /** Async teardown for a boundary (`await using` / `disposeAsync`). Optional — a sync-only sink omits it. */
+  endAsync?(boundary: Boundary): Promise<void>;
 };
 
 /**
@@ -62,6 +64,7 @@ export type Scope = {
   resolve<T extends SourceType>(token: ServiceIdentifier<T>): T;
   resolveAll<T extends SourceType>(token: ServiceIdentifier<T>): T[];
   [Symbol.dispose](): void;
+  [Symbol.asyncDispose](): Promise<void>;
 };
 
 /** The built engine: the provider root plus the verb that opens a scope. */
@@ -185,7 +188,11 @@ export const buildEngine = (services: DescriptorMap, composition: EngineComposit
         (instance as Record<string, unknown>)[field] = (locals[slot] as { value: unknown }).value;
       }
       // Announce the construction against the boundary that resolved it — the seam
-      // Phase 14's disposal tracker composes onto (decisions.md §8). Inert unless composed.
+      // the disposal tracker composes onto (decisions.md §8), inert unless composed.
+      // Every constructed disposable is announced, no lifetime exempt: it dies at its
+      // resolving boundary's end (root-resolved at provider dispose, scope-resolved at
+      // scope dispose). "The pass never disposes" means pass exit is not a disposal
+      // event — the caller holds the result — not that resolve-lifetime is never tracked.
       disposal?.announce(instance, boundary);
       return instance;
     };
@@ -242,6 +249,9 @@ export const buildEngine = (services: DescriptorMap, composition: EngineComposit
     resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolveValue(token, freshPass(base), boundary) as T,
     resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(token, freshPass(base), boundary) as T[],
     [Symbol.dispose]: (): void => disposal?.end(boundary),
+    [Symbol.asyncDispose]: async (): Promise<void> => {
+      await disposal?.endAsync?.(boundary);
+    },
   });
 
   const rootBase: Env = composition.scoped?.beginScope() ?? {};
@@ -270,7 +280,9 @@ export const buildEngine = (services: DescriptorMap, composition: EngineComposit
       throw new Error('createScope requires a scoped lifetime to be composed');
     }
     // A scope is its own boundary — constructions it resolves are announced there
-    // and end when it is disposed (the nearest-boundary refinement is Phase 14).
+    // and end when it is disposed. That per-boundary filing is the nearest-boundary
+    // rule: a scope-resolved transient files under the scope, a root-resolved one
+    // under the root (decisions.md §8; the tracker is {@link DisposalSink}).
     return scopeSurface(composition.scoped.beginScope(), { id: Symbol('scope') });
   };
 
@@ -279,5 +291,6 @@ export const buildEngine = (services: DescriptorMap, composition: EngineComposit
     resolveAll: root.resolveAll,
     createScope,
     [Symbol.dispose]: root[Symbol.dispose],
+    [Symbol.asyncDispose]: root[Symbol.asyncDispose],
   };
 };
