@@ -145,3 +145,116 @@ describe('createCollection: the builder carries the register-side surface', () =
   });
 });
 
+
+abstract class IResource {}
+class Resource implements IResource {}
+
+// A member-bearing class, so Promise<Widget> and Widget are genuinely distinct
+// types — that is what makes the async/sync verb mismatch a real local error
+// rather than a structural coincidence for an empty class.
+class Widget {
+  readonly kind = 'widget' as const;
+}
+
+describe('createCollection: usingAsync exists only on an async collection (decisions.md §8)', () => {
+  it('has no runtime usingAsync verb on a sync collection', () => {
+    const services = createCollection([Lifetime.Singleton]);
+
+    const builder = services.register(Resource).asSelf() as Record<string, unknown>;
+    const actual = builder.usingAsync;
+
+    expect(actual).toBeUndefined();
+  });
+
+  it('rejects usingAsync on a sync collection at compile time', () => {
+    const services = createCollection([Lifetime.Singleton]);
+
+    services
+      .register(Resource)
+      // @ts-expect-error - a sync collection was not composed async; it has no usingAsync verb at all
+      .usingAsync;
+  });
+
+  it('exposes a runtime usingAsync verb on an async collection', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+    const expected = 'function';
+
+    const builder = services.register(Resource) as Record<string, unknown>;
+    const actual = typeof builder.usingAsync;
+
+    expect(actual).toBe(expected);
+  });
+});
+
+describe('createCollection: usingAsync declares async intent at the call site', () => {
+  it('records the registration as async', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+    const expected = true;
+
+    services
+      .register(Resource)
+      .usingAsync(async () => new Resource())
+      .asSelf()
+      .singleton();
+    const actual = services.regs.get(Resource)?.isAsync;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('records the registration as a factory', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+    const expected = true;
+
+    services
+      .register(Resource)
+      .usingAsync(async () => new Resource())
+      .asSelf();
+    const actual = services.regs.get(Resource)?.usesFactory;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('records the declared dependencies of an async declared-deps factory', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+    const expected = [IResource];
+
+    services
+      .register(Widget)
+      .usingAsync([IResource], async (_resource: IResource) => new Widget())
+      .asSelf();
+    const actual = services.regs.get(Widget)?.declaredDeps;
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('a synchronous factory does not satisfy usingAsync at compile time', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+
+    services
+      .register(Widget)
+      // @ts-expect-error - a sync factory returns Widget, not Promise<Widget>; usingAsync requires async
+      .usingAsync(() => new Widget());
+  });
+
+  it('an async factory does not satisfy using at compile time', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+
+    services
+      .register(Widget)
+      // @ts-expect-error - an async factory returns Promise<Widget>, not Widget; using requires sync
+      .using(async () => new Widget());
+  });
+
+  it('usingAsync on an abstract registration returns a newable-flavoured builder whose asSelf registers', () => {
+    const services = createCollection([Lifetime.Singleton], { async: true });
+    const expected = true;
+
+    services
+      .register(IResource)
+      .usingAsync(async () => new Resource())
+      .asSelf();
+    const actual = services.regs.has(IResource);
+
+    expect(actual).toBe(expected);
+  });
+});

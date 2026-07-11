@@ -14,6 +14,8 @@ export type GraphFacts = {
   readonly lifetime: Lifetime | undefined;
   readonly owner: ServiceIdentifier<SourceType>;
   readonly deps: readonly ServiceIdentifier<SourceType>[];
+  /** Whether this node's factory is async (`usingAsync`) — read by the async-through-sync-path policy (decisions.md §8). */
+  readonly isAsync: boolean;
 };
 
 /**
@@ -54,15 +56,16 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
   const graph = new Map<GraphNode, GraphFacts>();
   for (const [owner, descriptors] of services) {
     for (const descriptor of descriptors) {
+      const isAsync = descriptor.isAsync === true;
       if (descriptor.forwardTarget != null) {
-        graph.set(descriptor, { lifetime: undefined, owner, deps: [descriptor.forwardTarget] });
+        graph.set(descriptor, { lifetime: undefined, owner, deps: [descriptor.forwardTarget], isAsync });
         continue;
       }
       if (descriptor.usesFactory) {
-        graph.set(descriptor, { lifetime: descriptor.lifetime, owner, deps: [...(descriptor.declaredDeps ?? [])] });
+        graph.set(descriptor, { lifetime: descriptor.lifetime, owner, deps: [...(descriptor.declaredDeps ?? [])], isAsync });
         continue;
       }
-      graph.set(descriptor, { lifetime: descriptor.lifetime, owner, deps: declaredDeps(descriptor.implementation) });
+      graph.set(descriptor, { lifetime: descriptor.lifetime, owner, deps: declaredDeps(descriptor.implementation), isAsync });
     }
   }
   return graph;

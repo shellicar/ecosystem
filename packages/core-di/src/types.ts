@@ -23,6 +23,15 @@ export type CacheKey<T extends SourceType> = ServiceRegistration<T> | InstanceFa
 
 export type InstanceFactory<T extends SourceType> = (x: IResolutionScope) => T;
 
+/**
+ * An async factory: it returns a `Promise<T>` rather than a `T`. Declared with
+ * `usingAsync` (decisions.md §8), which localises the async/sync mismatch at the
+ * call site — `using(asyncFactory)` and `usingAsync(syncFactory)` are each a
+ * local type error. Its instance is awaited at the build boundary
+ * (`buildProviderAsync`); `resolve()` stays synchronous.
+ */
+export type AsyncInstanceFactory<T extends SourceType> = (x: IResolutionScope) => Promise<T>;
+
 /** The instance type a service identifier resolves to. */
 export type ResolvedDep<I> = I extends ServiceIdentifier<infer T> ? T : never;
 /**
@@ -57,6 +66,14 @@ export type ServiceDescriptor<T extends SourceType> = {
    * declarative `@dependsOn` wiring, so `validate()` never probe-constructs it.
    */
   usesFactory?: boolean;
+  /**
+   * Whether the factory is async (`usingAsync`) — it returns a `Promise<T>` whose
+   * instance is awaited at the build boundary (`buildProviderAsync`), in
+   * topological order, so a later synchronous `resolve()` reads the settled
+   * instance. Only a singleton can be pre-baked this way; an async factory
+   * reachable through a sync path is a `validate()` problem (decisions.md §8).
+   */
+  isAsync?: boolean;
   /**
    * The dependencies declared by a `using([deps], factory)` registration. The
    * container resolves them and hands them, positionally, to the factory. Being
@@ -121,7 +138,26 @@ export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) ex
 export type EnsureObject<T> = T extends object ? T : never;
 
 export type RegistrationMap<T extends SourceType = any> = Map<CacheKey<T>, T>;
-export type DescriptorMap<T extends SourceType = any> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]>;
+
+/**
+ * A phantom brand recording whether a descriptor map came from an async
+ * collection (decisions.md §8). It exists only in the type system — never at
+ * runtime — so the async/sync build choice is enforced at compile time.
+ */
+declare const asyncBrand: unique symbol;
+
+/**
+ * A registered token to its descriptors. The optional `Async` brand marks a map
+ * built from an async collection (`createCollection(..., { async: true })`):
+ * `buildEngine` accepts only a sync-branded map (`Async` is `false`), so an
+ * async-branded map is a type error against it and the consumer is pushed to
+ * `buildEngineAsync` (decisions.md §8). A hand-built {@link createDescriptorMap}
+ * is sync-branded and so slips past this at the type level — which is why the
+ * engine also refuses an `isAsync` node at build, a runtime backstop.
+ */
+export type DescriptorMap<T extends SourceType = any, Async extends boolean = false> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]> & {
+  readonly [asyncBrand]?: Async;
+};
 
 export const createRegistrationMap = <T extends SourceType = any>(): RegistrationMap<T> => {
   return new Map<CacheKey<T>, T>();

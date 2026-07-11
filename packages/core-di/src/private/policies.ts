@@ -65,6 +65,29 @@ export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !
 export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped);
 
 /**
+ * An async factory (`usingAsync`) reachable through a synchronous path
+ * (decisions.md §8). Async is the build boundary only: `buildProviderAsync`
+ * awaits async *singleton* factories in topo order, so their instances are
+ * settled before any synchronous `resolve()`. An async factory under any other
+ * lifetime is constructed during a sync resolve, where its `Promise` cannot be
+ * awaited — the graph knows this statically, before anything constructs. The
+ * safe case is exactly `Lifetime.Singleton`; every other effective lifetime
+ * (including the un-verbed default, which is never singleton) is a problem.
+ */
+export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
+  const problems: ValidationProblem[] = [];
+  for (const facts of graph.values()) {
+    if (facts.isAsync && facts.lifetime !== Lifetime.Singleton) {
+      problems.push({
+        kind: ValidationProblemKind.AsyncThroughSyncPath,
+        message: `${facts.owner.name} is an async factory resolving under ${facts.lifetime ?? 'the default lifetime'} — an async factory reachable through a synchronous path; register it as a singleton and build with buildProviderAsync`,
+      });
+    }
+  }
+  return problems;
+};
+
+/**
  * Maps each {@link CaptivePolicy} option to its graph policy. Total over the
  * enum, so a new enum member without an entry here is a compile error rather
  * than a silent fall-through.

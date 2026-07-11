@@ -24,7 +24,8 @@
  * composed member.
  */
 import { Lifetime } from '../enums';
-import type { AbstractNewable, InstanceFactory, Newable, ResolvedDeps, ServiceIdentifier, SourceType } from '../types';
+import { createDescriptorMap } from '../types';
+import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 
 /** The lowercase call-site verb for each production `Lifetime` member. */
 const lifetimeVerbNames = {
@@ -41,44 +42,68 @@ type VerbName<L extends Lifetime> = (typeof lifetimeVerbNames)[L];
 export type ComposableLifetime = Exclude<Lifetime, Lifetime.Transient>;
 
 /** The verbs generated for a newable-flavoured composition, one per composed lifetime. */
-type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime> = {
-  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L>;
+type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
+  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L, Async>;
 };
 
 /** The verbs generated for an abstract-flavoured composition, one per composed lifetime. */
-type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime> = {
-  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L>;
+type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
+  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async>;
 };
+
+/**
+ * The async verb, present on the builder only when the collection was composed
+ * async (`createCollection(..., { async: true })`). On a sync collection it does
+ * not exist at all — no verb in the type, none folded on at runtime — so async
+ * intent cannot be declared where the build path could not honour it (decisions.md
+ * §8). A newable-flavoured builder is returned either way, since a factory can
+ * build the implementation as itself.
+ */
+type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean> = Async extends true
+  ? {
+      /**
+       * Supply an async factory (returns `Promise<T>`). A separate verb from `using`
+       * so async intent is declared at the call site: `using(asyncFactory)` and
+       * `usingAsync(syncFactory)` are each a local type error (decisions.md §8). Its
+       * instance is awaited at the build boundary (`buildProviderAsync`).
+       */
+      usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async>;
+      /** Supply an async factory with declared dependencies, resolved and handed to it positionally. */
+      usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async>;
+    }
+  : unknown;
 
 /**
  * The builder for a concrete (newable) registration. `.as()` declares a
  * resolution face and type-checks it against the implementation; `.asSelf()`
  * declares the concrete itself as a face — offered here because a newable can
- * be built as itself.
+ * be built as itself. `usingAsync` is present only on an async composition (see
+ * {@link AsyncVerb}).
  */
-export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L>;
-  asSelf(): ComposableNewableBuilder<T, L>;
+export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean> = {
+  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async>;
+  asSelf(): ComposableNewableBuilder<T, L, Async>;
   /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L>;
+  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L>;
-} & NewableLifetimeVerbs<T, L | Lifetime.Transient>;
+  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async>;
+} & NewableLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async>;
 
 /**
  * The builder for an abstract registration. It has no `.asSelf()` — an
  * abstract class cannot be built as itself, so identity is declared with
  * `.as()` and the instance supplied by `.using()`. Once a factory supplies the
  * instance the registration can be built as itself, so `using()` returns the
- * newable-flavoured builder (with `asSelf`).
+ * newable-flavoured builder (with `asSelf`). `usingAsync` is present only on an
+ * async composition (see {@link AsyncVerb}).
  */
-export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L>;
+export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, Async extends boolean> = {
+  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async>;
   /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L>;
+  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L>;
-} & AbstractLifetimeVerbs<T, L | Lifetime.Transient>;
+  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async>;
+} & AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async>;
 
 /** One registration: the shared node every face of a `register()` call points at. */
 export type ComposableNode = {
@@ -86,20 +111,35 @@ export type ComposableNode = {
   lifetime?: Lifetime;
   createInstance?: InstanceFactory<SourceType>;
   usesFactory?: boolean;
+  /** Whether the factory is async (`usingAsync`) — awaited at the build boundary (decisions.md §8). */
+  isAsync?: boolean;
   declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
 
-export type ComposableCollection<L extends Lifetime> = {
+export type ComposableCollection<L extends Lifetime, Async extends boolean> = {
   readonly regs: Map<ServiceIdentifier<SourceType>, ComposableNode>;
   /** Registers a concrete (newable) implementation. The returned builder offers `asSelf`. */
-  register<T extends SourceType>(impl: Newable<T>): ComposableNewableBuilder<T, L>;
+  register<T extends SourceType>(impl: Newable<T>): ComposableNewableBuilder<T, L, Async>;
   /** Registers an abstract implementation. The returned builder has no `asSelf` — supply an instance with `.using()`. */
-  register<T extends SourceType>(impl: AbstractNewable<T>): ComposableAbstractBuilder<T, L>;
+  register<T extends SourceType>(impl: AbstractNewable<T>): ComposableAbstractBuilder<T, L, Async>;
 };
 
-export const createCollection = <const L extends ComposableLifetime>(lifetimes: readonly L[]): ComposableCollection<L> => {
+/** How a collection declares async intent (decisions.md §8). Omitted or `false` is a sync collection. */
+export type CreateCollectionOptions<Async extends boolean> = {
+  readonly async?: Async;
+};
+
+export const createCollection = <const L extends ComposableLifetime, const Async extends boolean = false>(
+  lifetimes: readonly L[],
+  options: CreateCollectionOptions<Async> = {},
+): ComposableCollection<L, Async> => {
+  // Async-ness is declared here, at composition, not inferred (decisions.md §8):
+  // the flag both marks the collection type — so only the async build path
+  // consumes it — and folds `usingAsync` onto the builder. A sync collection has
+  // no `usingAsync` at all, in the type or at runtime.
+  const async = options.async === true;
   const regs = new Map<ServiceIdentifier<SourceType>, ComposableNode>();
-  const register = <T extends SourceType>(impl: Newable<T> | AbstractNewable<T>): ComposableNewableBuilder<T, L> | ComposableAbstractBuilder<T, L> => {
+  const register = <T extends SourceType>(impl: Newable<T> | AbstractNewable<T>): ComposableNewableBuilder<T, L, Async> | ComposableAbstractBuilder<T, L, Async> => {
     // One mutable node shared by every face this register() call declares.
     const node: ComposableNode = { impl: impl as Newable<SourceType> };
     const builder: Record<string, unknown> = {
@@ -129,6 +169,29 @@ export const createCollection = <const L extends ComposableLifetime>(lifetimes: 
         return builder;
       },
     };
+    if (async) {
+      // usingAsync exists only on an async collection — folded on from the same
+      // flag the collection type is marked with, so runtime and type cannot disagree.
+      builder.usingAsync = (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => {
+        if (typeof depsOrFactory === 'function') {
+          // Opaque async form: `usingAsync((scope) => Promise<Impl>)`. Awaited at
+          // the build boundary; the graph chain terminates at this node.
+          node.createInstance = depsOrFactory;
+          node.usesFactory = true;
+          node.isAsync = true;
+          return builder;
+        }
+        // Declared-deps async form: `usingAsync([deps], asyncFactory)`. Each dep is
+        // resolved synchronously and handed, positionally, to the async factory.
+        const deps = depsOrFactory;
+        const build = factory as (...args: SourceType[]) => Promise<SourceType>;
+        node.createInstance = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
+        node.usesFactory = true;
+        node.isAsync = true;
+        node.declaredDeps = deps;
+        return builder;
+      };
+    }
     // The verbs are folded on from the same array the type derives from, so
     // the composed type and the composed runtime methods cannot disagree.
     for (const lifetime of [...lifetimes, Lifetime.Transient]) {
@@ -137,7 +200,34 @@ export const createCollection = <const L extends ComposableLifetime>(lifetimes: 
         return builder;
       };
     }
-    return builder as ComposableNewableBuilder<T, L>;
+    return builder as ComposableNewableBuilder<T, L, Async>;
   };
-  return { regs, register: register as ComposableCollection<L>['register'] };
+  return { regs, register: register as ComposableCollection<L, Async>['register'] };
+};
+
+/**
+ * Bridges a composed collection to the {@link DescriptorMap} the engine consumes,
+ * carrying its async brand so the build choice stays typed: a sync collection's
+ * map builds via `buildEngine`, an async one's only via `buildEngineAsync`
+ * (decisions.md §8). One descriptor per registration — the full multiplicity,
+ * forward-target and dynamic-scope reconciliation of the two registration models
+ * is Phase 17's composition; this is the minimal seam the async guard needs.
+ */
+export const toDescriptorMap = <L extends Lifetime, Async extends boolean>(collection: ComposableCollection<L, Async>): DescriptorMap<SourceType, Async> => {
+  const map = createDescriptorMap<SourceType>();
+  for (const [token, node] of collection.regs) {
+    const descriptor: ServiceDescriptor<SourceType> = {
+      implementation: node.impl,
+      cacheKey: Symbol(node.impl.name),
+      lifetime: node.lifetime,
+      createInstance: node.createInstance ?? (() => new (node.impl as Newable<SourceType>)()),
+      usesFactory: node.usesFactory,
+      isAsync: node.isAsync,
+      declaredDeps: node.declaredDeps,
+    };
+    map.set(token, [descriptor]);
+  }
+  // The runtime map holds no brand; async-ness is the collection's compile-time
+  // fact, asserted onto the phantom brand so the build functions can guard on it.
+  return map as DescriptorMap<SourceType, Async>;
 };

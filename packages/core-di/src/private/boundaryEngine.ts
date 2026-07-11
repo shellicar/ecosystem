@@ -84,7 +84,10 @@ const ok = (value: unknown): Outcome => ({ ok: true, value });
 const failed = (error: unknown): Outcome => ({ ok: false, error });
 
 /**
- * Renders a registration map into a running engine (decisions.md §7/§8).
+ * Assembles the shared engine machinery over a registration map (decisions.md
+ * §7/§8) — used by both {@link buildEngine} and {@link buildEngineAsync}, which
+ * differ only in how singletons are pre-baked: synchronously, or awaiting async
+ * (`usingAsync`) factories at the build boundary.
  *
  * The graph is derived once, and every token's execution is compiled into a
  * static {@link Plan} at build — dependency edges and faults (cycles,
@@ -103,7 +106,7 @@ const failed = (error: unknown): Outcome => ({ ok: false, error });
  * a singleton whose construction throws has that error *held* as its resolution:
  * lenient by default, thrown at build when `validate` is set.
  */
-export const buildEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions = {}): Engine => {
+const setupEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions) => {
   const graph = deriveFacts(services);
   const index = indexByOwner(graph);
   /** A singleton whose build threw: its error, replayed as its resolution. */
@@ -256,41 +259,121 @@ export const buildEngine = (services: DescriptorMap, composition: EngineComposit
 
   const rootBase: Env = composition.scoped?.beginScope() ?? {};
 
-  // Pre-bake singletons deps-first: each is worked out once by executing its
-  // plan, its instance memoised in the feature's table, or its error held as
-  // that node's resolution (lenient by default; thrown at build under validate).
-  for (const node of topologicalOrder(graph)) {
-    if (node.forwardTarget != null || effectiveLifetime(node) !== Lifetime.Singleton) {
-      continue;
-    }
-    const outcome = execute(planFor(node), freshPass(rootBase), rootBoundary);
+  /** Singletons in deps-first order — the nodes pre-baked at build (forwards excluded). */
+  const singletonNodes = (): GraphNode[] => topologicalOrder(graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton);
+
+  /** Hold a failed pre-bake as that node's resolution — lenient by default, thrown at build under validate. */
+  const hold = (node: GraphNode, outcome: Outcome): void => {
     if (!outcome.ok) {
       heldErrors.set(node, outcome.error);
     }
-  }
+  };
 
-  if (options.validate === true && heldErrors.size > 0) {
-    throw heldErrors.values().next().value;
-  }
-
-  const root = scopeSurface(rootBase, rootBoundary);
-
-  const createScope = (): Scope => {
-    if (composition.scoped === undefined) {
-      throw new Error('createScope requires a scoped lifetime to be composed');
+  /**
+   * Await one async singleton's factory (`usingAsync`) and seed the settled
+   * instance into the singleton table, so a later synchronous resolve reads the
+   * value and never the promise. Async is the build boundary only (decisions.md
+   * §8): deps-first order means every singleton this one depends on is already
+   * seeded, so the factory's synchronous `scope.resolve` calls return settled
+   * instances. `resolve()` never awaits. The failure path mirrors `runStep`'s —
+   * the factory's throw (or rejection) is wrapped as this token's creation error.
+   */
+  const constructAsyncSingleton = async (node: GraphNode): Promise<Outcome> => {
+    const env = freshPass(rootBase);
+    const token = graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+    try {
+      const value = await Promise.resolve(node.createInstance(inPassScope(env, rootBoundary)));
+      const seeded = composition.singleton === undefined ? value : composition.singleton.getInstance(node, env, () => value);
+      disposal?.announce(seeded, rootBoundary);
+      return ok(seeded);
+    } catch (err) {
+      return failed(new ServiceCreationError(token, err instanceof Error ? err : undefined, node.implementation));
     }
-    // A scope is its own boundary — constructions it resolves are announced there
-    // and end when it is disposed. That per-boundary filing is the nearest-boundary
-    // rule: a scope-resolved transient files under the scope, a root-resolved one
-    // under the root (decisions.md §8; the tracker is {@link DisposalSink}).
-    return scopeSurface(composition.scoped.beginScope(), { id: Symbol('scope') });
   };
 
-  return {
-    resolve: root.resolve,
-    resolveAll: root.resolveAll,
-    createScope,
-    [Symbol.dispose]: root[Symbol.dispose],
-    [Symbol.asyncDispose]: root[Symbol.asyncDispose],
+  /** Pre-bake every singleton synchronously by executing its plan (the sync build boundary). */
+  const prebakeSync = (): void => {
+    for (const node of singletonNodes()) {
+      // The sync build boundary refuses an async factory: only buildEngineAsync can
+      // await its instance. A raw DescriptorMap can carry an isAsync node past the
+      // type-level guard (hand-built descriptors), so this backstops it at build,
+      // naming the token and pointing to the async builder (decisions.md §8).
+      if (node.isAsync === true) {
+        const token = graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+        throw new Error(`Cannot build '${token.name}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`);
+      }
+      hold(node, execute(planFor(node), freshPass(rootBase), rootBoundary));
+    }
   };
+
+  /** Pre-bake deps-first, awaiting each async singleton's factory in turn (the async build boundary). */
+  const prebakeAsync = async (): Promise<void> => {
+    for (const node of singletonNodes()) {
+      hold(node, node.isAsync === true ? await constructAsyncSingleton(node) : execute(planFor(node), freshPass(rootBase), rootBoundary));
+    }
+  };
+
+  /** Under `validate`, surface the first held singleton error at build rather than at first resolve. */
+  const throwIfValidating = (): void => {
+    if (options.validate === true && heldErrors.size > 0) {
+      throw heldErrors.values().next().value;
+    }
+  };
+
+  const assemble = (): Engine => {
+    const root = scopeSurface(rootBase, rootBoundary);
+
+    const createScope = (): Scope => {
+      if (composition.scoped === undefined) {
+        throw new Error('createScope requires a scoped lifetime to be composed');
+      }
+      // A scope is its own boundary — constructions it resolves are announced there
+      // and end when it is disposed. That per-boundary filing is the nearest-boundary
+      // rule: a scope-resolved transient files under the scope, a root-resolved one
+      // under the root (decisions.md §8; the tracker is {@link DisposalSink}).
+      return scopeSurface(composition.scoped.beginScope(), { id: Symbol('scope') });
+    };
+
+    return {
+      resolve: root.resolve,
+      resolveAll: root.resolveAll,
+      createScope,
+      [Symbol.dispose]: root[Symbol.dispose],
+      [Symbol.asyncDispose]: root[Symbol.asyncDispose],
+    };
+  };
+
+  return { prebakeSync, prebakeAsync, throwIfValidating, assemble };
+};
+
+/**
+ * Renders a registration map into a running engine, synchronously. Singletons
+ * are pre-baked at build in topological order; a singleton whose construction
+ * throws has that error held as its resolution — lenient by default, thrown here
+ * under `validate`. `resolve` executes a static plan and never re-enters itself.
+ */
+export const buildEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions = {}): Engine => {
+  const engine = setupEngine(services, composition, options);
+  engine.prebakeSync();
+  engine.throwIfValidating();
+  return engine.assemble();
+};
+
+/**
+ * The async build boundary (decisions.md §8): the same engine as
+ * {@link buildEngine}, but async singleton factories (`usingAsync`) are awaited
+ * in topological order before the provider is returned, so their instances are
+ * settled and every subsequent `resolve()` stays synchronous. Async is possible
+ * here — where every v4 attempt failed — because definition-time edges separate
+ * knowing the graph from constructing it. An async factory reachable through a
+ * sync path (one not pre-baked as a singleton) is an `asyncThroughSyncPathPolicy`
+ * problem for `validate()`, not a runtime check.
+ */
+export const buildEngineAsync = async (services: DescriptorMap<SourceType, boolean>, composition: EngineComposition, options: BuildEngineOptions = {}): Promise<Engine> => {
+  // The phantom async brand exists only to steer the sync/async build choice at
+  // the public boundary; setupEngine treats every map alike, so erase it here.
+  const engine = setupEngine(services as DescriptorMap, composition, options);
+  await engine.prebakeAsync();
+  engine.throwIfValidating();
+  return engine.assemble();
 };

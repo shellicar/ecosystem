@@ -29,4 +29,5 @@ export enum ValidationProblemKind {
   MissingTarget = 'MISSING_TARGET',
   CaptiveDependency = 'CAPTIVE_DEPENDENCY',
   Cycle = 'CYCLE',
+  AsyncThroughSyncPath = 'ASYNC_THROUGH_SYNC_PATH',
 }

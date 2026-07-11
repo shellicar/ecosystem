@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 import { Lifetime } from '../src/enums';
 import { CircularDependencyError, SelfDependencyError, ServiceCreationError, UnregisteredServiceError } from '../src/errors';
-import { type Boundary, buildEngine, type DisposalSink, type EngineComposition } from '../src/private/boundaryEngine';
+import { type Boundary, buildEngine, buildEngineAsync, type DisposalSink, type EngineComposition } from '../src/private/boundaryEngine';
 import { createDisposal } from '../src/private/disposal';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
@@ -23,6 +23,8 @@ const composition = (): EngineComposition => ({
 type DescriptorOptions<T extends SourceType> = {
   readonly lifetime?: Lifetime;
   readonly factory?: InstanceFactory<T>;
+  readonly isAsync?: boolean;
+  readonly declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
 
 // An un-verbed registration carries no lifetime on its descriptor; the engine's
@@ -34,6 +36,8 @@ const descriptor = <T extends SourceType>(implementation: ServiceImplementation<
   lifetime: options.lifetime,
   createInstance: options.factory ?? (() => new implementation()),
   usesFactory: options.factory != null,
+  isAsync: options.isAsync,
+  declaredDeps: options.declaredDeps,
 });
 
 const mapOf = (...entries: readonly [ServiceIdentifier<SourceType>, ServiceDescriptor<SourceType>][]): DescriptorMap => {
@@ -622,5 +626,128 @@ describe('boundaryEngine: disposal feature — nearest-boundary tracker (decisio
     const actual = () => engine[Symbol.dispose]();
 
     expect(actual).toThrow();
+  });
+});
+
+// Phase 15 (P6b): async at the build boundary (decisions.md §8). buildEngineAsync
+// awaits async singleton factories (usingAsync) in topo order, so their instances
+// are settled before any synchronous resolve. resolve() stays synchronous, always.
+describe('boundaryEngine: async at the build boundary — buildEngineAsync (decisions.md §8)', () => {
+  abstract class IAsyncResource {}
+  class AsyncResource implements IAsyncResource {
+    constructor() {
+      track('AsyncResource');
+    }
+  }
+
+  abstract class ISyncDep {}
+  class SyncDep implements ISyncDep {
+    constructor() {
+      track('SyncDep');
+    }
+  }
+  abstract class IAsyncHolder {}
+  class AsyncHolder implements IAsyncHolder {}
+
+  const asyncSingleton = () => descriptor(AsyncResource, { lifetime: Lifetime.Singleton, isAsync: true, factory: () => Promise.resolve(new AsyncResource()) });
+  const rejectingSingleton = () => descriptor(AsyncResource, { lifetime: Lifetime.Singleton, isAsync: true, factory: () => Promise.reject(new Error('async boom')) });
+
+  it('awaits an async singleton factory so a synchronous resolve returns the settled instance', async () => {
+    const engine = await buildEngineAsync(mapOf([IAsyncResource, asyncSingleton()]), composition());
+
+    const actual = engine.resolve(IAsyncResource);
+
+    expect(actual).toBeInstanceOf(AsyncResource);
+  });
+
+  it('constructs the async singleton once, at build', async () => {
+    const expected = 1;
+    await buildEngineAsync(mapOf([IAsyncResource, asyncSingleton()]), composition());
+
+    const actual = countOf('AsyncResource');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('resolves the awaited async singleton as a pure lookup, constructing nothing more', async () => {
+    const engine = await buildEngineAsync(mapOf([IAsyncResource, asyncSingleton()]), composition());
+    const expected = countOf('AsyncResource');
+
+    engine.resolve(IAsyncResource);
+    const actual = countOf('AsyncResource');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('hands an async singleton factory the already-settled instance of its dependency', async () => {
+    let captured: unknown;
+    const holder = descriptor(AsyncHolder, {
+      lifetime: Lifetime.Singleton,
+      isAsync: true,
+      factory: (scope) => {
+        captured = scope.resolve(ISyncDep);
+        return Promise.resolve(new AsyncHolder());
+      },
+    });
+    const engine = await buildEngineAsync(mapOf([ISyncDep, descriptor(SyncDep, { lifetime: Lifetime.Singleton })], [IAsyncHolder, holder]), composition());
+    const expected = engine.resolve(ISyncDep);
+
+    const actual = captured;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('pre-bakes a synchronous singleton alongside an async one', async () => {
+    const expected = 1;
+    await buildEngineAsync(mapOf([ISyncDep, descriptor(SyncDep, { lifetime: Lifetime.Singleton })], [IAsyncResource, asyncSingleton()]), composition());
+
+    const actual = countOf('SyncDep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('leaves the async build unthrown when a singleton factory rejects (lenient)', async () => {
+    let actual = 'built';
+    try {
+      await buildEngineAsync(mapOf([IAsyncResource, rejectingSingleton()]), composition());
+    } catch {
+      actual = 'threw';
+    }
+
+    expect(actual).toBe('built');
+  });
+
+  it('throws the held error when the rejected async singleton is resolved', async () => {
+    const engine = await buildEngineAsync(mapOf([IAsyncResource, rejectingSingleton()]), composition());
+
+    const actual = () => engine.resolve(IAsyncResource);
+
+    expect(actual).toThrow(ServiceCreationError);
+  });
+
+  it('throws the held error at build when validate is set', async () => {
+    let actual: unknown;
+    try {
+      await buildEngineAsync(mapOf([IAsyncResource, rejectingSingleton()]), composition(), { validate: true });
+    } catch (err) {
+      actual = err;
+    }
+
+    expect(actual).toBeInstanceOf(ServiceCreationError);
+  });
+
+  // The sync build boundary refuses an async factory outright (decisions.md §8): a raw
+  // DescriptorMap can carry an isAsync node past the type-level guard, so the engine
+  // backstops it at build, naming the token and pointing to the async builder.
+  it('refuses an async singleton at build under the synchronous buildEngine', () => {
+    const actual = () => buildEngine(mapOf([IAsyncResource, asyncSingleton()]), composition());
+
+    expect(actual).toThrow(/buildProviderAsync/);
+  });
+
+  it('names the refused async token when the synchronous build throws', () => {
+    const actual = () => buildEngine(mapOf([IAsyncResource, asyncSingleton()]), composition());
+
+    expect(actual).toThrow(/IAsyncResource/);
   });
 });
