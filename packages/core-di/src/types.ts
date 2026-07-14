@@ -144,12 +144,39 @@ export type ServiceCollectionOptions = {
 };
 
 /**
+ * A timing surfaced by the instrumentation hook (decisions.md §7): the build
+ * once, and each `resolve` call. `durationMs` is the elapsed time in
+ * milliseconds; a `resolve` event also carries the resolved token's `name`.
+ */
+export type InstrumentationEvent = { readonly kind: 'build'; readonly durationMs: number } | { readonly kind: 'resolve'; readonly identifier: string; readonly durationMs: number };
+
+/** Receives an {@link InstrumentationEvent} each time one fires. */
+export type InstrumentationHook = (event: InstrumentationEvent) => void;
+
+/**
+ * The instrumentation hook (decisions.md §7): a toggleable way to time
+ * `buildProvider` and each `resolve`. `enabled` is the toggle — when it is
+ * `false` (or the whole option is omitted) the hook is present but never called:
+ * a branch check with no timing, so production pays nothing. When `true`, the
+ * build is timed once and every `resolve` is timed, each surfaced to
+ * {@link onTiming}.
+ */
+export type InstrumentationOptions = {
+  readonly enabled: boolean;
+  readonly onTiming: InstrumentationHook;
+};
+
+/**
  * Options for {@link IServiceCollection.buildProvider}. When `validate` is true,
  * the wiring is validated up front and a {@link ValidationError} is thrown if it
  * has problems. Omitted or false leaves the provider lenient (the default).
+ *
+ * `instrument` turns on the instrumentation hook (decisions.md §7): omitted, or
+ * with `enabled: false`, the provider is not timed and pays nothing.
  */
 export type BuildProviderOptions = {
   validate?: boolean;
+  instrument?: InstrumentationOptions;
 };
 
 /** A single wiring problem reported by {@link IServiceCollection.validate}. */

@@ -15,6 +15,7 @@
 * 🔥 Eager or lazy singleton construction
 * 🧹 Deterministic per-lifetime disposal
 * 🗺️ Inspect the built dependency graph with `printGraph`
+* ⏱️ Time `buildProvider` and each `resolve` with an opt-in instrumentation hook
 * 📦 Service modules for organization
 * 🔍 Circular dependency detection at resolution time
 * 🚨 Clear error messages with dependency chain tracking
@@ -283,6 +284,20 @@ provider.printGraph();
 // IClock -> SystemClock [SINGLETON]
 // IGreeter -> Greeter [SCOPED]
 //     -> IClock
+```
+
+* Time the build and resolves. Pass an instrumentation hook to `buildProvider` and it times `buildProvider` and every `resolve`, handing each timing to `onTiming`. It is off by default: omit it, or set `enabled: false`, and the hook is present but never called, so a production build pays nothing. A `resolve` timing carries the resolved token name.
+
+```ts
+const timings: InstrumentationEvent[] = [];
+const provider = services.buildProvider({
+  instrument: {
+    enabled: process.env.NODE_ENV !== 'production',
+    onTiming: (event) => timings.push(event),
+  },
+});
+provider.resolve(IClock);
+// timings: [{ kind: 'build', durationMs }, { kind: 'resolve', identifier: 'IClock', durationMs }]
 ```
 
 ## Usage

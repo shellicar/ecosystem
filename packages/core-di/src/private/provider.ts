@@ -1,7 +1,7 @@
 import type { IServiceCollection } from '../interfaces';
 import { IResolutionScope, IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
-import type { ServiceIdentifier, SourceType } from '../types';
+import type { InstrumentationHook, ServiceIdentifier, SourceType } from '../types';
 import type { Engine, Scope } from './boundaryEngine';
 
 /**
@@ -32,10 +32,14 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
     private readonly scope: Scope,
     private readonly engine: Engine,
     private readonly rootProvider: ServiceProvider | undefined,
+    // The resolved instrumentation hook, or undefined when timing is off. The
+    // build boundary reads the enabled toggle once (decisions.md §7) and hands
+    // the active hook down; the provider just checks its presence.
+    private readonly instrument: InstrumentationHook | undefined,
   ) {}
 
-  public static createRoot(logger: ILogger, services: ScopeServicesSource, engine: Engine): ServiceProvider {
-    const root = new ServiceProvider(logger, services, engine, engine, undefined);
+  public static createRoot(logger: ILogger, services: ScopeServicesSource, engine: Engine, instrument: InstrumentationHook | undefined): ServiceProvider {
+    const root = new ServiceProvider(logger, services, engine, engine, undefined, instrument);
     // Bind the wrapper as the root boundary's surface, so a surface token
     // resolved inside a plan yields this provider, not the engine internals.
     engine.bindSurface(root);
@@ -47,6 +51,21 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   public resolve<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
+    // When timing is off the hook is present-but-not-called: a single branch,
+    // no clock read, so a consumer who leaves it off pays nothing (decisions.md
+    // §7). When on, the whole resolve is timed and surfaced with the token name.
+    if (this.instrument === undefined) {
+      return this.resolveInternal(identifier);
+    }
+    const start = performance.now();
+    try {
+      return this.resolveInternal(identifier);
+    } finally {
+      this.instrument({ kind: 'resolve', identifier: identifier.name, durationMs: performance.now() - start });
+    }
+  }
+
+  private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
     // The self-tokens resolve to the boundary surface the call went through
     // (decisions.md §7): scope tokens to this surface, the provider token to the
     // root. Never the in-pass scope — a later call through an injected surface
@@ -82,7 +101,7 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
     // arrays keep dynamic registrations from leaking to the parent.
     const scopeServices = this.Services.cloneShared();
     const engineScope = this.engine.createScope(() => scopeServices.snapshot());
-    const scoped = new ServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root);
+    const scoped = new ServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root, this.instrument);
     engineScope.bindSurface(scoped);
     return scoped;
   }

@@ -3,7 +3,7 @@ import { InvalidOperationError, InvalidServiceIdentifierError, ValidationError }
 import type { IAbstractServiceBuilder, IForwardBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
 import { IResolutionScope, IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
 import type { ILogger } from '../logger';
-import type { AbstractNewable, BuildProviderOptions, DescriptorMap, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationProblem, ValidationReport } from '../types';
+import type { AbstractNewable, BuildProviderOptions, DescriptorMap, InstrumentationHook, InstrumentationOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationProblem, ValidationReport } from '../types';
 import { buildEngine, buildEngineAsync } from './boundaryEngine';
 import { type ComposableCollection, type ComposableLifetime, createCollection } from './composableBuilder';
 import { createDisposal } from './disposal';
@@ -17,6 +17,14 @@ import { ServiceProvider } from './provider';
 
 /** The full composed lifetime set of the main `core-di` surface (the lite seam composes fewer; decisions.md §8). */
 const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve] as const satisfies readonly ComposableLifetime[];
+
+/**
+ * The instrumentation hook resolved to what the build boundary consumes: the
+ * `onTiming` sink when timing is enabled, otherwise `undefined` (decisions.md
+ * §7). Reading the `enabled` toggle here — once, at build — is what lets every
+ * downstream check be a bare presence test, so a disabled build times nothing.
+ */
+const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
 /**
  * The public collection: a shell over the composed register layer
@@ -204,12 +212,23 @@ export class ServiceCollection implements IServiceCollection {
   }
 
   public buildProvider(options?: BuildProviderOptions): IServiceProvider {
-    const frozen = this.freeze(options);
-    const engine = buildEngine(frozen.services, this.composition(), {
-      validate: options?.validate,
-      registrationMode: this.options.registrationMode,
-    });
-    return ServiceProvider.createRoot(this.logger, frozen, engine);
+    const onTiming = activeHook(options?.instrument);
+    const build = (): IServiceProvider => {
+      const frozen = this.freeze(options);
+      const engine = buildEngine(frozen.services, this.composition(), {
+        validate: options?.validate,
+        registrationMode: this.options.registrationMode,
+      });
+      return ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
+    };
+    // Off is a single branch — no clock read, no build event (decisions.md §7).
+    if (onTiming === undefined) {
+      return build();
+    }
+    const start = performance.now();
+    const provider = build();
+    onTiming({ kind: 'build', durationMs: performance.now() - start });
+    return provider;
   }
 
   /**
@@ -219,11 +238,22 @@ export class ServiceCollection implements IServiceCollection {
    * instances are settled and every later `resolve()` is synchronous.
    */
   public async buildProviderAsync(options?: BuildProviderOptions): Promise<IServiceProvider> {
-    const frozen = this.freeze(options);
-    const engine = await buildEngineAsync(frozen.services, this.composition(), {
-      validate: options?.validate,
-      registrationMode: this.options.registrationMode,
-    });
-    return ServiceProvider.createRoot(this.logger, frozen, engine);
+    const onTiming = activeHook(options?.instrument);
+    const build = async (): Promise<IServiceProvider> => {
+      const frozen = this.freeze(options);
+      const engine = await buildEngineAsync(frozen.services, this.composition(), {
+        validate: options?.validate,
+        registrationMode: this.options.registrationMode,
+      });
+      return ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
+    };
+    // Off is a single branch — no clock read, no build event (decisions.md §7).
+    if (onTiming === undefined) {
+      return build();
+    }
+    const start = performance.now();
+    const provider = await build();
+    onTiming({ kind: 'build', durationMs: performance.now() - start });
+    return provider;
   }
 }

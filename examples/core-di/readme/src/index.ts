@@ -36,5 +36,7 @@ import './disposal.js';
 import './validation.js';
 // * Inspect the built dependency graph with printGraph
 import './print-graph.js';
+// * Time buildProvider and each resolve with the instrumentation hook
+import './instrumentation.js';
 // * Circular dependency detection
 import './circular-dependency.js';

@@ -22,4 +22,23 @@ export {
 export type { IAbstractServiceBuilder, IAsyncServiceCollection, INewableServiceBuilder } from './interfaces';
 export { IAsyncDisposable, IDisposable, IForwardBuilder, IForwardResult, IResolutionScope, IScopedProvider, IServiceCollection, IServiceModule, IServiceProvider } from './interfaces';
 export { ILogger } from './logger';
-export type { AbstractNewable, AsyncInstanceFactory, BuildProviderOptions, InstanceFactory, MetadataType, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceImplementation, ServiceModuleType, ServiceRegistration, SourceType, ValidationProblem, ValidationReport } from './types';
+export type {
+  AbstractNewable,
+  AsyncInstanceFactory,
+  BuildProviderOptions,
+  InstanceFactory,
+  InstrumentationEvent,
+  InstrumentationHook,
+  InstrumentationOptions,
+  MetadataType,
+  Newable,
+  ServiceCollectionOptions,
+  ServiceDescriptor,
+  ServiceIdentifier,
+  ServiceImplementation,
+  ServiceModuleType,
+  ServiceRegistration,
+  SourceType,
+  ValidationProblem,
+  ValidationReport,
+} from './types';

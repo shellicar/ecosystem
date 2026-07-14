@@ -83,3 +83,4 @@
 {"description":"New error types: `BuilderError`, `ValidationError`, `CaptiveDependencyError`, and `InvalidOperationError`","category":"added"}
 {"description":"`INewableServiceBuilder` and `IAbstractServiceBuilder` replace `IServiceBuilder` and `ILifetimeBuilder`, and the builder interfaces are now type-only exports","category":"changed"}
 {"description":"Inspect the built graph with `provider.printGraph(write = console.log)` — a human-readable visualisation of the registered tokens, their `@dependsOn` and forward edges, and their lifetimes","category":"added"}
+{"description":"Time `buildProvider` and each `resolve` with `buildProvider({ instrument: { enabled, onTiming } })` — off by default, so a provider without it pays nothing","category":"added"}
