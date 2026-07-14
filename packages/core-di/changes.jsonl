@@ -82,3 +82,4 @@
 {"description":"`validate()` reports problems as a `ValidationReport` of `ValidationProblem` entries classified by `ValidationProblemKind`","category":"added"}
 {"description":"New error types: `BuilderError`, `ValidationError`, `CaptiveDependencyError`, and `InvalidOperationError`","category":"added"}
 {"description":"`INewableServiceBuilder` and `IAbstractServiceBuilder` replace `IServiceBuilder` and `ILifetimeBuilder`, and the builder interfaces are now type-only exports","category":"changed"}
+{"description":"Inspect the built graph with `provider.printGraph(write = console.log)` — a human-readable visualisation of the registered tokens, their `@dependsOn` and forward edges, and their lifetimes","category":"added"}

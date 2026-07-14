@@ -87,6 +87,13 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
     return scoped;
   }
 
+  public printGraph(write: (line: string) => void = console.log): void {
+    // The graph lives in the engine; the wrapper just forwards to this
+    // boundary's surface. Default sink is console.log so a bare `printGraph()`
+    // prints straight to the terminal.
+    this.scope.printGraph(write);
+  }
+
   [Symbol.dispose](): void {
     this.scope[Symbol.dispose]();
   }

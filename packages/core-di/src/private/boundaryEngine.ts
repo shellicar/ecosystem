@@ -2,7 +2,7 @@ import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
 import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
 import type { AsyncInstanceFactory, DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
-import { buildPlan, concreteNode, deriveFacts, followForward, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
+import { buildPlan, concreteNode, deriveFacts, followForward, formatGraph, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import type { Env, LifetimeFeature } from './lifetimeContracts';
 import type { ScopedLifetime } from './lifetimeScoped';
 
@@ -102,6 +102,8 @@ export type Scope = {
   resolve<T extends SourceType>(token: ServiceIdentifier<T>): T;
   resolveAll<T extends SourceType>(token: ServiceIdentifier<T>): T[];
   bindSurface(surface: unknown): void;
+  /** Writes a human-readable visualisation of this boundary's dependency graph, one line per `write` call (decisions.md §7 inspection). */
+  printGraph(write: (line: string) => void): void;
   [Symbol.dispose](): void;
   [Symbol.asyncDispose](): Promise<void>;
 };
@@ -403,6 +405,14 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     bindSurface: (surface: unknown): void => {
       surfaces.set(boundary.id, surface);
     },
+    printGraph: (write: (line: string) => void): void => {
+      // The graph is the boundary's own view — the root's static structure, or a
+      // scope's overlaid one. Rendering is the pure graph.ts function; the engine
+      // supplies only the effective lifetime an un-verbed node resolves under.
+      for (const line of formatGraph(viewOf().graph, effectiveLifetime)) {
+        write(line);
+      }
+    },
     [Symbol.dispose]: (): void => disposal?.end(boundary),
     [Symbol.asyncDispose]: async (): Promise<void> => {
       await disposal?.endAsync?.(boundary);
@@ -516,6 +526,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       resolveAll: root.resolveAll,
       createScope,
       bindSurface: root.bindSurface,
+      printGraph: root.printGraph,
       [Symbol.dispose]: root[Symbol.dispose],
       [Symbol.asyncDispose]: root[Symbol.asyncDispose],
     };

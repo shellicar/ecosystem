@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 import { Lifetime } from '../src/enums';
-import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '../src/private/graph';
+import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, formatGraph, type GraphNode, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '../src/private/graph';
 import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type SourceType } from '../src/types';
 
 // A minimal, direct-to-map registration helper — deliberately bypassing
@@ -380,5 +380,72 @@ describe('findUnregisteredEdges: structural detection of dangling deps', () => {
     const problems = findUnregisteredEdges(graph);
 
     expect(problems).toEqual([]);
+  });
+});
+
+describe('formatGraph: a human-readable visualisation of the static graph', () => {
+  // The engine supplies effective lifetime; here an un-verbed node falls to Resolve.
+  const lifetimeOf = (node: GraphNode): Lifetime => node.lifetime ?? Lifetime.Resolve;
+
+  it('renders each node with its implementation, lifetime and dependency edges', () => {
+    abstract class IClock {}
+    abstract class IService {}
+    class Clock implements IClock {}
+    class Service implements IService {
+      @dependsOn(IClock) public readonly clock!: IClock;
+    }
+    const services = createDescriptorMap();
+    register(services, IClock, { implementation: Clock, lifetime: Lifetime.Singleton });
+    register(services, IService, { implementation: Service, lifetime: Lifetime.Scoped });
+    const graph = deriveFacts(services);
+
+    const expected = ['Dependency graph (2 registrations)', 'IClock -> Clock [SINGLETON]', 'IService -> Service [SCOPED]', '    -> IClock'];
+    const actual = formatGraph(graph, lifetimeOf);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('shows a forward as a redirect to its target, carrying no lifetime', () => {
+    abstract class ITarget {}
+    abstract class IAlias {}
+    class Target implements ITarget {}
+    const services = createDescriptorMap();
+    register(services, ITarget, { implementation: Target, lifetime: Lifetime.Singleton });
+    register(services, IAlias, { implementation: Target, forwardTarget: ITarget });
+    const graph = deriveFacts(services);
+
+    const expected = ['Dependency graph (2 registrations)', 'ITarget -> Target [SINGLETON]', 'IAlias -> ITarget (forward)'];
+    const actual = formatGraph(graph, lifetimeOf);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('lists every face of a multi-face node on one line', () => {
+    abstract class IFoo {}
+    abstract class IBar {}
+    class Foo implements IFoo, IBar {}
+    const descriptor = { implementation: Foo, cacheKey: IFoo, lifetime: Lifetime.Singleton, createInstance: () => new Foo() } satisfies ServiceDescriptor<SourceType>;
+    const services = createDescriptorMap();
+    services.set(IFoo, [descriptor]);
+    services.set(IBar, [descriptor]);
+    const graph = deriveFacts(services);
+
+    const expected = ['Dependency graph (1 registration)', 'IFoo, IBar -> Foo [SINGLETON]'];
+    const actual = formatGraph(graph, lifetimeOf);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('shows the effective lifetime supplied for an un-verbed node', () => {
+    abstract class IThing {}
+    class Thing implements IThing {}
+    const services = createDescriptorMap();
+    register(services, IThing, { implementation: Thing, lifetime: undefined });
+    const graph = deriveFacts(services);
+
+    const expected = ['Dependency graph (1 registration)', 'IThing -> Thing [RESOLVE]'];
+    const actual = formatGraph(graph, lifetimeOf);
+
+    expect(actual).toEqual(expected);
   });
 });

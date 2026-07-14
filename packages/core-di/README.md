@@ -14,6 +14,7 @@
 * ⏳ Async factories awaited at the build boundary
 * 🔥 Eager or lazy singleton construction
 * 🧹 Deterministic per-lifetime disposal
+* 🗺️ Inspect the built dependency graph with `printGraph`
 * 📦 Service modules for organization
 * 🔍 Circular dependency detection at resolution time
 * 🚨 Clear error messages with dependency chain tracking
@@ -267,6 +268,21 @@ if (!report.valid) {
 
 // Or fail fast at build:
 const provider = services.buildProvider({ validate: true });
+```
+
+* Inspect the built graph. `printGraph(write = console.log)` writes a human-readable visualisation of the wiring — each token, its implementation and lifetime, and its `@dependsOn` and forward edges — to any line sink. It reads the static graph derived at build, so nothing is constructed.
+
+```ts
+const services = createServiceCollection();
+services.register(SystemClock).as(IClock).singleton();
+services.register(Greeter).as(IGreeter).scoped();
+const provider = services.buildProvider();
+
+provider.printGraph();
+// Dependency graph (2 registrations)
+// IClock -> SystemClock [SINGLETON]
+// IGreeter -> Greeter [SCOPED]
+//     -> IClock
 ```
 
 ## Usage

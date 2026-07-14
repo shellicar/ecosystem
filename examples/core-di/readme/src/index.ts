@@ -34,5 +34,7 @@ import './eager-construction.js';
 import './disposal.js';
 // * Static validation with validate() and buildProvider({ validate: true })
 import './validation.js';
+// * Inspect the built dependency graph with printGraph
+import './print-graph.js';
 // * Circular dependency detection
 import './circular-dependency.js';

@@ -70,6 +70,13 @@ export abstract class IScopedProvider extends IResolutionScope implements IDispo
 export abstract class IServiceProvider extends IResolutionScope implements IDisposable, IAsyncDisposable {
   public abstract readonly Services: IServiceCollection;
   public abstract createScope(): IScopedProvider;
+  /**
+   * Writes a human-readable visualisation of the built dependency graph to
+   * `write` (default `console.log`), one line per call: each registered token,
+   * its implementation and effective lifetime, its declared `@dependsOn` and
+   * forward edges. Reads the static graph derived at build — no construction.
+   */
+  public abstract printGraph(write?: (line: string) => void): void;
   public abstract [Symbol.dispose](): void;
   public abstract [Symbol.asyncDispose](): Promise<void>;
 }

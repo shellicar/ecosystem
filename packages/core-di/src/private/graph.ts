@@ -401,3 +401,32 @@ export const buildPlan = (
   emitNode(rootNode, new Set());
   return steps;
 };
+
+/**
+ * Renders the static graph as human-readable lines — the visualisation behind
+ * {@link IServiceProvider.printGraph} (the graph-inspection capability,
+ * decisions.md §7). One line per registered node: its resolution faces, its
+ * implementation and effective lifetime, then each declared out-edge
+ * (`@dependsOn` fields and declared-deps factories) on its own indented line. A
+ * forward is shown as a redirect to its target, carrying no lifetime of its own.
+ *
+ * Pure and zero-construction, like every function here. `lifetimeOf` is supplied
+ * by the engine — the same seam {@link buildPlan} uses — so the module never
+ * interprets the default lifetime an un-verbed node resolves under.
+ */
+export const formatGraph = (graph: Graph, lifetimeOf: (node: GraphNode) => Lifetime): string[] => {
+  const lines: string[] = [`Dependency graph (${graph.size} registration${graph.size === 1 ? '' : 's'})`];
+  for (const [node, facts] of graph) {
+    if (node.forwardTarget != null) {
+      lines.push(`${facts.owner.name} -> ${node.forwardTarget.name} (forward)`);
+      continue;
+    }
+    const faces = facts.owners.map((owner) => owner.name).join(', ');
+    const asyncMark = facts.isAsync ? ' (async)' : '';
+    lines.push(`${faces} -> ${node.implementation.name} [${lifetimeOf(node)}]${asyncMark}`);
+    for (const dep of facts.deps) {
+      lines.push(`    -> ${dep.name}`);
+    }
+  }
+  return lines;
+};
