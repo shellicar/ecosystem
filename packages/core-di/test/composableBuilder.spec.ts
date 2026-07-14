@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Lifetime } from '../src/enums';
+import type { IResolutionScope } from '../src/interfaces';
 import { createCollection } from '../src/private/composableBuilder';
 
 abstract class IThing {}
@@ -246,16 +247,17 @@ describe('createCollection: usingAsync exists only on an async collection (decis
 });
 
 describe('createCollection: usingAsync declares async intent at the call site', () => {
-  it('lands the async factory on its own createInstanceAsync field', () => {
+  it('lands the async factory itself on its own createInstanceAsync field', () => {
     const services = createCollection([Lifetime.Singleton], { async: true });
-    const expected = 'function';
+    const asyncFactory = async () => new Resource();
+    const expected = asyncFactory;
 
     services
       .register(Resource)
-      .usingAsync(async () => new Resource())
+      .usingAsync(asyncFactory)
       .asSelf()
       .singleton();
-    const actual = typeof services.regs.get(Resource)?.[0]?.createInstanceAsync;
+    const actual = services.regs.get(Resource)?.[0]?.createInstanceAsync;
 
     expect(actual).toBe(expected);
   });
@@ -263,7 +265,7 @@ describe('createCollection: usingAsync declares async intent at the call site', 
   // The field split (decisions.md §8): the async factory has its OWN field, so it
   // cannot occupy the sync createInstance slot — the sync execution path reads
   // createInstance alone and could never cache a returned Promise.
-  it('leaves createInstance the default sync factory when an async factory is supplied', () => {
+  it('leaves createInstance the default sync constructor when an async factory is supplied', () => {
     const services = createCollection([Lifetime.Singleton], { async: true });
     const asyncFactory = async () => new Resource();
 
@@ -271,9 +273,11 @@ describe('createCollection: usingAsync declares async intent at the call site', 
       .register(Resource)
       .usingAsync(asyncFactory)
       .asSelf();
-    const actual = services.regs.get(Resource)?.[0]?.createInstance;
+    const createInstance = services.regs.get(Resource)?.[0]?.createInstance;
+    // The default factory ignores its scope argument, so an empty stand-in suffices.
+    const actual = createInstance?.({} as IResolutionScope);
 
-    expect(actual).not.toBe(asyncFactory);
+    expect(actual).toBeInstanceOf(Resource);
   });
 
   it('records the registration as a factory', () => {

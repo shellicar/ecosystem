@@ -2,6 +2,8 @@ import type { ServiceIdentifier, ServiceImplementation, ServiceRegistration, Val
 
 export abstract class ServiceError extends Error {}
 
+export abstract class BuilderError extends Error {}
+
 export class UnregisteredServiceError<T extends object> extends ServiceError {
   name = 'UnregisteredServiceError';
   constructor(identifier: ServiceIdentifier<T>) {
