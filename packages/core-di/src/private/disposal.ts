@@ -1,17 +1,10 @@
 import { InvalidOperationError } from '../errors';
-import type { Boundary, DisposalSink } from './boundaryEngine';
 import { Messages } from './messages';
-
-type SyncDisposable = { [Symbol.dispose](): void };
-type AsyncDisposable = { [Symbol.asyncDispose](): PromiseLike<void> };
+import type { AsyncDisposable, Disposal, SyncDisposable } from './types';
 
 const asSyncDisposable = (value: unknown): SyncDisposable | undefined => (typeof (value as Partial<SyncDisposable>)[Symbol.dispose] === 'function' ? (value as SyncDisposable) : undefined);
 
 const asAsyncDisposable = (value: unknown): AsyncDisposable | undefined => (typeof (value as Partial<AsyncDisposable>)[Symbol.asyncDispose] === 'function' ? (value as AsyncDisposable) : undefined);
-
-export type Disposal = DisposalSink & {
-  endAsync(boundary: Boundary): Promise<void>;
-};
 
 export const createDisposal = (): Disposal => {
   const lists = new Map<symbol, unknown[]>();

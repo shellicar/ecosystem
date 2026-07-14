@@ -1,4 +1,4 @@
-import type { CacheKey, LifetimeFeature } from './lifetimeContracts';
+import type { CacheKey, LifetimeFeature } from './types';
 
 export const createSingletonLifetime = (): LifetimeFeature => {
   const table = new Map<CacheKey, unknown>();

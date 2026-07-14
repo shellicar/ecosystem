@@ -1,28 +1,11 @@
 import type { Lifetime } from '../enums';
 import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError } from '../errors';
-import type { DescriptorMap, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
+import type { DescriptorMap, ServiceIdentifier, SourceType } from '../types';
 import { DesignDependenciesKey } from './constants';
 import { Messages } from './messages';
 import { getMetadata } from './metadata';
-
-export type GraphFacts = {
-  readonly lifetime: Lifetime | undefined;
-  readonly owner: ServiceIdentifier<SourceType>;
-  readonly owners: readonly ServiceIdentifier<SourceType>[];
-  readonly deps: readonly ServiceIdentifier<SourceType>[];
-  readonly isAsync: boolean;
-};
-
-export type GraphNode = ServiceDescriptor<SourceType>;
-
-export type Graph = ReadonlyMap<GraphNode, GraphFacts>;
-
-export type Cycle = readonly GraphNode[];
-
-export type UnregisteredEdge = {
-  readonly from: GraphNode;
-  readonly missing: ServiceIdentifier<SourceType>;
-};
+import { pushBucket } from './pushBucket';
+import type { Cycle, Graph, GraphFacts, GraphNode, UnregisteredEdge } from './types';
 
 const declaredDeps = (implementation: object): ServiceIdentifier<SourceType>[] => {
   const record = getMetadata<SourceType>(DesignDependenciesKey, implementation) ?? {};
@@ -58,12 +41,7 @@ export const indexByOwner = (graph: Graph): Map<ServiceIdentifier<SourceType>, G
   const index = new Map<ServiceIdentifier<SourceType>, GraphNode[]>();
   for (const [node, facts] of graph) {
     for (const owner of facts.owners) {
-      const bucket = index.get(owner);
-      if (bucket === undefined) {
-        index.set(owner, [node]);
-      } else {
-        bucket.push(node);
-      }
+      pushBucket(index, owner, node);
     }
   }
   return index;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Lifetime } from '../src/enums';
 import { buildEngine, buildEngineAsync, type EngineComposition } from '../src/private/boundaryEngine';
-import { createCollection, toDescriptorMap } from '../src/private/composableBuilder';
+import { createCollection } from '../src/private/composableBuilder';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
@@ -16,7 +16,7 @@ abstract class IResource {}
 class Resource implements IResource {}
 
 // The async build guard is declared at collection creation, not inferred: the
-// async brand carried from createCollection through toDescriptorMap decides which
+// async brand carried on the collection's regs decides which
 // build path may consume the map. buildEngine accepts only a sync-branded map; an
 // async collection is consumed only by buildEngineAsync.
 describe('async collection build guard', () => {
@@ -24,7 +24,7 @@ describe('async collection build guard', () => {
     const services = createCollection([Lifetime.Singleton]);
     services.register(Resource).asSelf().singleton();
 
-    const engine = buildEngine(toDescriptorMap(services), composition());
+    const engine = buildEngine(services.regs, composition());
     const actual = engine.resolve(Resource);
 
     expect(actual).toBeInstanceOf(Resource);
@@ -40,7 +40,7 @@ describe('async collection build guard', () => {
 
     const build = () =>
       // @ts-expect-error - an async collection's map is async-branded; buildEngine consumes only a sync map, so this pushes the consumer to buildEngineAsync
-      buildEngine(toDescriptorMap(services), composition());
+      buildEngine(services.regs, composition());
 
     expect(build).toThrow(/buildProviderAsync/);
   });
@@ -53,7 +53,7 @@ describe('async collection build guard', () => {
       .asSelf()
       .singleton();
 
-    const engine = await buildEngineAsync(toDescriptorMap(services), composition());
+    const engine = await buildEngineAsync(services.regs, composition());
     const actual = engine.resolve(Resource);
 
     expect(actual).toBeInstanceOf(Resource);

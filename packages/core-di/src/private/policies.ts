@@ -1,9 +1,8 @@
 import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
 import type { ValidationProblem } from '../types';
-import { detectCycles, findUnregisteredEdges, type Graph, reachableFrom } from './graph';
+import { detectCycles, findUnregisteredEdges, reachableFrom } from './graph';
 import { Messages } from './messages';
-
-export type GraphPolicy = (graph: Graph) => ValidationProblem[];
+import type { Graph, GraphPolicy } from './types';
 
 export const cyclePolicy: GraphPolicy = (graph) =>
   detectCycles(graph).map((cycle) => {

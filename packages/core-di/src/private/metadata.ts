@@ -1,10 +1,9 @@
 import '../polyfill';
 import type { MetadataType, ServiceIdentifier, SourceType } from '../types';
+import type { ClassMetadata } from './types';
 
 // A symbol const, not read inline: tsc does not declare `Symbol.metadata`, so an inline read fails type-check.
 const MetadataKey: symbol = (Symbol as { metadata?: symbol }).metadata ?? Symbol.for('Symbol.metadata');
-
-type ClassMetadata = Record<string | symbol, unknown>;
 
 export const getMetadata = <T extends SourceType>(key: string, ctor: object): MetadataType<T> | undefined => {
   return (ctor as unknown as Record<symbol, ClassMetadata | undefined>)[MetadataKey]?.[key] as MetadataType<T> | undefined;

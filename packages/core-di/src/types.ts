@@ -14,9 +14,8 @@ export type ServiceIdentifier<T extends SourceType> = { prototype: T; name: stri
 export type ServiceImplementation<T extends SourceType> = Newable<T>;
 export type ServiceRegistration<T extends SourceType> = ServiceIdentifier<T> | ServiceImplementation<T>;
 
-/** A per-register-call identity token: each `register()` call mints a fresh one, shared by its faces. */
-export type IdentityToken = symbol;
-export type CacheKey<T extends SourceType> = ServiceRegistration<T> | InstanceFactory<T> | IdentityToken;
+/** The symbol arm is the per-register-call identity token: each `register()` call mints a fresh one, shared by its faces. */
+export type CacheKey<T extends SourceType> = ServiceRegistration<T> | InstanceFactory<T> | symbol;
 
 export type InstanceFactory<T extends SourceType> = (x: IResolutionScope) => T;
 
@@ -118,10 +117,6 @@ export type ValidationReport = {
   readonly valid: boolean;
   readonly problems: ValidationProblem[];
 };
-
-export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
-
-export type EnsureObject<T> = T extends object ? T : never;
 
 declare const asyncBrand: unique symbol;
 

@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Env, Resolver } from '../src/private/lifetimeContracts';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
-import type { ServiceIdentifier, SourceType } from '../src/types';
 
 const makeCounter = () => {
   let count = 0;
@@ -11,12 +9,6 @@ const makeCounter = () => {
   };
   return { build, getCount: () => count };
 };
-
-const wrapResolver = (feature: ReturnType<typeof createScopedLifetime>['feature'], build: () => unknown): Resolver => ({
-  resolve<T extends SourceType>(token: ServiceIdentifier<T>, extraEnv?: Env): T {
-    return feature.getInstance(token, extraEnv ?? {}, build) as T;
-  },
-});
 
 abstract class IThing {}
 
@@ -32,28 +24,27 @@ describe('createScopedLifetime', () => {
   });
 
   it('shares one instance across resolves within the same scope', () => {
-    const { feature, createScope } = createScopedLifetime();
+    const { feature, beginScope } = createScopedLifetime();
     const token = IThing;
     const { build } = makeCounter();
-    const scope = createScope(wrapResolver(feature, build));
+    const env = beginScope();
 
-    const expected = scope.resolve(token);
-    const actual = scope.resolve(token);
+    const expected = feature.getInstance(token, env, build);
+    const actual = feature.getInstance(token, env, build);
 
     expect(actual).toBe(expected);
   });
 
   it('builds a fresh instance for a different scope', () => {
-    const { feature, createScope } = createScopedLifetime();
+    const { feature, beginScope } = createScopedLifetime();
     const token = IThing;
     const { build, getCount } = makeCounter();
-    const resolver = wrapResolver(feature, build);
-    const scope1 = createScope(resolver);
-    const scope2 = createScope(resolver);
+    const env1 = beginScope();
+    const env2 = beginScope();
     const expected = 2;
 
-    scope1.resolve(token);
-    scope2.resolve(token);
+    feature.getInstance(token, env1, build);
+    feature.getInstance(token, env2, build);
     const actual = getCount();
 
     expect(actual).toBe(expected);

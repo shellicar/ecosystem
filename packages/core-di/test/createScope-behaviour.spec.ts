@@ -3,7 +3,7 @@ import { createServiceCollection } from '../src';
 import { Lifetime } from '../src/enums';
 import { BuilderError } from '../src/errors';
 import { buildEngine, type EngineComposition } from '../src/private/boundaryEngine';
-import { createCollection, toDescriptorMap } from '../src/private/composableBuilder';
+import { createCollection } from '../src/private/composableBuilder';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
 
@@ -48,7 +48,7 @@ describe('createScope on a custom collection composed without the scoped feature
   it('does not expose createScope when the scoped feature is not composed', () => {
     const services = createCollection([Lifetime.Singleton]);
     // Inline literal so its inferred type has no scoped key.
-    const engine = buildEngine(toDescriptorMap(services), { singleton: createSingletonLifetime(), resolve: createResolveLifetime() });
+    const engine = buildEngine(services.regs, { singleton: createSingletonLifetime(), resolve: createResolveLifetime() });
 
     // @ts-expect-error - a composition without the scoped feature must not carry createScope on the returned type
     engine.createScope;
@@ -57,7 +57,7 @@ describe('createScope on a custom collection composed without the scoped feature
   it('throws a BuilderError when createScope is called with no scoped feature composed', () => {
     const services = createCollection([Lifetime.Singleton]);
     services.register(RootThing).asSelf().singleton();
-    const engine = buildEngine(toDescriptorMap(services), compositionWithoutScoped());
+    const engine = buildEngine(services.regs, compositionWithoutScoped());
 
     const actual = () => engine.createScope();
 

@@ -1,70 +1,17 @@
 import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
-import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
+import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ServiceIdentifier, SourceType } from '../types';
 import { createDescriptorMap } from '../types';
 import { Messages } from './messages';
+import { pushBucket } from './pushBucket';
+import type { ComposableAbstractBuilder, ComposableCollection, ComposableLifetime, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
 
-const lifetimeVerbNames = {
+export const lifetimeVerbNames = {
   [Lifetime.Singleton]: 'singleton',
   [Lifetime.Scoped]: 'scoped',
   [Lifetime.Resolve]: 'resolve',
   [Lifetime.Transient]: 'transient',
 } as const satisfies Record<Lifetime, string>;
-
-type VerbName<L extends Lifetime> = (typeof lifetimeVerbNames)[L];
-
-export type ComposableLifetime = Exclude<Lifetime, Lifetime.Transient>;
-
-type EagerVerb<B> = {
-  eager(): B;
-};
-
-type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false, true>;
-};
-
-type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false, true>;
-};
-
-type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean> = Async extends true
-  ? {
-      usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
-      usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async, Eager>;
-    }
-  : unknown;
-
-export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false, LifeSet extends boolean = false> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-  asSelf(): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-} & (LifeSet extends true ? unknown : NewableLifetimeVerbs<T, L | Lifetime.Transient, Async>) &
-  AsyncVerb<T, L, Async, Eager> &
-  (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async, false, LifeSet>> : unknown);
-
-export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false, LifeSet extends boolean = false> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async, Eager, LifeSet>;
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-} & (LifeSet extends true ? unknown : AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async>) &
-  AsyncVerb<T, L, Async, Eager> &
-  (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async, false, LifeSet>> : unknown);
-
-export type ComposableNode = ServiceDescriptor<SourceType>;
-
-export type ComposableCollection<L extends Lifetime, Async extends boolean> = {
-  readonly regs: DescriptorMap<SourceType, Async>;
-  register<T extends SourceType>(impl: Newable<T>): ComposableNewableBuilder<T, L, Async>;
-  register<T extends SourceType>(impl: AbstractNewable<T>): ComposableAbstractBuilder<T, L, Async>;
-  unfaced(): ComposableNode[];
-};
-
-export type CreateCollectionOptions<Async extends boolean> = {
-  readonly async?: Async;
-  readonly scoped?: boolean;
-  readonly onFace?: (token: ServiceIdentifier<SourceType>, descriptor: ComposableNode) => void;
-};
 
 export const createCollection = <const L extends ComposableLifetime, const Async extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async> = {}): ComposableCollection<L, Async> => {
   const async = options.async === true;
@@ -87,12 +34,7 @@ export const createCollection = <const L extends ComposableLifetime, const Async
         throw new InvalidServiceIdentifierError();
       }
       withoutFace.delete(node);
-      const bucket = regs.get(token);
-      if (bucket === undefined) {
-        regs.set(token, [node]);
-      } else {
-        bucket.push(node);
-      }
+      pushBucket(regs, token, node);
       options.onFace?.(token, node);
     };
     // One body serves both using and usingAsync: they differ only in which descriptor
@@ -149,5 +91,3 @@ export const createCollection = <const L extends ComposableLifetime, const Async
   };
   return { regs, register: register as ComposableCollection<L, Async>['register'], unfaced: () => [...withoutFace] };
 };
-
-export const toDescriptorMap = <L extends Lifetime, Async extends boolean>(collection: ComposableCollection<L, Async>): DescriptorMap<SourceType, Async> => collection.regs;

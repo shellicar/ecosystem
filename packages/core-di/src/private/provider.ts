@@ -1,13 +1,8 @@
-import type { IServiceCollection } from '../interfaces';
 import { IResolutionScope, IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { InstrumentationHook, ServiceIdentifier, SourceType } from '../types';
 import type { Engine, Scope } from './boundaryEngine';
-
-export type ScopeServicesSource = IServiceCollection & {
-  cloneShared(): ScopeServicesSource;
-  snapshot(): { readonly services: import('../types').DescriptorMap; readonly version: number };
-};
+import type { ScopeServicesSource } from './types';
 
 export class ServiceProvider implements IServiceProvider, IScopedProvider {
   private constructor(

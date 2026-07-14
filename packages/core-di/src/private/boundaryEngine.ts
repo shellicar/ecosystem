@@ -1,13 +1,10 @@
 import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
 import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
-import type { AsyncInstanceFactory, DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
-import { buildPlan, deriveFacts, followForward, formatGraph, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
-import type { Env, LifetimeFeature } from './lifetimeContracts';
-import type { ScopedLifetime } from './lifetimeScoped';
+import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
+import { buildPlan, deriveFacts, followForward, formatGraph, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import { Messages } from './messages';
-
-type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceType> };
+import type { AsyncNode, Env, Graph, GraphNode, LifetimeFeature, ScopedLifetime } from './types';
 
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
 

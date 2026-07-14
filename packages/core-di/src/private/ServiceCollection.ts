@@ -5,7 +5,7 @@ import { IResolutionScope, IScopedProvider, IServiceProvider as IServiceProvider
 import type { ILogger } from '../logger';
 import type { AbstractNewable, BuildProviderOptions, DescriptorMap, InstrumentationHook, InstrumentationOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationProblem, ValidationReport } from '../types';
 import { buildEngine, buildEngineAsync } from './boundaryEngine';
-import { type ComposableCollection, type ComposableLifetime, createCollection } from './composableBuilder';
+import { createCollection } from './composableBuilder';
 import { createDisposal } from './disposal';
 import { ForwardBuilder } from './ForwardBuilder';
 import { deriveFacts } from './graph';
@@ -15,6 +15,8 @@ import { createSingletonLifetime } from './lifetimeSingleton';
 import { Messages } from './messages';
 import { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
 import { ServiceProvider } from './provider';
+import { pushBucket } from './pushBucket';
+import type { ComposableCollection, ComposableLifetime } from './types';
 
 const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve] as const satisfies readonly ComposableLifetime[];
 
@@ -78,12 +80,7 @@ export class ServiceCollection implements IServiceCollection {
       throw new InvalidServiceIdentifierError();
     }
     return new ForwardBuilder<S>(source, (identifier, descriptor) => {
-      const bucket = this.services.get(identifier);
-      if (bucket === undefined) {
-        this.services.set(identifier, [descriptor]);
-      } else {
-        bucket.push(descriptor);
-      }
+      pushBucket(this.services, identifier, descriptor);
       this.logger.info('Adding service', { identifier: identifier.name, descriptor });
       this.version++;
     });
