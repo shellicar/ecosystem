@@ -73,3 +73,12 @@
 {"type":"release","version":"4.0.1","date":"2026-05-08","tag":"core-di@4.0.1"}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"4.0.2","date":"2026-05-17","tag":"core-di@4.0.2"}
+{"description":"Rebuild the container as a static-DAG composable engine","category":"changed"}
+{"description":"Record dependency edges at class-definition time with the `dependsOn` decorator, so the container derives a static dependency graph before constructing anything","category":"added"}
+{"description":"Build asynchronously: `createServiceCollection({ async: true })` exposes `usingAsync` factories and `buildProviderAsync`, which awaits async singletons in dependency order while `resolve` stays synchronous","category":"added"}
+{"description":"Construct eagerly with the `.eager()` registration verb; singletons are lazy by default","category":"added"}
+{"description":"Dispose per lifetime: each disposable is tracked to the boundary that resolved it, and `IAsyncDisposable` / `Symbol.asyncDispose` are supported on providers and scopes","category":"added"}
+{"description":"Configure the captive-dependency check with `CaptivePolicy` (build-time) and `RuntimeCaptivePolicy` (resolve-time)","category":"added"}
+{"description":"`validate()` reports problems as a `ValidationReport` of `ValidationProblem` entries classified by `ValidationProblemKind`","category":"added"}
+{"description":"New error types: `BuilderError`, `ValidationError`, `CaptiveDependencyError`, and `InvalidOperationError`","category":"added"}
+{"description":"`INewableServiceBuilder` and `IAbstractServiceBuilder` replace `IServiceBuilder` and `ILifetimeBuilder`, and the builder interfaces are now type-only exports","category":"changed"}
