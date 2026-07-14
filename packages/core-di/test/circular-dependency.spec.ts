@@ -7,7 +7,7 @@ abstract class ISelfDependent {
 }
 
 class SelfDependent implements ISelfDependent {
-  @dependsOn(ISelfDependent) private readonly self!: ISelfDependent;
+  @dependsOn(ISelfDependent) public readonly self!: ISelfDependent;
 
   value(): string {
     return 'self';
@@ -24,7 +24,7 @@ abstract class ICycleB {
 }
 
 class CycleA implements ICycleA {
-  @dependsOn(ICycleB) private readonly b!: ICycleB;
+  @dependsOn(ICycleB) public readonly b!: ICycleB;
 
   value(): string {
     return 'a';
@@ -32,7 +32,7 @@ class CycleA implements ICycleA {
 }
 
 class CycleB implements ICycleB {
-  @dependsOn(ICycleA) private readonly a!: ICycleA;
+  @dependsOn(ICycleA) public readonly a!: ICycleA;
 
   value(): string {
     return 'b';
@@ -53,7 +53,7 @@ abstract class ICycle3C {
 }
 
 class Cycle3A implements ICycle3A {
-  @dependsOn(ICycle3B) private readonly b!: ICycle3B;
+  @dependsOn(ICycle3B) public readonly b!: ICycle3B;
 
   value(): string {
     return 'a';
@@ -61,7 +61,7 @@ class Cycle3A implements ICycle3A {
 }
 
 class Cycle3B implements ICycle3B {
-  @dependsOn(ICycle3C) private readonly c!: ICycle3C;
+  @dependsOn(ICycle3C) public readonly c!: ICycle3C;
 
   value(): string {
     return 'b';
@@ -69,7 +69,7 @@ class Cycle3B implements ICycle3B {
 }
 
 class Cycle3C implements ICycle3C {
-  @dependsOn(ICycle3A) private readonly a!: ICycle3A;
+  @dependsOn(ICycle3A) public readonly a!: ICycle3A;
 
   value(): string {
     return 'c';

@@ -9,12 +9,12 @@ class TransientDep implements ITransientDep {}
 
 abstract class IScopedHolder {}
 class ScopedHolder implements IScopedHolder {
-  @dependsOn(IScopedDep) private readonly dep!: IScopedDep;
+  @dependsOn(IScopedDep) public readonly dep!: IScopedDep;
 }
 
 abstract class ITransientHolder {}
 class TransientHolder implements ITransientHolder {
-  @dependsOn(ITransientDep) private readonly dep!: ITransientDep;
+  @dependsOn(ITransientDep) public readonly dep!: ITransientDep;
 }
 
 describe('CaptivePolicy configuration', () => {

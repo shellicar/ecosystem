@@ -33,4 +33,3 @@ export const tagFieldMetadata = <T extends SourceType>(key: string, meta: ClassM
   }
   (meta[key] as MetadataType<T>)[name] = identifier;
 };
-

@@ -27,12 +27,12 @@ class DatabaseService implements IDatabaseService {
   @dependsOn(IConfigOptions) private readonly options!: IConfigOptions;
 
   connect(): void {
-    const connectionString = this.options.getConnectionString();
+    this.options.getConnectionString();
   }
 }
 
 class UserService implements IUserService {
-  @dependsOn(IDatabaseService) private readonly db!: IDatabaseService;
+  @dependsOn(IDatabaseService) public readonly db!: IDatabaseService;
 
   getUsers(): string[] {
     return ['user1', 'user2'];
@@ -190,7 +190,7 @@ describe('Dependency Resolution Error Handling', () => {
             expect(currentError.message).toContain('ILevel5 (Level5)');
           } else {
             expect(currentError.innerError).toBeInstanceOf(ServiceCreationError);
-            currentError = currentError.innerError as ServiceCreationError<any>;
+            currentError = currentError.innerError as ServiceCreationError<object>;
           }
         }
         return;

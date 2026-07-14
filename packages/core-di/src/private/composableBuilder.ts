@@ -31,8 +31,8 @@
  */
 import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
-import { createDescriptorMap } from '../types';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
+import { createDescriptorMap } from '../types';
 
 /** The lowercase call-site verb for each production `Lifetime` member. */
 const lifetimeVerbNames = {
@@ -123,7 +123,9 @@ export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, A
   using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
   using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-} & (LifeSet extends true ? unknown : NewableLifetimeVerbs<T, L | Lifetime.Transient, Async>) & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async, false, LifeSet>> : unknown);
+} & (LifeSet extends true ? unknown : NewableLifetimeVerbs<T, L | Lifetime.Transient, Async>) &
+  AsyncVerb<T, L, Async, Eager> &
+  (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async, false, LifeSet>> : unknown);
 
 /**
  * The builder for an abstract registration. It has no `.asSelf()` — an
@@ -139,7 +141,9 @@ export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, 
   using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
   using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-} & (LifeSet extends true ? unknown : AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async>) & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async, false, LifeSet>> : unknown);
+} & (LifeSet extends true ? unknown : AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async>) &
+  AsyncVerb<T, L, Async, Eager> &
+  (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async, false, LifeSet>> : unknown);
 
 /**
  * One registration: the shared node every face of a `register()` call points
@@ -176,10 +180,7 @@ export type CreateCollectionOptions<Async extends boolean> = {
   readonly onFace?: (token: ServiceIdentifier<SourceType>, descriptor: ComposableNode) => void;
 };
 
-export const createCollection = <const L extends ComposableLifetime, const Async extends boolean = false>(
-  lifetimes: readonly L[],
-  options: CreateCollectionOptions<Async> = {},
-): ComposableCollection<L, Async> => {
+export const createCollection = <const L extends ComposableLifetime, const Async extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async> = {}): ComposableCollection<L, Async> => {
   // Async-ness is declared here, at composition, not inferred (decisions.md §8):
   // the flag both marks the collection type — so only the async build path
   // consumes it — and folds `usingAsync` onto the builder. A sync collection has

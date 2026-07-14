@@ -10,21 +10,21 @@ class ErrorOnCreation implements IAbstract {
 }
 
 class TestLogger implements ILogger {
-  public readonly debugLogs: [string, string[]][] = [];
-  public readonly infoLogs: [string, string[]][] = [];
-  public readonly warnLogs: [string, string[]][] = [];
-  public readonly errorLogs: [string, string[]][] = [];
+  public readonly debugLogs: [unknown, unknown[]][] = [];
+  public readonly infoLogs: [unknown, unknown[]][] = [];
+  public readonly warnLogs: [unknown, unknown[]][] = [];
+  public readonly errorLogs: [unknown, unknown[]][] = [];
 
-  public debug(message?: any, ...optionalParams: any[]): void {
+  public debug(message?: unknown, ...optionalParams: unknown[]): void {
     this.debugLogs.push([message, optionalParams]);
   }
-  public info(message?: any, ...optionalParams: any[]): void {
+  public info(message?: unknown, ...optionalParams: unknown[]): void {
     this.infoLogs.push([message, optionalParams]);
   }
-  public error(message?: any, ...optionalParams: any[]): void {
+  public error(message?: unknown, ...optionalParams: unknown[]): void {
     this.errorLogs.push([message, optionalParams]);
   }
-  public warn(message?: any, ...optionalParams: any[]): void {
+  public warn(message?: unknown, ...optionalParams: unknown[]): void {
     this.warnLogs.push([message, optionalParams]);
   }
 }

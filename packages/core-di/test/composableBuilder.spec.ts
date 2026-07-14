@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Lifetime } from '../src/enums';
-import type { IResolutionScope } from '../src/interfaces';
 import { BuilderError } from '../src/errors';
+import type { IResolutionScope } from '../src/interfaces';
 import { createCollection } from '../src/private/composableBuilder';
 
 abstract class IThing {}
@@ -45,11 +45,8 @@ describe('createCollection: the composed set generates the verbs', () => {
   it('rejects an uncomposed verb at compile time', () => {
     const services = createCollection([Lifetime.Singleton]);
 
-    services
-      .register(Thing)
-      .as(IThing)
-      // @ts-expect-error - 'scoped' was not composed; this builder has no such verb, so referencing it is a type error
-      .scoped;
+    // @ts-expect-error - 'scoped' was not composed; this builder has no such verb, so referencing it is a type error
+    services.register(Thing).as(IThing).scoped;
   });
 
   it('rejects .as(Face) when the implementation does not satisfy it at compile time', () => {
@@ -106,18 +103,22 @@ describe('createCollection: the builder carries the register-side surface', () =
   it('rejects asSelf on an abstract registration at compile time', () => {
     const services = createCollection([Lifetime.Singleton]);
 
-    services
-      .register(IShape)
-      // @ts-expect-error - IShape is abstract; an abstract registration has no asSelf
-      .asSelf;
+    // @ts-expect-error - IShape is abstract; an abstract registration has no asSelf
+    services.register(IShape).asSelf;
   });
 
   it('using registers a factory on both a newable and an abstract registration', () => {
     const services = createCollection([Lifetime.Singleton]);
     const expected = { newable: true, abstract: true };
 
-    services.register(Thing).using(() => new Thing()).asSelf();
-    services.register(IShape).using(() => new Thing()).as(IShape);
+    services
+      .register(Thing)
+      .using(() => new Thing())
+      .asSelf();
+    services
+      .register(IShape)
+      .using(() => new Thing())
+      .as(IShape);
     const actual = {
       newable: services.regs.get(Thing)?.[0]?.usesFactory === true,
       abstract: services.regs.get(IShape)?.[0]?.usesFactory === true,
@@ -130,7 +131,10 @@ describe('createCollection: the builder carries the register-side surface', () =
     const services = createCollection([Lifetime.Singleton]);
     const expected = true;
 
-    services.register(IShape).using(() => new Thing()).asSelf();
+    services
+      .register(IShape)
+      .using(() => new Thing())
+      .asSelf();
     const actual = services.regs.has(IShape);
 
     expect(actual).toBe(expected);
@@ -185,12 +189,8 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
   it('rejects eager on a non-singleton lifetime at compile time', () => {
     const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
 
-    services
-      .register(Thing)
-      .asSelf()
-      .scoped()
-      // @ts-expect-error - the chosen lifetime is scoped, not singleton, so there is no eager verb
-      .eager;
+    // @ts-expect-error - the chosen lifetime is scoped, not singleton, so there is no eager verb
+    services.register(Thing).asSelf().scoped().eager;
   });
 
   it('does not expose a second lifetime verb once one is set', () => {
@@ -210,7 +210,6 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
     void probe;
   });
 });
-
 
 abstract class IResource {}
 class Resource implements IResource {}
@@ -235,10 +234,8 @@ describe('createCollection: usingAsync exists only on an async collection (decis
   it('rejects usingAsync on a sync collection at compile time', () => {
     const services = createCollection([Lifetime.Singleton]);
 
-    services
-      .register(Resource)
-      // @ts-expect-error - a sync collection was not composed async; it has no usingAsync verb at all
-      .usingAsync;
+    // @ts-expect-error - a sync collection was not composed async; it has no usingAsync verb at all
+    services.register(Resource).usingAsync;
   });
 
   it('exposes a runtime usingAsync verb on an async collection', () => {
@@ -258,11 +255,7 @@ describe('createCollection: usingAsync declares async intent at the call site', 
     const asyncFactory = async () => new Resource();
     const expected = asyncFactory;
 
-    services
-      .register(Resource)
-      .usingAsync(asyncFactory)
-      .asSelf()
-      .singleton();
+    services.register(Resource).usingAsync(asyncFactory).asSelf().singleton();
     const actual = services.regs.get(Resource)?.[0]?.createInstanceAsync;
 
     expect(actual).toBe(expected);
@@ -275,10 +268,7 @@ describe('createCollection: usingAsync declares async intent at the call site', 
     const services = createCollection([Lifetime.Singleton], { async: true });
     const asyncFactory = async () => new Resource();
 
-    services
-      .register(Resource)
-      .usingAsync(asyncFactory)
-      .asSelf();
+    services.register(Resource).usingAsync(asyncFactory).asSelf();
     const createInstance = services.regs.get(Resource)?.[0]?.createInstance;
     // The default factory ignores its scope argument, so an empty stand-in suffices.
     const actual = createInstance?.({} as IResolutionScope);

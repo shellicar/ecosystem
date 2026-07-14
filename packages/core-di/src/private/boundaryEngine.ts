@@ -1,8 +1,8 @@
 import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
 import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
-import type { AsyncInstanceFactory, DescriptorMap, ServiceDescriptor, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
-import { buildPlan, concreteNode, deriveFacts, followForward, type Graph, type GraphNode, indexByOwner, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
+import type { AsyncInstanceFactory, DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
+import { buildPlan, concreteNode, deriveFacts, followForward, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import type { Env, LifetimeFeature } from './lifetimeContracts';
 import type { ScopedLifetime } from './lifetimeScoped';
 

@@ -286,11 +286,7 @@ describe('boundaryEngine: resolve lifetime is one instance per pass', () => {
 });
 
 describe('boundaryEngine: opaque factory joins the current pass', () => {
-  const build = () =>
-    buildEngine(
-      mapOf([IBottom, descriptor(Bottom, { lifetime: Lifetime.Resolve })], [ITop, descriptor(Top, { lifetime: Lifetime.Resolve, factory: (scope) => new Top(scope.resolve(IBottom)) })]),
-      composition(),
-    );
+  const build = () => buildEngine(mapOf([IBottom, descriptor(Bottom, { lifetime: Lifetime.Resolve })], [ITop, descriptor(Top, { lifetime: Lifetime.Resolve, factory: (scope) => new Top(scope.resolve(IBottom)) })]), composition());
 
   it('wires the declared field of a factory-built instance', () => {
     const engine = build();

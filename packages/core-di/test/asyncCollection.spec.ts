@@ -33,7 +33,11 @@ describe('async collection build guard (decisions.md §8)', () => {
 
   it('rejects an async collection at the synchronous buildEngine at compile time', () => {
     const services = createCollection([Lifetime.Singleton], { async: true });
-    services.register(Resource).usingAsync(async () => new Resource()).asSelf().singleton();
+    services
+      .register(Resource)
+      .usingAsync(async () => new Resource())
+      .asSelf()
+      .singleton();
 
     const build = () =>
       // @ts-expect-error - an async collection's map is async-branded; buildEngine consumes only a sync map, so this pushes the consumer to buildEngineAsync
@@ -44,7 +48,11 @@ describe('async collection build guard (decisions.md §8)', () => {
 
   it('builds an async collection through buildEngineAsync and resolves it synchronously', async () => {
     const services = createCollection([Lifetime.Singleton], { async: true });
-    services.register(Resource).usingAsync(async () => new Resource()).asSelf().singleton();
+    services
+      .register(Resource)
+      .usingAsync(async () => new Resource())
+      .asSelf()
+      .singleton();
 
     const engine = await buildEngineAsync(toDescriptorMap(services), composition());
     const actual = engine.resolve(Resource);

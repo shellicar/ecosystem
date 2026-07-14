@@ -13,7 +13,7 @@ abstract class ILogger {
 // Concrete class that implements both interfaces
 class Runner implements IRunnable, ILogger {
   run(): void {}
-  log(message: string): void {}
+  log(_message: string): void {}
 }
 
 // Class that implements only IRunnable
@@ -23,7 +23,7 @@ class OnlyRunnable implements IRunnable {
 
 // Class that implements only ILogger
 class OnlyLogger implements ILogger {
-  log(message: string): void {}
+  log(_message: string): void {}
 }
 
 describe('Concrete-first face registration', () => {

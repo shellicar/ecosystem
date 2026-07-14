@@ -27,6 +27,7 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
     it('throws a BuilderError when forced past the type (it would otherwise cache a Promise as the instance)', () => {
       const services = createServiceCollection();
 
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       const actual = () => (services.register(Thing) as any).usingAsync(async () => new Thing());
 
       expect(actual).toThrow(BuilderError);
@@ -57,6 +58,7 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
       const services = createServiceCollection();
       services.register(Target).asSelf().singleton();
 
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       const actual = () => (services.forward(IAlias).to(Target) as any).singleton();
 
       expect(actual).toThrow(BuilderError);
@@ -66,6 +68,7 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
       const services = createServiceCollection();
       services.register(Target).asSelf().singleton();
 
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       const actual = () => (services.forward(IAlias).to(Target) as any).resolve();
 
       expect(actual).toThrow(BuilderError);
@@ -78,7 +81,11 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
       // singleton would throw. The pin only needs to exist for the compiler.
       const probe = () => {
         const services = createServiceCollection({ async: true });
-        services.register(Thing).usingAsync(async () => new Thing()).asSelf().singleton();
+        services
+          .register(Thing)
+          .usingAsync(async () => new Thing())
+          .asSelf()
+          .singleton();
         // @ts-expect-error - an async collection exposes only buildProviderAsync
         services.buildProvider();
       };
@@ -87,8 +94,13 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
 
     it('throws a BuilderError when buildProvider is forced past the type', () => {
       const services = createServiceCollection({ async: true });
-      services.register(Thing).usingAsync(async () => new Thing()).asSelf().singleton();
+      services
+        .register(Thing)
+        .usingAsync(async () => new Thing())
+        .asSelf()
+        .singleton();
 
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       const actual = () => (services as any).buildProvider();
 
       expect(actual).toThrow(BuilderError);
@@ -115,6 +127,7 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
     it('throws a BuilderError when a second lifetime is forced past the type (it silently picks last-wins otherwise)', () => {
       const services = createServiceCollection();
 
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       const actual = () => (services.register(Thing).as(IThing).singleton() as any).scoped();
 
       expect(actual).toThrow(BuilderError);
@@ -137,6 +150,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
 
     it('registers and resolves when forced past the type — abstract erases at runtime, so there is nothing to throw for', () => {
       const services = createServiceCollection();
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       (services.register(IAbstractThing) as any).asSelf();
       const provider = services.buildProvider();
 
@@ -160,6 +174,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
 
     it('records a harmless dead flag when forced past the type — nothing reads eager on a non-singleton, so there is nothing to throw for', () => {
       const services = createServiceCollection();
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       (services.register(Thing).as(IThing).scoped() as any).eager();
       const provider = services.buildProvider();
 
@@ -185,6 +200,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
 
     it('registers and resolves the implementation under the mismatched face when forced past the type — JS is structurally free, so there is nothing to throw for', () => {
       const services = createServiceCollection();
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       (services.register(Thing) as any).as(IUnrelated);
       const provider = services.buildProvider();
 
@@ -207,6 +223,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
       const services = createServiceCollection();
       services.register(Thing).as(IThing).singleton();
 
+      // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       const provider = await (services as any).buildProviderAsync();
       const actual = provider.resolve(IThing);
 

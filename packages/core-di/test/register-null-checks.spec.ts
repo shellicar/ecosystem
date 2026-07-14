@@ -18,7 +18,7 @@ describe('register method null/undefined implementation checks', () => {
   it('throws when passed an undefined implementation', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(undefined as any);
+    const actual = () => services.register(undefined as never);
 
     expect(actual).toThrow(InvalidImplementationError);
   });
@@ -26,7 +26,7 @@ describe('register method null/undefined implementation checks', () => {
   it('throws when passed a null implementation', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(null as any);
+    const actual = () => services.register(null as never);
 
     expect(actual).toThrow(InvalidImplementationError);
   });

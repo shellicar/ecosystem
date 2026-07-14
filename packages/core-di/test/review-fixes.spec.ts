@@ -10,7 +10,7 @@ describe('captive detection judges the effective lifetime of an un-verbed depend
     class UnverbedDep implements IUnverbedDep {}
     abstract class IHolder {}
     class Holder implements IHolder {
-      @dependsOn(IUnverbedDep) private readonly dep!: IUnverbedDep;
+      @dependsOn(IUnverbedDep) public readonly dep!: IUnverbedDep;
     }
     const services = createServiceCollection({ captivePolicy: CaptivePolicy.Strict });
     services.register(UnverbedDep).as(IUnverbedDep);
@@ -35,8 +35,14 @@ describe('factory-edge cycles throw a clean CircularDependencyError', () => {
       constructor(readonly a: IA) {}
     }
     const services = createServiceCollection();
-    services.register(A).using([IB], (b) => new A(b)).as(IA);
-    services.register(B).using([IA], (a) => new B(a)).as(IB);
+    services
+      .register(A)
+      .using([IB], (b) => new A(b))
+      .as(IA);
+    services
+      .register(B)
+      .using([IA], (a) => new B(a))
+      .as(IB);
     const provider = services.buildProvider();
 
     const actual = () => provider.resolve(IA);
@@ -54,8 +60,14 @@ describe('factory-edge cycles throw a clean CircularDependencyError', () => {
       constructor(readonly a: IA) {}
     }
     const services = createServiceCollection();
-    services.register(A).using((scope) => new A(scope.resolve(IB))).as(IA);
-    services.register(B).using((scope) => new B(scope.resolve(IA))).as(IB);
+    services
+      .register(A)
+      .using((scope) => new A(scope.resolve(IB)))
+      .as(IA);
+    services
+      .register(B)
+      .using((scope) => new B(scope.resolve(IA)))
+      .as(IB);
     const provider = services.buildProvider();
 
     const actual = () => provider.resolve(IA);
@@ -72,13 +84,16 @@ describe('validate() sees a factory node\u2019s @dependsOn field edges', () => {
     abstract class IA {}
     abstract class IB {}
     class A implements IA {
-      @dependsOn(IB) private readonly b!: IB;
+      @dependsOn(IB) public readonly b!: IB;
     }
     class B implements IB {
-      @dependsOn(IA) private readonly a!: IA;
+      @dependsOn(IA) public readonly a!: IA;
     }
     const services = createServiceCollection();
-    services.register(A).using(() => new A()).as(IA);
+    services
+      .register(A)
+      .using(() => new A())
+      .as(IA);
     services.register(B).as(IB);
 
     const actual = services.validate().problems.map((p) => p.kind);
@@ -127,10 +142,10 @@ describe('cycle diagnostics de-duplicate on identity, not name', () => {
     abstract class IX {}
     abstract class IY {}
     class X implements IX {
-      @dependsOn(IY) private readonly y!: IY;
+      @dependsOn(IY) public readonly y!: IY;
     }
     class Y implements IY {
-      @dependsOn(IX) private readonly x!: IX;
+      @dependsOn(IX) public readonly x!: IX;
     }
     return { IX, IY, X, Y };
   };
@@ -158,7 +173,7 @@ describe('validate() completeness', () => {
     class Dep implements IDep {}
     abstract class IHolder {}
     class Holder implements IHolder {
-      @dependsOn(IDep) private readonly dep!: IDep;
+      @dependsOn(IDep) public readonly dep!: IDep;
     }
     const services = createServiceCollection();
     services.register(Dep).as(IDep).scoped();

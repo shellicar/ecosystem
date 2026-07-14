@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { ServiceIdentifier, SourceType } from '../src/types';
 import type { Env, Resolver } from '../src/private/lifetimeContracts';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
+import type { ServiceIdentifier, SourceType } from '../src/types';
 
 const makeCounter = () => {
   let count = 0;

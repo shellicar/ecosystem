@@ -6,7 +6,7 @@
  * disposal driven through the public provider/scope.
  */
 import { describe, expect, it } from 'vitest';
-import { createServiceCollection, type IAsyncDisposable, type IDisposable, IScopedProvider, Lifetime } from '../src';
+import { createServiceCollection, type IAsyncDisposable, type IDisposable, IScopedProvider } from '../src';
 import { dependsOn } from '../src/dependsOn';
 
 abstract class IResource {
@@ -34,10 +34,8 @@ describe('the async flag declares the surface at collection creation (decisions.
   it('does not expose usingAsync on a sync collection', () => {
     const services = createServiceCollection();
 
-    services
-      .register(Resource)
-      // @ts-expect-error - the collection was not created async; the builder has no usingAsync verb at all
-      .usingAsync;
+    // @ts-expect-error - the collection was not created async; the builder has no usingAsync verb at all
+    services.register(Resource).usingAsync;
   });
 
   it('does not expose buildProviderAsync on a sync collection', () => {

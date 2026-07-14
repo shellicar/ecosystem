@@ -17,4 +17,3 @@ export const dependsOn = <T extends SourceType>(identifier: ServiceIdentifier<T>
     tagFieldMetadata(DesignDependenciesKey, ctx.metadata, ctx.name, identifier);
   };
 };
-

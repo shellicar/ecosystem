@@ -1,6 +1,6 @@
 export abstract class ILogger {
-  public debug(_message?: any, ..._optionalParams: any[]) {}
-  public info(_message?: any, ..._optionalParams: any[]) {}
-  public error(_message?: any, ..._optionalParams: any[]) {}
-  public warn(_message?: any, ..._optionalParams: any[]) {}
+  public debug(_message?: unknown, ..._optionalParams: unknown[]) {}
+  public info(_message?: unknown, ..._optionalParams: unknown[]) {}
+  public error(_message?: unknown, ..._optionalParams: unknown[]) {}
+  public warn(_message?: unknown, ..._optionalParams: unknown[]) {}
 }

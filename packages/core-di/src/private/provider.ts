@@ -1,5 +1,5 @@
-import { IResolutionScope, IScopedProvider, IServiceProvider } from '../interfaces';
 import type { IServiceCollection } from '../interfaces';
+import { IResolutionScope, IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { ServiceIdentifier, SourceType } from '../types';
 import type { Engine, Scope } from './boundaryEngine';

@@ -5,7 +5,9 @@ import type { ConsoleLogger } from './private/consoleLogger';
 
 export type SourceType = object;
 
+// biome-ignore lint/suspicious/noExplicitAny: constraint position — `unknown[]` params would reject real constructors (contravariance); the generic still carries T
 export type AbstractNewable<T> = abstract new (...args: any[]) => T;
+// biome-ignore lint/suspicious/noExplicitAny: constraint position — `unknown[]` params would reject real constructors (contravariance); the generic still carries T
 export type Newable<T> = new (...args: any[]) => T;
 
 export type ServiceIdentifier<T extends SourceType> = { prototype: T; name: string }; //AbstractNewable<T>;
@@ -162,7 +164,7 @@ export type ValidationReport = {
   readonly problems: ValidationProblem[];
 };
 
-export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
 export type EnsureObject<T> = T extends object ? T : never;
 
@@ -186,6 +188,6 @@ export type DescriptorMap<T extends SourceType = SourceType, Async extends boole
   readonly [asyncBrand]?: Async;
 };
 
-export const createDescriptorMap = <T extends SourceType = any>(): DescriptorMap<T> => {
+export const createDescriptorMap = <T extends SourceType = SourceType>(): DescriptorMap<T> => {
   return new Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]>();
 };

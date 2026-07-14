@@ -10,7 +10,7 @@ describe('multi-face registrations in the static graph', () => {
     abstract class IFace {}
     class Concrete implements IFace {}
     class Dependent {
-      @dependsOn(IFace) private readonly face!: IFace;
+      @dependsOn(IFace) public readonly face!: IFace;
     }
     const services = createServiceCollection();
     services.register(Concrete).as(IFace).asSelf();
@@ -25,7 +25,7 @@ describe('multi-face registrations in the static graph', () => {
     abstract class IFace {}
     class Concrete implements IFace {}
     class Dependent {
-      @dependsOn(IFace) private readonly face!: IFace;
+      @dependsOn(IFace) public readonly face!: IFace;
     }
     const expected: ValidationProblemKind[] = [];
     const services = createServiceCollection();
@@ -41,10 +41,10 @@ describe('multi-face registrations in the static graph', () => {
     abstract class IAlpha {}
     abstract class IBeta {}
     class Alpha implements IAlpha {
-      @dependsOn(IBeta) private readonly beta!: IBeta;
+      @dependsOn(IBeta) public readonly beta!: IBeta;
     }
     class Beta implements IBeta {
-      @dependsOn(IAlpha) private readonly alpha!: IAlpha;
+      @dependsOn(IAlpha) public readonly alpha!: IAlpha;
     }
     const expected = [ValidationProblemKind.Cycle];
     const services = createServiceCollection();

@@ -16,11 +16,7 @@ import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type Ser
 // A minimal, direct-to-map registration helper — deliberately bypassing
 // ServiceBuilder/ServiceCollection so these tests exercise the graph module
 // against its actual input shape, not through the container.
-const register = <T extends SourceType>(
-  services: DescriptorMap,
-  identifier: ServiceIdentifier<T>,
-  descriptor: Partial<ServiceDescriptor<T>> & Pick<ServiceDescriptor<T>, 'implementation'>,
-): void => {
+const register = <T extends SourceType>(services: DescriptorMap, identifier: ServiceIdentifier<T>, descriptor: Partial<ServiceDescriptor<T>> & Pick<ServiceDescriptor<T>, 'implementation'>): void => {
   const full: ServiceDescriptor<T> = {
     cacheKey: identifier,
     lifetime: Lifetime.Singleton,
@@ -38,7 +34,7 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
     abstract class ISvc {}
     class Dep implements IDep {}
     class Svc implements ISvc {
-      @dependsOn(IDep) private readonly dep!: IDep;
+      @dependsOn(IDep) public readonly dep!: IDep;
     }
     const services = createDescriptorMap();
     register(services, IDep, { implementation: Dep });
@@ -61,7 +57,7 @@ describe('deriveFacts: zero-construction facts per registered descriptor', () =>
       }
     }
     class Svc implements ISvc {
-      @dependsOn(IDep) private readonly dep!: IDep;
+      @dependsOn(IDep) public readonly dep!: IDep;
       constructor() {
         constructions++;
       }
@@ -269,10 +265,10 @@ describe('detectCycles: pure cycle detection over the graph', () => {
     abstract class IA {}
     abstract class IB {}
     class A implements IA {
-      @dependsOn(IB) private readonly b!: IB;
+      @dependsOn(IB) public readonly b!: IB;
     }
     class B implements IB {
-      @dependsOn(IA) private readonly a!: IA;
+      @dependsOn(IA) public readonly a!: IA;
     }
     const services = createDescriptorMap();
     register(services, IA, { implementation: A });
@@ -291,10 +287,10 @@ describe('detectCycles: pure cycle detection over the graph', () => {
     abstract class IBeta {}
     abstract class IForwarded {}
     class Alpha implements IAlpha {
-      @dependsOn(IForwarded) private readonly forwarded!: IForwarded;
+      @dependsOn(IForwarded) public readonly forwarded!: IForwarded;
     }
     class Beta implements IBeta {
-      @dependsOn(IAlpha) private readonly alpha!: IAlpha;
+      @dependsOn(IAlpha) public readonly alpha!: IAlpha;
     }
     const services = createDescriptorMap();
     register(services, IAlpha, { implementation: Alpha });
@@ -326,13 +322,13 @@ describe('detectCycles: pure cycle detection over the graph', () => {
     abstract class IB {}
     let constructions = 0;
     class A implements IA {
-      @dependsOn(IB) private readonly b!: IB;
+      @dependsOn(IB) public readonly b!: IB;
       constructor() {
         constructions++;
       }
     }
     class B implements IB {
-      @dependsOn(IA) private readonly a!: IA;
+      @dependsOn(IA) public readonly a!: IA;
       constructor() {
         constructions++;
       }
@@ -355,7 +351,7 @@ describe('findUnregisteredEdges: structural detection of dangling deps', () => {
     abstract class IOther {}
     class Other implements IOther {}
     class Needy implements INeedy {
-      @dependsOn(IMissing) private readonly missing!: IMissing;
+      @dependsOn(IMissing) public readonly missing!: IMissing;
     }
     const services = createDescriptorMap();
     register(services, IOther, { implementation: Other });
@@ -374,7 +370,7 @@ describe('findUnregisteredEdges: structural detection of dangling deps', () => {
     abstract class INeedy {}
     class Dep implements IDep {}
     class Needy implements INeedy {
-      @dependsOn(IDep) private readonly dep!: IDep;
+      @dependsOn(IDep) public readonly dep!: IDep;
     }
     const services = createDescriptorMap();
     register(services, IDep, { implementation: Dep });

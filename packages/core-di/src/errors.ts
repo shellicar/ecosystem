@@ -1,4 +1,4 @@
-import type { ServiceIdentifier, ServiceImplementation, ServiceRegistration, ValidationProblem } from './types';
+import type { ServiceIdentifier, ServiceRegistration, ValidationProblem } from './types';
 
 export abstract class ServiceError extends Error {}
 

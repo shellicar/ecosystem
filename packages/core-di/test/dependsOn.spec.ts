@@ -16,7 +16,7 @@ describe('edges are recorded without construction', () => {
   it('a field edge is readable from the class before any instance exists', () => {
     abstract class IDep {}
     class Svc {
-      @dependsOn(IDep) private readonly dep!: IDep;
+      @dependsOn(IDep) public readonly dep!: IDep;
     }
 
     const actual = Object.values(getDeclaredDeps(Svc));
@@ -28,8 +28,8 @@ describe('edges are recorded without construction', () => {
     abstract class IA {}
     abstract class IB {}
     class Svc {
-      @dependsOn(IA) private readonly a!: IA;
-      @dependsOn(IB) private readonly b!: IB;
+      @dependsOn(IA) public readonly a!: IA;
+      @dependsOn(IB) public readonly b!: IB;
     }
 
     const expected = [IA, IB];
@@ -48,7 +48,7 @@ describe('subclass metadata layers over the parent without mutating it', () => {
     @dependsOn(IBase) protected readonly base!: IBase;
   }
   class Derived extends Base {
-    @dependsOn(IExtra) private readonly extra!: IExtra;
+    @dependsOn(IExtra) public readonly extra!: IExtra;
   }
 
   it('derived sees both its own edge and the inherited one', () => {
@@ -79,13 +79,13 @@ describe('a static DAG is derivable from declared edges alone', () => {
       }
     }
     class Service implements IService {
-      @dependsOn(IRepo) private readonly repo!: IRepo;
+      @dependsOn(IRepo) public readonly repo!: IRepo;
       constructor() {
         constructions++;
       }
     }
     class Controller implements IController {
-      @dependsOn(IService) private readonly service!: IService;
+      @dependsOn(IService) public readonly service!: IService;
       constructor() {
         constructions++;
       }
@@ -102,10 +102,14 @@ describe('a static DAG is derivable from declared edges alone', () => {
     const order: ServiceIdentifier<SourceType>[] = [];
     const visited = new Set<ServiceIdentifier<SourceType>>();
     const visit = (face: ServiceIdentifier<SourceType>) => {
-      if (visited.has(face)) return;
+      if (visited.has(face)) {
+        return;
+      }
       visited.add(face);
       const impl = registrations.get(face);
-      if (impl === undefined) return;
+      if (impl === undefined) {
+        return;
+      }
       for (const dep of Object.values(getDeclaredDeps(impl))) {
         visit(dep);
       }
@@ -132,7 +136,7 @@ describe('the Symbol.metadata polyfill installs before any decorated class evalu
     // thrown at module-load time, and this test would never run.
     abstract class IThing {}
     class Consumer {
-      @barrel.dependsOn(IThing) private readonly thing!: IThing;
+      @barrel.dependsOn(IThing) public readonly thing!: IThing;
     }
 
     const actual = Object.values(getDeclaredDeps(Consumer));
@@ -146,7 +150,7 @@ describe('the Symbol.metadata polyfill installs before any decorated class evalu
 
     abstract class IThing {}
     class Consumer {
-      @dependsOnSubpath(IThing) private readonly thing!: IThing;
+      @dependsOnSubpath(IThing) public readonly thing!: IThing;
     }
 
     const actual = Object.values(getDeclaredDeps(Consumer));

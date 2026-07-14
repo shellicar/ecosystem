@@ -176,7 +176,7 @@ export type IAsyncServiceCollection = {
  * The builder for a forward. `.to()` names the target and completes the redirect;
  * a forward has no lifetime, so there is no lifetime verb to chain.
  */
-export abstract class IForwardBuilder<S extends SourceType> {
+export abstract class IForwardBuilder<_S extends SourceType> {
   public abstract to<Target extends SourceType>(target: ServiceIdentifier<Target>): IForwardResult;
 }
 

@@ -16,7 +16,7 @@ describe('registration errors are a BuilderError', () => {
   it('InvalidImplementationError is a BuilderError (register(null))', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(null as any);
+    const actual = () => services.register(null as never);
 
     expect(actual).toThrow(BuilderError);
   });
@@ -24,7 +24,7 @@ describe('registration errors are a BuilderError', () => {
   it('InvalidImplementationError is catchable by its own type', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(null as any);
+    const actual = () => services.register(null as never);
 
     expect(actual).toThrow(InvalidImplementationError);
   });
@@ -32,7 +32,7 @@ describe('registration errors are a BuilderError', () => {
   it('InvalidServiceIdentifierError is a BuilderError (as(null))', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(Service).as(null as any);
+    const actual = () => services.register(Service).as(null as never);
 
     expect(actual).toThrow(BuilderError);
   });
@@ -40,7 +40,7 @@ describe('registration errors are a BuilderError', () => {
   it('InvalidServiceIdentifierError is a BuilderError (forward(null))', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.forward(null as any).to(IService);
+    const actual = () => services.forward(null as never).to(IService);
 
     expect(actual).toThrow(BuilderError);
   });
@@ -48,7 +48,7 @@ describe('registration errors are a BuilderError', () => {
   it('InvalidServiceIdentifierError is a BuilderError (forward().to(null))', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.forward(IService).to(null as any);
+    const actual = () => services.forward(IService).to(null as never);
 
     expect(actual).toThrow(BuilderError);
   });
@@ -56,7 +56,7 @@ describe('registration errors are a BuilderError', () => {
   it('InvalidServiceIdentifierError is catchable by its own type', () => {
     const services = createServiceCollection();
 
-    const actual = () => services.register(Service).as(null as any);
+    const actual = () => services.register(Service).as(null as never);
 
     expect(actual).toThrow(InvalidServiceIdentifierError);
   });

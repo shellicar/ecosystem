@@ -6,7 +6,7 @@ class Dependency implements IDependency {}
 
 abstract class IService {}
 class Service implements IService {
-  @dependsOn(IDependency) private readonly dep!: IDependency;
+  @dependsOn(IDependency) public readonly dep!: IDependency;
 }
 
 describe('validate() as a diagnostic', () => {
@@ -52,10 +52,10 @@ describe('validate() as a diagnostic', () => {
     abstract class ICycleA {}
     abstract class ICycleB {}
     class CycleA implements ICycleA {
-      @dependsOn(ICycleB) private readonly b!: ICycleB;
+      @dependsOn(ICycleB) public readonly b!: ICycleB;
     }
     class CycleB implements ICycleB {
-      @dependsOn(ICycleA) private readonly a!: ICycleA;
+      @dependsOn(ICycleA) public readonly a!: ICycleA;
     }
     const services = createServiceCollection();
     services.register(CycleA).as(ICycleA);
@@ -71,10 +71,10 @@ describe('validate() as a diagnostic', () => {
     abstract class IBeta {}
     abstract class IForwarded {}
     class Alpha implements IAlpha {
-      @dependsOn(IForwarded) private readonly forwarded!: IForwarded;
+      @dependsOn(IForwarded) public readonly forwarded!: IForwarded;
     }
     class Beta implements IBeta {
-      @dependsOn(IAlpha) private readonly alpha!: IAlpha;
+      @dependsOn(IAlpha) public readonly alpha!: IAlpha;
     }
     const services = createServiceCollection();
     services.register(Alpha).as(IAlpha);
@@ -92,10 +92,10 @@ describe('validate() as a diagnostic', () => {
     abstract class IRoot {}
     class ScopedLeaf implements IScopedLeaf {}
     class Middle implements IMiddle {
-      @dependsOn(IScopedLeaf) private readonly leaf!: IScopedLeaf;
+      @dependsOn(IScopedLeaf) public readonly leaf!: IScopedLeaf;
     }
     class Root implements IRoot {
-      @dependsOn(IMiddle) private readonly middle!: IMiddle;
+      @dependsOn(IMiddle) public readonly middle!: IMiddle;
     }
     const services = createServiceCollection();
     services.register(ScopedLeaf).as(IScopedLeaf).scoped();
@@ -113,7 +113,7 @@ describe('validate() as a diagnostic', () => {
     abstract class IHolder {}
     class ScopedTarget implements IScopedTarget {}
     class Holder implements IHolder {
-      @dependsOn(IAliasToScoped) private readonly aliased!: IAliasToScoped;
+      @dependsOn(IAliasToScoped) public readonly aliased!: IAliasToScoped;
     }
     const services = createServiceCollection();
     services.register(ScopedTarget).as(IScopedTarget).scoped();
@@ -130,7 +130,7 @@ describe('validate() as a diagnostic', () => {
     abstract class IB {}
     class A implements IA {}
     class B implements IB {
-      @dependsOn(IA) private readonly a!: IA;
+      @dependsOn(IA) public readonly a!: IA;
     }
     const services = createServiceCollection();
     // A is built by a declared-deps factory that declares IB; B @dependsOn IA.
@@ -156,7 +156,7 @@ describe('validate() as a diagnostic', () => {
       constructor(readonly leaf: IScopedLeaf) {}
     }
     class Root implements IRoot {
-      @dependsOn(IMiddle) private readonly middle!: IMiddle;
+      @dependsOn(IMiddle) public readonly middle!: IMiddle;
     }
     const services = createServiceCollection();
     // Root (singleton) -> Middle (transient, declared-deps factory) -> ScopedLeaf.
@@ -184,7 +184,7 @@ describe('validate() as a diagnostic', () => {
       constructor(readonly thing: IScopedThing) {}
     }
     class Holder implements IHolder {
-      @dependsOn(IOpaque) private readonly opaque!: IOpaque;
+      @dependsOn(IOpaque) public readonly opaque!: IOpaque;
     }
     const services = createServiceCollection();
     // The opaque factory's dependency on the scoped service is invisible, so the
@@ -208,7 +208,7 @@ describe('validate() as a diagnostic', () => {
     abstract class IHolder {}
     class OpaqueScoped implements IOpaqueScoped {}
     class Holder implements IHolder {
-      @dependsOn(IOpaqueScoped) private readonly dep!: IOpaqueScoped;
+      @dependsOn(IOpaqueScoped) public readonly dep!: IOpaqueScoped;
     }
     const services = createServiceCollection();
     // The opaque node carries its declared (scoped) lifetime, so a singleton
@@ -224,7 +224,6 @@ describe('validate() as a diagnostic', () => {
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
-
 });
 
 describe('buildProvider validation', () => {
