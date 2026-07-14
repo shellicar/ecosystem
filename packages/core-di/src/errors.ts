@@ -94,13 +94,8 @@ export class ValidationError extends ServiceError {
 }
 
 /**
- * A build/registration operation the type surface hides because it is invalid,
- * forced past the types (via `as any` or a plain-JS consumer) — `usingAsync` on
- * a sync builder, a verb on a terminal forward, a second lifetime after one is
- * set, a sync build of an async collection, `overrideLifetime` after build,
- * `createScope` with no scoped feature composed, a sync dispose of an async-only
- * boundary. The type is the friendly surface; the runtime enforces correctness,
- * so each of these throws rather than silently corrupting.
+ * Thrown when an operation the type surface hides as invalid is forced past the
+ * types (via `as any` or plain JS): the runtime enforces what the types surface.
  */
 export class InvalidOperationError extends BuilderError {
   name = 'InvalidOperationError';
@@ -111,16 +106,13 @@ export class InvalidOperationError extends BuilderError {
 }
 
 /**
- * A singleton that reaches a scoped instance at resolve — through an opaque
- * factory the static graph cannot see — when the `runtimeCaptivePolicy` forbids it
- * (`RuntimeCaptivePolicy.Throw`). The static captive is reported by `validate()`;
- * this is its runtime half, caught at resolution because the factory hid the edge.
- * A resolve-time error, so it is a {@link ServiceError}.
+ * Thrown at resolve when a singleton reaches a scoped instance through an opaque
+ * factory and `runtimeCaptivePolicy` is `Throw` (see {@link RuntimeCaptivePolicy}).
  */
 export class CaptiveDependencyError extends ServiceError {
   name = 'CaptiveDependencyError';
   constructor(singleton: ServiceIdentifier<object>, captured: ServiceIdentifier<object>) {
-    super(`${singleton.name} (singleton) captured ${captured.name} (scoped) at resolve, through a factory the static graph cannot see — forbidden by RuntimeCaptivePolicy.Throw`);
+    super(`${singleton.name} (singleton) captured ${captured.name} (scoped) at resolve, through a factory the static graph cannot see, forbidden by RuntimeCaptivePolicy.Throw`);
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }

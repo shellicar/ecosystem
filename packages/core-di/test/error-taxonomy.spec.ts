@@ -7,7 +7,7 @@ import { BuilderError, InvalidImplementationError, InvalidServiceIdentifierError
 // ValidationError for the thrown validate report. Registration misuse and the
 // consumer-facing misuse throws are BuilderError, still catchable by their own
 // subclass. A singleton reaching a scoped service is not an error family of its
-// own — it is governed by captivePolicy (see captivePolicy.spec).
+// own; it is governed by captivePolicy (see captivePolicy.spec).
 
 abstract class IService {}
 class Service implements IService {}

@@ -212,7 +212,7 @@ describe('validate() as a diagnostic', () => {
     }
     const services = createServiceCollection();
     // The opaque node carries its declared (scoped) lifetime, so a singleton
-    // holding it directly is still flagged — you just cannot see through it.
+    // holding it directly is still flagged: you just cannot see through it.
     services
       .register(OpaqueScoped)
       .using(() => new OpaqueScoped())

@@ -4,27 +4,11 @@ import type { ILogger } from '../logger';
 import type { InstrumentationHook, ServiceIdentifier, SourceType } from '../types';
 import type { Engine, Scope } from './boundaryEngine';
 
-/**
- * The internal surface {@link ServiceProvider} needs from its collection beyond
- * `IServiceCollection`: the share-references clone that backs a scope's own
- * collection, and the live registration snapshot the engine's per-scope view
- * reads (dynamic scope registration, decisions.md §7).
- */
 export type ScopeServicesSource = IServiceCollection & {
   cloneShared(): ScopeServicesSource;
   snapshot(): { readonly services: import('../types').DescriptorMap; readonly version: number };
 };
 
-/**
- * The public resolution surface over the boundary engine — the provider root
- * and every scope are instances of this one wrapper, differing only in which
- * engine surface they hold and which collection is theirs.
- *
- * The wrapper owns what the engine deliberately does not: the three self-token
- * short-circuits for direct `resolve` calls (the engine handles the same tokens
- * inside plans via its surface steps), per-resolution logging, and the scope's
- * own `Services` collection whose registrations extend the scope's plans.
- */
 export class ServiceProvider implements IServiceProvider, IScopedProvider {
   private constructor(
     private readonly logger: ILogger,
@@ -32,16 +16,11 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
     private readonly scope: Scope,
     private readonly engine: Engine,
     private readonly rootProvider: ServiceProvider | undefined,
-    // The resolved instrumentation hook, or undefined when timing is off. The
-    // build boundary reads the enabled toggle once (decisions.md §7) and hands
-    // the active hook down; the provider just checks its presence.
     private readonly instrument: InstrumentationHook | undefined,
   ) {}
 
   public static createRoot(logger: ILogger, services: ScopeServicesSource, engine: Engine, instrument: InstrumentationHook | undefined): ServiceProvider {
     const root = new ServiceProvider(logger, services, engine, engine, undefined, instrument);
-    // Bind the wrapper as the root boundary's surface, so a surface token
-    // resolved inside a plan yields this provider, not the engine internals.
     engine.bindSurface(root);
     return root;
   }
@@ -51,9 +30,6 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   public resolve<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
-    // When timing is off the hook is present-but-not-called: a single branch,
-    // no clock read, so a consumer who leaves it off pays nothing (decisions.md
-    // §7). When on, the whole resolve is timed and surfaced with the token name.
     if (this.instrument === undefined) {
       return this.resolveInternal(identifier);
     }
@@ -66,10 +42,6 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
-    // The self-tokens resolve to the boundary surface the call went through
-    // (decisions.md §7): scope tokens to this surface, the provider token to the
-    // root. Never the in-pass scope — a later call through an injected surface
-    // is a fresh pass.
     if (identifier.prototype === IServiceProvider.prototype) {
       return this.root as IServiceProvider as T;
     }
@@ -86,8 +58,6 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   public resolveAll<T extends SourceType>(identifier: ServiceIdentifier<T>): T[] {
-    // No registrations is an empty result for resolveAll, not an error — the
-    // "how many are there?" question has a valid answer of none.
     if (this.Services.get(identifier).length === 0) {
       return [];
     }
@@ -95,10 +65,6 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   public createScope(): IScopedProvider {
-    // The scope's collection shares the descriptor objects of this provider's
-    // frozen collection — node identity is what lets the engine's per-scope view
-    // share every feature cache and held error with the root — while its own
-    // arrays keep dynamic registrations from leaking to the parent.
     const scopeServices = this.Services.cloneShared();
     const engineScope = this.engine.createScope(() => scopeServices.snapshot());
     const scoped = new ServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root, this.instrument);
@@ -107,9 +73,6 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   }
 
   public printGraph(write: (line: string) => void = console.log): void {
-    // The graph lives in the engine; the wrapper just forwards to this
-    // boundary's surface. Default sink is console.log so a bare `printGraph()`
-    // prints straight to the terminal.
     this.scope.printGraph(write);
   }
 

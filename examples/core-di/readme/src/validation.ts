@@ -10,7 +10,7 @@ class Service implements IService {
 }
 
 // validate() reads the static dependency graph and reports problems without
-// throwing — cheap to run in CI. A singleton that depends on a shorter-lived
+// throwing, cheap to run in CI. A singleton that depends on a shorter-lived
 // scoped service is a captive dependency.
 const services = createServiceCollection();
 services.register(Repository).as(IRepository).scoped();

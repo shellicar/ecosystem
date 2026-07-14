@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { InstrumentationEvent } from '../src';
 import { createServiceCollection } from '../src';
 
-// The instrumentation hook (decisions.md §7) is a toggleable way to time
+// The instrumentation hook is a toggleable way to time
 // buildProvider and each resolve. Enabled, it reports a build timing once and a
 // resolve timing per call to onTiming; disabled, the hook is present but never
 // called, so production pays nothing.

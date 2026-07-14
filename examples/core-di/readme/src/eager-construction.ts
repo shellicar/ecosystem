@@ -8,7 +8,7 @@ class Warmup {
   }
 }
 
-// A singleton is lazy by default — built at first resolve. `.eager()` opts it
+// A singleton is lazy by default: built at first resolve. `.eager()` opts it
 // into construction at buildProvider() instead. It composes with the lifetime
 // verbs in any chain order and is offered only on a singleton.
 const services = createServiceCollection();
@@ -18,4 +18,4 @@ const provider = services.buildProvider();
 equal(constructions, 1); // constructed at build, before any resolve
 
 provider.resolve(Warmup);
-equal(constructions, 1); // still one — a warm singleton resolve is a lookup
+equal(constructions, 1); // still one: a warm singleton resolve is a lookup

@@ -5,11 +5,8 @@ import { ServiceCollection } from './private/ServiceCollection';
 import type { ServiceCollectionOptions } from './types';
 
 /**
- * Options for {@link createServiceCollection}. `async` is a type-level flag,
- * declared at collection creation (decisions.md §8): with it, the collection's
- * builders carry `usingAsync` and the collection carries `buildProviderAsync`;
- * without it, neither exists on the type — async intent cannot be declared
- * where the build path could not honour it.
+ * Options for {@link createServiceCollection}. `async: true` makes the builders
+ * carry `usingAsync` and the collection `buildProviderAsync`.
  */
 export type CreateServiceCollectionOptions<Async extends boolean = false> = Partial<ServiceCollectionOptions> & {
   readonly async?: Async;

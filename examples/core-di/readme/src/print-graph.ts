@@ -9,7 +9,7 @@ class Greeter implements IGreeter {
   @dependsOn(IClock) public readonly clock!: IClock;
 }
 
-// printGraph reads the static graph derived at build — no construction — and
+// printGraph reads the static graph derived at build (no construction) and
 // writes a human-readable visualisation: each token, its implementation and
 // lifetime, and its @dependsOn and forward edges. It defaults to console.log;
 // here a line sink captures the output so it can be asserted, then printed.

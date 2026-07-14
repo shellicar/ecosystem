@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  * The `Symbol.metadata` polyfill is imported for its side effect only
  * (`import './polyfill'` in the barrel). A bundler is free to drop a
  * side-effect-only import unless the package's `sideEffects` field marks the
- * module as impure — and it evaluates that field against the *source* file
+ * module as impure, and it evaluates that field against the *source* file
  * (`src/polyfill.ts`), not the built output. So a `sideEffects` list of `dist`
  * paths alone leaves the source polyfill unprotected: a bundler tree-shakes it
  * away and `@dependsOn` silently stops recording edges.
@@ -22,7 +22,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const polyfillSource = new URL('../src/polyfill.ts', import.meta.url);
 const packageJson = new URL('../package.json', import.meta.url);
 
-/** The polyfill's one statement, as it reads once bundled — present iff the module survived. */
+/** The polyfill's one statement, as it reads once bundled: present iff the module survived. */
 const polyfillAssignment = /Symbol\.for\(['"]Symbol\.metadata['"]\)/;
 
 let polyfillText: string;

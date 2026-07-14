@@ -4,38 +4,20 @@ import type { DescriptorMap, ServiceDescriptor, ServiceIdentifier, SourceType } 
 import { DesignDependenciesKey } from './constants';
 import { getMetadata } from './metadata';
 
-/**
- * One registration's static facts: its declared lifetime (`undefined` for a
- * forward, which has none of its own), the identifier it is registered under,
- * and its out-edges. Lifetime is carried as opaque data here — this module
- * never interprets it (no engine, no lifetime policy; see decisions.md §7/§8).
- */
 export type GraphFacts = {
   readonly lifetime: Lifetime | undefined;
-  /** The last face this node is registered under — the one `resolve(token)` lands on. */
   readonly owner: ServiceIdentifier<SourceType>;
-  /** Every face this node is registered under, in registration order. A multi-face node (one `register()` call, several `as`/`asSelf`) is one descriptor reachable through each of these. */
   readonly owners: readonly ServiceIdentifier<SourceType>[];
   readonly deps: readonly ServiceIdentifier<SourceType>[];
-  /** Whether this node's factory is async (`usingAsync`) — read by the async-through-sync-path policy (decisions.md §8). */
   readonly isAsync: boolean;
 };
 
-/**
- * A graph node is the descriptor itself — one node per *registration*, not
- * per token. A token (identifier) can carry several descriptors (multiple
- * registrations, `resolveAll`); collapsing them to one node per token would
- * lose that multiplicity.
- */
 export type GraphNode = ServiceDescriptor<SourceType>;
 
-/** The static graph: every registered descriptor mapped to its facts. */
 export type Graph = ReadonlyMap<GraphNode, GraphFacts>;
 
-/** One reported cycle, as the sequence of nodes that form it. */
 export type Cycle = readonly GraphNode[];
 
-/** One dependency edge pointing at an identifier with no registered node. */
 export type UnregisteredEdge = {
   readonly from: GraphNode;
   readonly missing: ServiceIdentifier<SourceType>;
@@ -46,23 +28,10 @@ const declaredDeps = (implementation: object): ServiceIdentifier<SourceType>[] =
   return Object.values(record);
 };
 
-/**
- * Derives one {@link GraphFacts} per registered descriptor — zero construction.
- *
- * - A forward carries no lifetime of its own; its one out-edge is its target.
- * - A factory (`using`) carries its declared deps (transparent) or none (opaque
- *   — the chain terminates, but the node still carries its declared lifetime).
- * - An `@dependsOn`-wired class reads its edges off definition-time metadata
- *   (`ctx.metadata`, landed in Phase 9) — no instance is constructed to see them.
- */
 export const deriveFacts = (services: DescriptorMap): Graph => {
   const graph = new Map<GraphNode, GraphFacts>();
   for (const [owner, descriptors] of services) {
     for (const descriptor of descriptors) {
-      // A multi-face node is the SAME descriptor under several tokens — the map
-      // key collides, so a plain set() would keep only the last face. Accumulate
-      // every face instead (the Phase 17 repro: an edge naming an earlier face
-      // was invisible to validate()/detectCycles).
       const existing = graph.get(descriptor);
       if (existing !== undefined) {
         graph.set(descriptor, { ...existing, owner, owners: [...existing.owners, owner] });
@@ -74,11 +43,6 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
         continue;
       }
       if (descriptor.usesFactory) {
-        // A factory-registered class still gets its `@dependsOn` fields injected
-        // at runtime — the plan wires them regardless of `usesFactory` — so those
-        // field edges are real out-edges. Union them with the declared deps so
-        // `validate()` sees the whole graph the engine actually wires: a cycle or
-        // captive running through a factory node's field is caught (C4).
         const fieldDeps = declaredDeps(descriptor.implementation);
         graph.set(descriptor, { lifetime: descriptor.lifetime, owner, owners: [owner], deps: [...(descriptor.declaredDeps ?? []), ...fieldDeps], isAsync });
         continue;
@@ -89,7 +53,6 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
   return graph;
 };
 
-/** Every node registered under `identifier` — a dependency edge fans out to all of them (multiplicity-aware). A multi-face node appears under every one of its faces. */
 export const indexByOwner = (graph: Graph): Map<ServiceIdentifier<SourceType>, GraphNode[]> => {
   const index = new Map<ServiceIdentifier<SourceType>, GraphNode[]>();
   for (const [node, facts] of graph) {
@@ -105,11 +68,6 @@ export const indexByOwner = (graph: Graph): Map<ServiceIdentifier<SourceType>, G
   return index;
 };
 
-/**
- * Every declared out-edge whose target identifier has no registered node.
- * Purely structural — reported for the caller (e.g. `validate()`) to turn
- * into a diagnostic; this module does not throw.
- */
 export const findUnregisteredEdges = (graph: Graph): UnregisteredEdge[] => {
   const index = indexByOwner(graph);
   const problems: UnregisteredEdge[] = [];
@@ -123,15 +81,6 @@ export const findUnregisteredEdges = (graph: Graph): UnregisteredEdge[] => {
   return problems;
 };
 
-/**
- * Every distinct cycle in the graph, deduped by the set of registrations
- * involved. The de-duplication keys on node *identity*, not owner name: two
- * distinct cycles whose classes happen to share names are different registration
- * sets, so both are reported rather than merged (Inv14) — upholding the
- * validate-completeness principle (fix one, re-validate, no hidden second). A
- * dependency edge naming an unregistered identifier is skipped here (see
- * {@link findUnregisteredEdges}); it cannot participate in a cycle.
- */
 export const detectCycles = (graph: Graph): Cycle[] => {
   const index = indexByOwner(graph);
   const state = new Map<GraphNode, 'visiting' | 'done'>();
@@ -139,8 +88,6 @@ export const detectCycles = (graph: Graph): Cycle[] => {
   const cycles: Cycle[] = [];
   const reported = new Set<string>();
 
-  // A stable id per node (assigned on first sight), so a cycle's signature keys
-  // on which actual registrations form it, not on their name strings.
   const nodeIds = new Map<GraphNode, number>();
   const idOf = (node: GraphNode): number => {
     let id = nodeIds.get(node);
@@ -186,12 +133,6 @@ export const detectCycles = (graph: Graph): Cycle[] => {
   return cycles;
 };
 
-/**
- * A deps-first order over every node in the graph — zero construction. A node
- * already `visiting` (part of a cycle) is left where the traversal finds it
- * rather than infinitely recursing; {@link detectCycles} is the source of
- * truth for cycles, not this function.
- */
 export const topologicalOrder = (graph: Graph): GraphNode[] => {
   const index = indexByOwner(graph);
   const order: GraphNode[] = [];
@@ -219,11 +160,6 @@ export const topologicalOrder = (graph: Graph): GraphNode[] => {
   return order;
 };
 
-/**
- * Every node transitively reachable from `start` by following declared
- * out-edges (deduped). Used by graph policies (e.g. captive-dependency
- * checks) to walk a node's dependency tree without re-deriving edge lookups.
- */
 export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
   const index = indexByOwner(graph);
   const found: GraphNode[] = [];
@@ -245,17 +181,8 @@ export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
   return found;
 };
 
-/** Every node registered under an identifier, in registration order — the owner-index the plan functions look edges up through. */
 export type OwnerIndex = ReadonlyMap<ServiceIdentifier<SourceType>, readonly GraphNode[]>;
 
-/**
- * One pre-computed step of a node's execution plan. A `build` step constructs a
- * node, wiring each `@dependsOn` field from an earlier slot in the same plan and
- * feeding each declared-deps factory argument (`using([deps], factory)`) from an
- * earlier slot, positionally. An `error` step is a fault determined statically
- * here (a cycle, a self-dependency, an unregistered edge), held as a slot value
- * to surface at execution.
- */
 export type PlanStep =
   | {
       readonly kind: 'build';
@@ -263,7 +190,6 @@ export type PlanStep =
       readonly token: ServiceIdentifier<SourceType>;
       readonly lifetime: Lifetime;
       readonly fields: readonly { readonly field: string; readonly slot: number }[];
-      /** The slots holding this node's declared-deps factory arguments, in declaration order. Empty for a class or an opaque factory. */
       readonly args: readonly number[];
     }
   | {
@@ -274,18 +200,11 @@ export type PlanStep =
   | {
       readonly kind: 'surface';
       readonly token: ServiceIdentifier<SourceType>;
-      /** Which boundary's surface the token resolves to: the root, or the boundary resolving this plan. */
       readonly at: 'root' | 'boundary';
     };
 
-/**
- * A flat, deps-first plan: executing it top to bottom fills a `locals` table,
- * and the last slot is the requested node's resolution. Every edge and every
- * static fault is decided here; execution only looks up and constructs.
- */
 export type Plan = readonly PlanStep[];
 
-/** Follow a forward chain to the concrete node it redirects to (guarding a forward loop). */
 export const followForward = (index: OwnerIndex, descriptor: GraphNode): GraphNode | undefined => {
   let node: GraphNode | undefined = descriptor;
   const seen = new Set<GraphNode>();
@@ -300,36 +219,12 @@ export const followForward = (index: OwnerIndex, descriptor: GraphNode): GraphNo
   return node;
 };
 
-/** The concrete node a single `resolve(token)` lands on — the last registration, forwards followed. */
 export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceType>): GraphNode | undefined => {
   const bucket = index.get(token) ?? [];
   const last = bucket[bucket.length - 1];
   return last === undefined ? undefined : followForward(index, last);
 };
 
-/**
- * Compiles the flat {@link Plan} that resolves `rootNode` — zero construction.
- *
- * Field edges are read from definition-time `@dependsOn` metadata. A dependency
- * `isCached` reports as cached (singleton, scoped, resolve — a feature memoises
- * it) is emitted once and its slot shared across its injection points; a
- * transient dependency (the floor, no feature) is emitted once per injection
- * edge, so each injection point constructs a distinct instance. A dependency
- * already on the compile path is a cycle, a field naming its own owner is a
- * self-dependency, an edge with no registered node is unregistered — each held
- * as an `error` step.
- *
- * Two things the graph cannot decide alone are supplied by the engine, keeping
- * this module free of lifetime interpretation: `lifetimeOf` yields a node's
- * effective lifetime (an un-verbed node resolves under the engine's
- * `defaultLifetime`), and `isCached` reports whether that lifetime is memoised
- * by a composed feature. Two further engine-supplied hooks keep the module free
- * of surface knowledge: `surfaceAt` names the tokens that resolve to a boundary
- * surface rather than a registration (the self-tokens — emitted as `surface`
- * steps, never constructed, never announced to disposal), and `guardToken`
- * turns a token's registration multiplicity into a policy error (the
- * `registrationMode` seam) held as an `error` step.
- */
 export const buildPlan = (
   graph: Graph,
   index: OwnerIndex,
@@ -345,9 +240,6 @@ export const buildPlan = (
   const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => {
     const facts = graph.get(node);
     if (facts === undefined) {
-      // Unreachable: every node emitted here is derived from the graph (root node
-      // and every edge target), so its facts are present. Throw rather than
-      // laundering a `Newable` into a `ServiceIdentifier` on a case that cannot occur.
       throw new Error('buildPlan reached a node with no graph facts; every emitted node is derived from the graph, so this cannot happen.');
     }
     return facts.owner;
@@ -395,10 +287,6 @@ export const buildPlan = (
       }
       fields.push({ field, slot: emitToken(identifier, nextPath) });
     }
-    // Declared-deps factory arguments are static edges too: resolve each into its
-    // own slot, in declaration order, so the engine hands the factory already-built
-    // dependencies instead of it re-entering `resolve`. Same faults as a field —
-    // a cycle, a self-dependency, an unregistered edge — become error slots here.
     const args: number[] = [];
     for (const identifier of node.declaredDeps ?? []) {
       if (identifier === token) {
@@ -418,18 +306,6 @@ export const buildPlan = (
   return steps;
 };
 
-/**
- * Renders the static graph as human-readable lines — the visualisation behind
- * {@link IServiceProvider.printGraph} (the graph-inspection capability,
- * decisions.md §7). One line per registered node: its resolution faces, its
- * implementation and effective lifetime, then each declared out-edge
- * (`@dependsOn` fields and declared-deps factories) on its own indented line. A
- * forward is shown as a redirect to its target, carrying no lifetime of its own.
- *
- * Pure and zero-construction, like every function here. `lifetimeOf` is supplied
- * by the engine — the same seam {@link buildPlan} uses — so the module never
- * interprets the default lifetime an un-verbed node resolves under.
- */
 export const formatGraph = (graph: Graph, lifetimeOf: (node: GraphNode) => Lifetime): string[] => {
   const lines: string[] = [`Dependency graph (${graph.size} registration${graph.size === 1 ? '' : 's'})`];
   for (const [node, facts] of graph) {

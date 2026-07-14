@@ -93,7 +93,7 @@ const services = createServiceCollection();
 abstract class IAbstract { abstract method(): void; }
 class Concrete {}
 services.register(Concrete).as(IAbstract);
-//                              ^ Error — Concrete does not implement IAbstract
+//                              ^ Error: Concrete does not implement IAbstract
 ```
 
 * Type-safe resolution.
@@ -257,7 +257,7 @@ scope.resolve(Connection);
 // the scoped Connection is disposed when the scope is disposed
 ```
 
-* Validate the wiring statically. `validate()` reads the dependency graph — unregistered targets, cycles, captive dependencies — with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`.
+* Validate the wiring statically. `validate()` reads the dependency graph (unregistered targets, cycles, captive dependencies) with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`.
 
 ```ts
 const report = services.validate();
@@ -271,7 +271,7 @@ if (!report.valid) {
 const provider = services.buildProvider({ validate: true });
 ```
 
-* Inspect the built graph. `printGraph(write = console.log)` writes a human-readable visualisation of the wiring — each token, its implementation and lifetime, and its `@dependsOn` and forward edges — to any line sink. It reads the static graph derived at build, so nothing is constructed.
+* Inspect the built graph. `printGraph(write = console.log)` writes a human-readable visualisation of the wiring (each token, its implementation and lifetime, and its `@dependsOn` and forward edges) to any line sink. It reads the static graph derived at build, so nothing is constructed.
 
 ```ts
 const services = createServiceCollection();

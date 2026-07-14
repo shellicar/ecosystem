@@ -81,8 +81,8 @@ describe('A forward has no lifetime of its own', () => {
   class Target implements IAlias {}
 
   it('does not accept a lifetime verb on a forward', () => {
-    // Never invoked: a verb on a forward result throws at runtime (Inv13c — the
-    // runtime enforces what the type hides), so the pin exists only for the compiler.
+    // Never invoked: a verb on a forward result throws at runtime (the runtime
+    // enforces what the type hides), so the pin exists only for the compiler.
     const probe = () => {
       const services = createServiceCollection();
       services.register(Target).asSelf().singleton();

@@ -15,30 +15,13 @@ import { createSingletonLifetime } from './lifetimeSingleton';
 import { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
 import { ServiceProvider } from './provider';
 
-/** The full composed lifetime set of the main `core-di` surface (the lite seam composes fewer; decisions.md §8). */
 const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve] as const satisfies readonly ComposableLifetime[];
 
-/**
- * The instrumentation hook resolved to what the build boundary consumes: the
- * `onTiming` sink when timing is enabled, otherwise `undefined` (decisions.md
- * §7). Reading the `enabled` toggle here — once, at build — is what lets every
- * downstream check be a bare presence test, so a disabled build times nothing.
- */
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
-/**
- * The public collection: a shell over the composed register layer
- * (`createCollection`, decisions.md §8) that adds what the public surface owns —
- * forwards, modules, validation, cloning, and the build boundary that renders
- * the registrations into the boundary engine. The registrations live in the
- * composed collection's `regs`, which IS the `DescriptorMap` the engine
- * consumes: one registration model end to end.
- */
 export class ServiceCollection implements IServiceCollection {
   private readonly composed: ComposableCollection<ComposableLifetime, boolean>;
-  /** Bumped on every registration — the engine's per-scope view reads it to know its plans are stale. */
   private version = 0;
-  /** Set by the first `buildProvider` — `overrideLifetime` is pre-build only (v5). */
   private built = false;
 
   constructor(
@@ -57,7 +40,6 @@ export class ServiceCollection implements IServiceCollection {
     });
   }
 
-  /** The registrations, as the map the graph and engine consume. */
   private get services(): DescriptorMap {
     return this.composed.regs as DescriptorMap;
   }
@@ -74,9 +56,6 @@ export class ServiceCollection implements IServiceCollection {
   }
 
   public overrideLifetime<T extends SourceType>(identifier: ServiceIdentifier<T>, lifetime: Lifetime): void {
-    // Pre-build only (v5, decided): a provider's plans and pre-baked singletons
-    // are derived at build, so a lifetime rewrite after buildProvider() could not
-    // reach them — it would silently disagree with the running engine.
     if (this.built) {
       throw new InvalidOperationError('overrideLifetime is pre-build only: the provider derives its plans at buildProvider(), so a lifetime cannot be overridden afterwards. Override before building.');
     }
@@ -109,14 +88,6 @@ export class ServiceCollection implements IServiceCollection {
     });
   }
 
-  /**
-   * Runs the wiring diagnostics. `NoIdentity` is collection-level (a register()
-   * call that never declared a face never enters the graph at all — it is only
-   * visible through the composed collection). The other kinds are composed
-   * graph policies over the static edges (decisions.md §8) — no
-   * probe-construction, the graph module derives the facts with zero
-   * construction. Reports problems without throwing.
-   */
   public validate(): ValidationReport {
     const problems: ValidationProblem[] = [];
     for (const node of this.composed.unfaced()) {
@@ -126,19 +97,12 @@ export class ServiceCollection implements IServiceCollection {
       });
     }
     const graph = deriveFacts(this.services);
-    // The composed default lifetime for an un-verbed registration is Lifetime.Resolve
-    // (the main surface's composition() default) — the captive check judges deps by
-    // that effective lifetime (C1).
     problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy, Lifetime.Resolve)]));
     return { valid: problems.length === 0, problems };
   }
 
   public clone(scoped?: unknown): IServiceCollection {
     const cloned = new ServiceCollection(this.logger, this.options, scoped === true, this.isAsync);
-    // Identity-preserving copy: every face of one register() call points at ONE
-    // shared node, and node identity is what shares the cached instance across
-    // faces — so each distinct descriptor is copied exactly once, and tokens
-    // that shared a node keep sharing the copy.
     const copies = new Map<ServiceDescriptor<SourceType>, ServiceDescriptor<SourceType>>();
     const copyOf = (descriptor: ServiceDescriptor<SourceType>): ServiceDescriptor<SourceType> => {
       let copy = copies.get(descriptor);
@@ -154,12 +118,6 @@ export class ServiceCollection implements IServiceCollection {
     return cloned;
   }
 
-  /**
-   * The scope-collection clone (dynamic scope registration, decisions.md §7):
-   * shares the descriptor *objects* — node identity is what lets a scope's
-   * engine view share every feature cache and held error with the root — while
-   * fresh arrays keep the scope's own registrations from leaking to the parent.
-   */
   public cloneShared(): ServiceCollection {
     const cloned = new ServiceCollection(this.logger, this.options, true, this.isAsync);
     for (const [key, descriptors] of this.services) {
@@ -168,17 +126,10 @@ export class ServiceCollection implements IServiceCollection {
     return cloned;
   }
 
-  /** The live registration state the engine's per-scope view reads (see {@link ServiceProvider.createScope}). */
   public snapshot(): { readonly services: DescriptorMap; readonly version: number } {
     return { services: this.services, version: this.version };
   }
 
-  /**
-   * The engine composition of the main surface: all three lifetime features,
-   * the floor's default of `Lifetime.Resolve` for un-verbed registrations
-   * (supplied by the engine, never stamped by the register layer), the
-   * disposal tracker, and the three self-tokens mapped to their surfaces.
-   */
   private composition() {
     return {
       singleton: createSingletonLifetime(),
@@ -195,7 +146,6 @@ export class ServiceCollection implements IServiceCollection {
     };
   }
 
-  /** Freeze the registrations for a build: later registrations must not reach a provider already built. */
   private freeze(options?: BuildProviderOptions): ServiceCollection {
     if (options?.validate) {
       const report = this.validate();
@@ -205,8 +155,6 @@ export class ServiceCollection implements IServiceCollection {
     }
     this.built = true;
     const frozen = this.clone() as ServiceCollection;
-    // The frozen clone is the provider's own collection — already built by
-    // definition, so overrideLifetime through provider.Services throws too.
     frozen.built = true;
     return frozen;
   }
@@ -221,7 +169,6 @@ export class ServiceCollection implements IServiceCollection {
       });
       return ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
     };
-    // Off is a single branch — no clock read, no build event (decisions.md §7).
     if (onTiming === undefined) {
       return build();
     }
@@ -231,12 +178,6 @@ export class ServiceCollection implements IServiceCollection {
     return provider;
   }
 
-  /**
-   * The async build boundary (decisions.md §8) — exposed on the type surface
-   * only for a collection created with `{ async: true }`. Awaits async
-   * singleton factories (`usingAsync`) in topological order, so their
-   * instances are settled and every later `resolve()` is synchronous.
-   */
   public async buildProviderAsync(options?: BuildProviderOptions): Promise<IServiceProvider> {
     const onTiming = activeHook(options?.instrument);
     const build = async (): Promise<IServiceProvider> => {
@@ -247,7 +188,6 @@ export class ServiceCollection implements IServiceCollection {
       });
       return ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
     };
-    // Off is a single branch — no clock read, no build event (decisions.md §7).
     if (onTiming === undefined) {
       return build();
     }

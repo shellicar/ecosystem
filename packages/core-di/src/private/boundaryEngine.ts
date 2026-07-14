@@ -6,152 +6,57 @@ import { buildPlan, deriveFacts, followForward, formatGraph, type Graph, type Gr
 import type { Env, LifetimeFeature } from './lifetimeContracts';
 import type { ScopedLifetime } from './lifetimeScoped';
 
-/** A node whose instance comes from an async factory (`usingAsync`) — its own field, physically apart from the sync `createInstance` (decisions.md §8). */
 type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceType> };
 
-/**
- * Whether a node is async — *derived* from the presence of its async factory
- * field, never a hand-set flag (decisions.md §8). The narrowing return type lets
- * the async build path read `createInstanceAsync` without a cast: the sync path
- * reads only `createInstance`, so an async factory is structurally unreachable there.
- */
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
 
-/** A shared empty registration list, so a token miss in resolveValue allocates nothing. */
 const EMPTY_BUCKET: readonly GraphNode[] = [];
 
-/**
- * The lifetime features an engine composes (decisions.md §8). Each is
- * self-contained: it brings its own storage and, where it has a boundary, the
- * handle that opens one. `Lifetime.Transient` is the floor — the absence of a
- * feature — so it has no entry here: a transient node has no table and is
- * constructed fresh at every dependency edge that names it.
- */
 export type EngineComposition = {
   readonly singleton?: LifetimeFeature;
   readonly scoped?: ScopedLifetime;
   readonly resolve?: LifetimeFeature;
-  /**
-   * The lifetime an un-verbed registration resolves under (decisions.md §8; the
-   * SC-confirmed value is `Lifetime.Resolve`). A registration that names no
-   * lifetime verb carries none on its descriptor; the engine — not the register
-   * layer — owns the default, resolving such a node here. Defaults to
-   * `Lifetime.Resolve` when the composition omits it.
-   */
   readonly defaultLifetime?: Lifetime;
-  /** The disposal seam (decisions.md §8). Inert when absent — see {@link DisposalSink}. */
   readonly disposal?: DisposalSink;
-  /**
-   * The self-tokens (decisions.md §7): tokens that resolve to a resolution
-   * *surface* rather than a registration — `IServiceProvider` to the root's
-   * bound surface, `IResolutionScope`/`IScopedProvider` to the surface of the
-   * boundary doing the resolving, never to the in-pass scope (an in-pass
-   * surface would pin pass handles alive and share stale `Resolve` instances;
-   * a later call through an injected surface must be a fresh pass). The
-   * surface value itself is bound by the public wrapper via
-   * {@link Scope.bindSurface}; a surface is never constructed by the engine
-   * and never announced to disposal.
-   */
   readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
-  /**
-   * Whether resolve throws on the runtime captive (decisions.md §8): a singleton
-   * that pulls a scoped instance through an opaque factory at resolve — an edge
-   * `validate()` cannot see. Under {@link RuntimeCaptivePolicy.Throw} it is caught
-   * at resolution; under `None`/absent it is not. This is a *separate* axis from
-   * the static captive report (`captivePolicy`, which lives entirely in `validate()`);
-   * the engine only ever consumes this runtime switch.
-   */
   readonly runtimeCaptivePolicy?: RuntimeCaptivePolicy;
 };
 
-/** A resolution boundary — the root, or a scope — that constructions are announced to and that has an end. */
 export type Boundary = { readonly id: symbol };
 
-/**
- * The seam disposal composes onto (decisions.md §8). The engine announces every
- * construction with the boundary that resolved it, and ends a boundary when its
- * surface is disposed. Phase 13 exposes the call sites; the tracker itself — the
- * `Map<boundary, disposables>` and the nearest-boundary rule — is Phase 14. When
- * no sink is composed the announce/end calls are inert no-ops.
- */
 export type DisposalSink = {
   announce(instance: unknown, boundary: Boundary): void;
   end(boundary: Boundary): void;
-  /** Async teardown for a boundary (`await using` / `disposeAsync`). Optional — a sync-only sink omits it. */
   endAsync?(boundary: Boundary): Promise<void>;
 };
 
-/**
- * Options for {@link buildEngine}. `validate` opts the build out of leniency:
- * if any singleton's resolution was held as an error, that error is thrown at
- * build rather than at the token's first resolve. `registrationMode` decides
- * what a single `resolve` does when a token carries several registrations:
- * throw {@link MultipleRegistrationError} (the default), or resolve the last
- * registered.
- */
 export type BuildEngineOptions = {
   readonly validate?: boolean;
   readonly registrationMode?: ResolveMultipleMode;
 };
 
-/**
- * A resolution surface — the provider root, or a scope opened from it. A surface
- * is a disposal boundary: disposing it ends that boundary (decisions.md §8), the
- * seam Phase 14's tracker composes onto. `bindSurface` names the value the
- * boundary's surface tokens resolve to — the public wrapper binds itself here,
- * so an injected `IScopedProvider` is the wrapper, not the engine internals.
- */
 export type Scope = {
   resolve<T extends SourceType>(token: ServiceIdentifier<T>): T;
   resolveAll<T extends SourceType>(token: ServiceIdentifier<T>): T[];
   bindSurface(surface: unknown): void;
-  /** Writes a human-readable visualisation of this boundary's dependency graph, one line per `write` call (decisions.md §7 inspection). */
   printGraph(write: (line: string) => void): void;
   [Symbol.dispose](): void;
   [Symbol.asyncDispose](): Promise<void>;
 };
 
-/**
- * A live overlay a scope resolves through: the scope's own registrations
- * (dynamic scope registration, decisions.md §7). Definition-time edges mean a
- * dynamically registered service's plan is derivable at registration with no
- * construction — the engine derives a per-scope view over this map, and
- * `version` tells it when a new registration made that view stale.
- */
 export type ScopeOverlay = () => { readonly services: DescriptorMap; readonly version: number };
 
-/** The built engine: the provider root plus the verb that opens a scope. */
 export type Engine = Scope & {
   createScope(overlay?: ScopeOverlay): Scope;
 };
 
-/**
- * The engine type for a given composition: `createScope` is present only when the
- * composition composes the scoped feature. Keyed on whether `scoped` is a key of
- * the composition type at all — an inline literal without a `scoped` key has no
- * `createScope`, so calling it is a compile error; a composition typed as the full
- * {@link EngineComposition} carries it (decisions.md §7; Phase 21 define-by-test).
- */
 export type EngineFor<C extends EngineComposition> = Scope & ('scoped' extends keyof C ? { createScope(overlay?: ScopeOverlay): Scope } : Record<never, never>);
 
-/**
- * One token's resolution, worked out once and held: the instance, or the error
- * that stands as that token's resolution (decisions.md §7). Plan execution
- * fills a slot with an `Outcome` rather than throwing, so a dependent can read
- * a failed dependency's error and wrap it, mirroring per-level nesting.
- */
 type Outcome = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly error: unknown };
 
 const ok = (value: unknown): Outcome => ({ ok: true, value });
 const failed = (error: unknown): Outcome => ({ ok: false, error });
 
-/**
- * One registration map's derived statics: the graph, the owner index, and the
- * compiled plans. The root has one view, built once; a scope with dynamic
- * registrations has its own, derived over the scope's map (which shares the
- * root's descriptor objects, so every cache and held error keyed on a node
- * still applies) and rebuilt when a registration lands.
- */
 type View = {
   readonly services: DescriptorMap;
   readonly graph: Graph;
@@ -159,49 +64,15 @@ type View = {
   readonly planCache: Map<GraphNode, Plan>;
 };
 
-/**
- * Assembles the shared engine machinery over a registration map (decisions.md
- * §7/§8) — used by both {@link buildEngine} and {@link buildEngineAsync}, which
- * differ only in how singletons are pre-baked: synchronously, or awaiting async
- * (`usingAsync`) factories at the build boundary.
- *
- * The graph is derived once, and every token's execution is compiled into a
- * static {@link Plan} at build — dependency edges and faults (cycles,
- * self-dependencies, unregistered edges) are resolved here, from
- * definition-time `@dependsOn` metadata, with zero construction. `resolve` then
- * executes a plan by a flat, deps-first pass over a `locals` table: it reads
- * edges the plan already decided and never re-enters itself. The one sanctioned
- * exception is an opaque factory, whose body calls `scope.resolve` to join the
- * current pass (so a shared `Resolve`-lifetime dependency is one instance across
- * the factory and a sibling `@dependsOn` field).
- *
- * A cached lifetime (singleton, scoped, resolve) is one slot in the plan, shared
- * across its injection points and memoised by its feature; transient — the floor,
- * no feature — is a fresh slot per injection edge, so each injection point gets a
- * distinct instance. A singleton is lazy by default — constructed on first resolve
- * and memoised by its feature; `.eager()` opts one into construction at build, and
- * an async (`usingAsync`) singleton must bake at build since `resolve()` cannot
- * await (decisions.md §8). Those pre-baked singletons are constructed once here, in
- * topological order; one whose construction throws has that error *held* as its
- * resolution: lenient by default, thrown at build when `validate` is set.
- */
 const setupEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions) => {
-  /** A singleton whose build threw: its error, replayed as its resolution. Keyed on the node, so it holds across every view. */
   const heldErrors = new Map<GraphNode, unknown>();
-  /** The lifetime an un-verbed registration resolves under — the engine owns the default (decisions.md §8). */
   const defaultLifetime = composition.defaultLifetime ?? Lifetime.Resolve;
-  /** The disposal seam (Phase 14 supplies the tracker); inert here. */
   const disposal = composition.disposal;
-  /** Whether resolve throws on the runtime captive (decisions.md §8). */
   const runtimeCaptivePolicy = composition.runtimeCaptivePolicy;
-  /** Nodes whose factory is mid-construction in the current pass — a re-entry is a runtime cycle (C2). */
   const constructing = new Set<GraphNode>();
-  /** Depth of in-flight singleton constructions, and the token of the innermost — the runtime captive check reads these. */
   let singletonDepth = 0;
   let currentSingletonToken: ServiceIdentifier<SourceType> | undefined;
-  /** The root's own boundary — every root-resolved construction is announced against it. */
   const rootBoundary: Boundary = { id: Symbol('root') };
-  /** Each boundary's bound surface — what its surface tokens resolve to (see {@link EngineComposition.surfaceTokens}). */
   const surfaces = new Map<symbol, unknown>();
 
   const featureFor = (lifetime: Lifetime): LifetimeFeature | undefined => {
@@ -217,19 +88,11 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     }
   };
 
-  /** Whether a lifetime is cached (a feature memoises it) — transient is the floor, not cached. */
   const isCached = (lifetime: Lifetime): boolean => featureFor(lifetime) !== undefined;
 
-  /** A node's effective lifetime — its own explicit choice, or the engine default when un-verbed. */
   const effectiveLifetime = (node: GraphNode): Lifetime => node.lifetime ?? defaultLifetime;
 
-  // The surface tokens as an identity-scanned list, not a map probe. There are at
-  // most three (the self-tokens) and surfaceAt is on the hot edge-resolution path,
-  // so a few reference comparisons beat hashing the token every resolve (Phase 26
-  // instrumentation finding). Identity is exactly Map key equality, so the result
-  // is unchanged.
   const surfaceEntries: readonly (readonly [ServiceIdentifier<SourceType>, 'root' | 'boundary'])[] = composition.surfaceTokens ? [...composition.surfaceTokens] : [];
-  /** Which boundary's surface a token resolves to, when it is a surface token at all. */
   const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => {
     for (const [surfaceToken, at] of surfaceEntries) {
       if (surfaceToken === token) {
@@ -239,12 +102,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     return undefined;
   };
 
-  /**
-   * The registrationMode policy over a token's registrations: a single resolve
-   * of a token carrying several is an error unless the composition chose
-   * last-registered (decisions.md §7; the engine default matches the public
-   * default, `ResolveMultipleMode.Error`).
-   */
   const guardToken = (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]): unknown | undefined => {
     if (nodes.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
       return new MultipleRegistrationError(token);
@@ -252,19 +109,13 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     return undefined;
   };
 
-  /** Features that mint a fresh handle at each top-level resolve (resolve-lifetime). */
   const contributors = [composition.resolve].filter((feature): feature is LifetimeFeature => feature?.contribute != null);
 
   const makeView = (viewServices: DescriptorMap): View => {
-    // The owner index is the services map itself — token to descriptors, every
-    // face included. Deriving it from the graph would lose faces: the graph
-    // holds ONE facts entry per node, so a node registered under several tokens
-    // (multiple `.as()` on one register call) keeps only its last owner there.
     const graph = deriveFacts(viewServices);
     return { services: viewServices, graph, index: viewServices, planCache: new Map() };
   };
 
-  /** The root's view — derived once at build, the static structure every resolve executes against. */
   const rootView = makeView(services);
 
   const planFor = (view: View, node: GraphNode): Plan => {
@@ -276,13 +127,11 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     return plan;
   };
 
-  /** The in-pass surface handed to an opaque factory: its `resolve` re-joins the current pass and boundary. */
   const inPassScope = (view: View, env: Env, boundary: Boundary): IResolutionScope => ({
     resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolveValue(view, token, env, boundary) as T,
     resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(view, token, env, boundary) as T[],
   });
 
-  /** Re-wraps a below-the-line failure as this token's own creation error, mirroring per-level nesting. */
   const wrapForToken = (error: unknown, token: ServiceIdentifier<SourceType>, implementation: ServiceRegistration<SourceType>): unknown => {
     if (error instanceof ServiceCreationError && error.identifier !== token) {
       return new ServiceCreationError(token, error, implementation);
@@ -295,9 +144,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       return failed(step.error);
     }
     if (step.kind === 'surface') {
-      // A surface token resolves to the bound surface of its boundary — the root's
-      // for IServiceProvider, the resolving boundary's for the scope tokens. Never
-      // constructed, never announced: a surface is not an instance the boundary owns.
       return ok(surfaces.get(step.at === 'root' ? rootBoundary.id : boundary.id));
     }
     if (step.lifetime === Lifetime.Singleton && heldErrors.has(step.node)) {
@@ -309,8 +155,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         return failed(wrapForToken(dependency.error, step.token, step.node.implementation));
       }
     }
-    // A declared-deps factory's arguments are plan slots too: a failed one wraps
-    // as this token's creation error, exactly like a field.
     for (const slot of step.args) {
       const dependency = locals[slot];
       if (!dependency.ok) {
@@ -325,25 +169,14 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         singletonDepth++;
         currentSingletonToken = step.token;
       }
-      // A declared-deps factory is wired from plan slots (its `args`), like an
-      // @dependsOn field, so it never re-enters resolve and needs no cycle
-      // tracking — its cycles are caught statically in the plan. Only an opaque
-      // factory (`createFromDeps` absent, `usesFactory` true) re-enters, so only
-      // it is tracked (Phase 26 instrumentation finding).
       const factory = step.node.createFromDeps;
       const tracksCycle = step.node.usesFactory === true && factory === undefined;
       if (tracksCycle) {
         constructing.add(step.node);
       }
       try {
-        // A declared-deps factory takes its args from the plan slots; every other
-        // node constructs through `createInstance` (a class's `new`, or an opaque
-        // factory joining the pass via `scope.resolve`).
         instance = (factory !== undefined ? factory(step.args.map((slot) => (locals[slot] as { value: SourceType }).value)) : step.node.createInstance(inPassScope(view, env, boundary))) as object;
       } catch (err) {
-        // A runtime cycle or captive that surfaced through the factory stands as
-        // itself; only a genuine construction fault is wrapped as this token's
-        // creation error.
         if (err instanceof CircularDependencyError || err instanceof CaptiveDependencyError) {
           throw err;
         }
@@ -360,15 +193,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       for (const { field, slot } of step.fields) {
         (instance as Record<string, unknown>)[field] = (locals[slot] as { value: unknown }).value;
       }
-      // Announce the construction to the seam the disposal tracker composes onto
-      // (decisions.md §8), inert unless composed. Every constructed disposable is
-      // announced, no lifetime exempt. A singleton belongs to the provider however it
-      // was first reached — a lazy singleton constructed *through* a scope still dies at
-      // provider dispose, not the scope's — so it is announced against the root boundary;
-      // every other lifetime dies at the boundary that resolved it (scope-resolved at
-      // scope dispose, root-resolved at provider dispose). "The pass never disposes"
-      // means pass exit is not a disposal event — the caller holds the result — not that
-      // resolve-lifetime is never tracked.
       disposal?.announce(instance, step.lifetime === Lifetime.Singleton ? rootBoundary : boundary);
       return instance;
     };
@@ -393,10 +217,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     if (at !== undefined) {
       return surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
     }
-    // One index lookup, shared by the multiplicity guard and the concrete-node
-    // pick — the old guardToken + concreteNode each probed the map for the same
-    // token (Phase 26 instrumentation finding). guardToken's Error-mode throw and
-    // concreteNode's last-registration-forwards-followed pick are inlined here.
     const bucket = view.index.get(token) ?? EMPTY_BUCKET;
     if (bucket.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
       throw new MultipleRegistrationError(token);
@@ -406,18 +226,10 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     if (node === undefined) {
       throw new UnregisteredServiceError(token);
     }
-    // The runtime cycle guard applies only to factory nodes: a plain `new`
-    // construction cannot re-enter resolve, so a non-factory node is never in
-    // `constructing`, and probing it for one is wasted work.
     if (node.usesFactory === true && constructing.has(node)) {
-      // Re-entered while this node's factory is still constructing: a runtime
-      // cycle through an opaque or declared-deps factory (C2). Throw a clean
-      // CircularDependencyError rather than recursing to stack exhaustion.
       throw new CircularDependencyError(token);
     }
     if (singletonDepth > 0 && runtimeCaptivePolicy === RuntimeCaptivePolicy.Throw && effectiveLifetime(node) === Lifetime.Scoped) {
-      // A singleton is pulling a scoped instance through a factory the static
-      // graph cannot see (the runtime captive). Under the Throw policy, forbidden.
       throw new CaptiveDependencyError(currentSingletonToken ?? token, token);
     }
     const outcome = execute(view, planFor(view, node), env, boundary);
@@ -444,7 +256,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const freshPass = (base: Env): Env => contributors.reduce((env, feature) => feature.contribute?.(env) ?? env, base);
 
-  /** A resolution surface bound to one boundary: its resolves announce there, and disposing it ends that boundary. */
   const scopeSurface = (base: Env, boundary: Boundary, viewOf: () => View): Scope => ({
     resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolveValue(viewOf(), token, freshPass(base), boundary) as T,
     resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(viewOf(), token, freshPass(base), boundary) as T[],
@@ -452,9 +263,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       surfaces.set(boundary.id, surface);
     },
     printGraph: (write: (line: string) => void): void => {
-      // The graph is the boundary's own view — the root's static structure, or a
-      // scope's overlaid one. Rendering is the pure graph.ts function; the engine
-      // supplies only the effective lifetime an un-verbed node resolves under.
       for (const line of formatGraph(viewOf().graph, effectiveLifetime)) {
         write(line);
       }
@@ -467,32 +275,14 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const rootBase: Env = composition.scoped?.beginScope() ?? {};
 
-  /**
-   * The singletons pre-baked at build, deps-first (forwards excluded). Design (A):
-   * a plain singleton is lazy — it falls through to the feature's own memoisation
-   * on first resolve — so only `.eager()` (an explicit build-time choice) and an
-   * async `usingAsync` singleton (which `resolve()` cannot await) bake here
-   * (decisions.md §8). Eager on a non-singleton has no build-time boundary to hold
-   * it, so nothing is pre-baked for it.
-   */
   const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (node.eager === true || isAsyncNode(node)));
 
-  /** Hold a failed pre-bake as that node's resolution — lenient by default, thrown at build under validate. */
   const hold = (node: GraphNode, outcome: Outcome): void => {
     if (!outcome.ok) {
       heldErrors.set(node, outcome.error);
     }
   };
 
-  /**
-   * Await one async singleton's factory (`usingAsync`) and seed the settled
-   * instance into the singleton table, so a later synchronous resolve reads the
-   * value and never the promise. Async is the build boundary only (decisions.md
-   * §8): deps-first order means every singleton this one depends on is already
-   * seeded, so the factory's synchronous `scope.resolve` calls return settled
-   * instances. `resolve()` never awaits. The failure path mirrors `runStep`'s —
-   * the factory's throw (or rejection) is wrapped as this token's creation error.
-   */
   const constructAsyncSingleton = async (node: AsyncNode): Promise<Outcome> => {
     const env = freshPass(rootBase);
     const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
@@ -506,13 +296,8 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     }
   };
 
-  /** Pre-bake every singleton synchronously by executing its plan (the sync build boundary). */
   const prebakeSync = (): void => {
     for (const node of prebakedNodes()) {
-      // The sync build boundary refuses an async factory: only buildEngineAsync can
-      // await its instance. A raw DescriptorMap can carry an async-factory node past the
-      // type-level guard (hand-built descriptors), so this backstops it at build,
-      // naming the token and pointing to the async builder (decisions.md §8).
       if (isAsyncNode(node)) {
         const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
         throw new InvalidOperationError(`Cannot build '${token.name}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`);
@@ -521,14 +306,12 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     }
   };
 
-  /** Pre-bake deps-first, awaiting each async singleton's factory in turn (the async build boundary). */
   const prebakeAsync = async (): Promise<void> => {
     for (const node of prebakedNodes()) {
       hold(node, isAsyncNode(node) ? await constructAsyncSingleton(node) : execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
     }
   };
 
-  /** Under `validate`, surface the first held singleton error at build rather than at first resolve. */
   const throwIfValidating = (): void => {
     if (options.validate === true && heldErrors.size > 0) {
       throw heldErrors.values().next().value;
@@ -542,17 +325,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       if (composition.scoped === undefined) {
         throw new InvalidOperationError('createScope requires a scoped lifetime to be composed. This composition omits it, so it has no scope to open.');
       }
-      // A scope is its own boundary — constructions it resolves are announced there
-      // and end when it is disposed. That per-boundary filing is the nearest-boundary
-      // rule: a scope-resolved transient files under the scope, a root-resolved one
-      // under the root (decisions.md §8; the tracker is {@link DisposalSink}).
-      //
-      // A scope with an overlay resolves through its own view, derived over the
-      // scope's map: dynamic registrations extend the scope's plans (their edges are
-      // definition-time, so the extension needs no construction), while root
-      // registrations keep their descriptor identity — every feature cache and held
-      // error keyed on a node still applies. The view is rebuilt when the overlay's
-      // version says a registration landed.
       let cached: { readonly view: View; readonly version: number } | undefined;
       const viewOf = (): View => {
         if (overlay === undefined) {
@@ -581,14 +353,6 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   return { prebakeSync, prebakeAsync, throwIfValidating, assemble };
 };
 
-/**
- * Renders a registration map into a running engine, synchronously. Eager
- * (`.eager()`) singletons are pre-baked at build in topological order — a plain
- * singleton stays lazy until first resolve (decisions.md §8); one whose
- * construction throws has that error held as its resolution, lenient by default,
- * thrown here under `validate`. `resolve` executes a static plan and never
- * re-enters itself.
- */
 export const buildEngine = <C extends EngineComposition>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}): EngineFor<C> => {
   const engine = setupEngine(services, composition, options);
   engine.prebakeSync();
@@ -596,19 +360,7 @@ export const buildEngine = <C extends EngineComposition>(services: DescriptorMap
   return engine.assemble() as EngineFor<C>;
 };
 
-/**
- * The async build boundary (decisions.md §8): the same engine as
- * {@link buildEngine}, but async singleton factories (`usingAsync`) are awaited
- * in topological order before the provider is returned, so their instances are
- * settled and every subsequent `resolve()` stays synchronous. Async is possible
- * here — where every v4 attempt failed — because definition-time edges separate
- * knowing the graph from constructing it. An async factory reachable through a
- * sync path (one not pre-baked as a singleton) is an `asyncThroughSyncPathPolicy`
- * problem for `validate()`, not a runtime check.
- */
 export const buildEngineAsync = async <C extends EngineComposition>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions = {}): Promise<EngineFor<C>> => {
-  // The phantom async brand exists only to steer the sync/async build choice at
-  // the public boundary; setupEngine treats every map alike, so erase it here.
   const engine = setupEngine(services as DescriptorMap, composition, options);
   await engine.prebakeAsync();
   engine.throwIfValidating();

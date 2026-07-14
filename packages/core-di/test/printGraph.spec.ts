@@ -3,7 +3,7 @@ import { createServiceCollection, dependsOn } from '../src';
 
 // printGraph is the graph-inspection capability on the built provider: it reads
 // the static graph derived at build and writes a visualisation, one line per
-// `write` call. These tests drive it through the public surface — the pure
+// `write` call. These tests drive it through the public surface: the pure
 // rendering is unit-tested against a hand-built graph in graph.spec.ts.
 describe('IServiceProvider.printGraph', () => {
   it('visualises the tokens, edges and lifetimes of the built graph', () => {

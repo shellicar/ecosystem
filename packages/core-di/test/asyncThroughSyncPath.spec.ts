@@ -5,13 +5,12 @@ import { asyncThroughSyncPathPolicy } from '../src/private/policies';
 import { createDescriptorMap, type DescriptorMap, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '../src/types';
 
 // The async-through-sync-path policy is proven standalone against a hand-built
-// graph — the same off-container discipline as the other graph policies. Wiring
-// it into the composed validate() set is Phase 17.
+// graph: the same off-container discipline as the other graph policies.
 
 // The policy is purely static: it reads only facts.isAsync and facts.lifetime.
-// facts.isAsync is DERIVED from the presence of createInstanceAsync (decisions.md
-// §8), so an async registration is modelled by populating that field — an async
-// factory here need only be shaped like one (returns a Promise); it is never run.
+// facts.isAsync is DERIVED from the presence of createInstanceAsync, so an async
+// registration is modelled by populating that field: an async factory here need
+// only be shaped like one (returns a Promise); it is never run.
 const asyncDescriptor = <T extends SourceType>(implementation: ServiceImplementation<T>, lifetime?: Lifetime): ServiceDescriptor<T> => ({
   implementation,
   cacheKey: Symbol(implementation.name),
@@ -70,7 +69,7 @@ describe('asyncThroughSyncPathPolicy', () => {
     expect(actual).toEqual(expected);
   });
 
-  it('does not flag an async factory registered as a singleton — the build boundary awaits it', () => {
+  it('does not flag an async factory registered as a singleton: the build boundary awaits it', () => {
     const graph = deriveFacts(mapOf([IResource, asyncDescriptor(Resource, Lifetime.Singleton)]));
     const expected: ValidationProblemKind[] = [];
 

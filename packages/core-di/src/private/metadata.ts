@@ -1,28 +1,16 @@
 import '../polyfill';
 import type { MetadataType, ServiceIdentifier, SourceType } from '../types';
 
-// The polyfill import above installs `Symbol.metadata`, so this module only
-// reads it — it does not install it again. Capturing it as a symbol const
-// (rather than reading `Symbol.metadata` inline at each use) is required for
-// tsc: without it, code referencing `Symbol.metadata` passes vitest (the
-// runtime value is there) but fails tsc (the property is not declared on
-// `SymbolConstructor` here).
+// A symbol const, not read inline: tsc does not declare `Symbol.metadata`, so an inline read fails type-check.
 const MetadataKey: symbol = (Symbol as { metadata?: symbol }).metadata ?? Symbol.for('Symbol.metadata');
 
 type ClassMetadata = Record<string | symbol, unknown>;
 
-/** Read a class's own metadata record for `key`, off the class constructor — zero construction. */
 export const getMetadata = <T extends SourceType>(key: string, ctor: object): MetadataType<T> | undefined => {
   return (ctor as unknown as Record<symbol, ClassMetadata | undefined>)[MetadataKey]?.[key] as MetadataType<T> | undefined;
 };
 
-/**
- * Record one class field's dependency into a class field decorator's
- * `ctx.metadata`, at class-definition time. `ctx.metadata` inherits
- * prototypally from the parent class's metadata, so a subclass's first write
- * must own-check `key` before mutating — otherwise it would mutate the
- * parent's shared record instead of layering its own edges over it.
- */
+// Own-check `key` first: `ctx.metadata` inherits the parent's record prototypally, so a blind write mutates the parent's.
 export const tagFieldMetadata = <T extends SourceType>(key: string, meta: ClassMetadata | undefined, name: string | symbol, identifier: ServiceIdentifier<T>): void => {
   if (meta === undefined) {
     throw new Error('Symbol.metadata is not installed');

@@ -61,7 +61,7 @@ describe('CaptivePolicy configuration', () => {
 
 // A singleton reaching a scoped instance through an opaque factory is the same
 // singleton-to-scoped mismatch as the static captive, but hidden from validate()
-// by the factory. It is governed by its own axis — runtimeCaptivePolicy, separate
+// by the factory. It is governed by its own axis: runtimeCaptivePolicy, separate
 // from the static captivePolicy: allowed under None, thrown at resolve under Throw.
 describe('RuntimeCaptivePolicy governs the runtime captive (a singleton reaching scoped through an opaque factory)', () => {
   abstract class IScopedThing {}

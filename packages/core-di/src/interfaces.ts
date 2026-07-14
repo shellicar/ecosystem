@@ -36,18 +36,9 @@ export abstract class IResolutionScope {
 }
 
 /**
- * A scope's resolution surface. Disposal contract (decisions.md §8): every
- * constructed disposable is tracked against the boundary that resolved it and
- * dies at that owner's end — scoped, transient and resolve-lifetime instances
- * this scope resolved are disposed when the scope is disposed; a singleton
- * belongs to the provider and survives the scope, however it was first
- * reached. A sync dispose of a scope holding an async-only disposable throws —
- * dispose it with `Symbol.asyncDispose` (`await using`) instead.
- *
- * Resolving `IResolutionScope` or `IScopedProvider` — directly or through
- * `@dependsOn` — yields the surface the resolution went through: this scope,
- * never the in-pass handle. A later call through an injected surface is a
- * fresh resolution pass.
+ * A scope's resolution surface. Disposables it resolves are disposed when the
+ * scope is disposed (a singleton survives, disposed with the provider). A sync
+ * dispose of a scope holding an async-only disposable throws; use `await using`.
  */
 export abstract class IScopedProvider extends IResolutionScope implements IDisposable, IAsyncDisposable {
   public abstract readonly Services: IServiceCollection;
@@ -56,16 +47,9 @@ export abstract class IScopedProvider extends IResolutionScope implements IDispo
 }
 
 /**
- * The provider root. Disposal contract (decisions.md §8): disposables are
- * tracked per lifetime and disposed at their owner's end — singletons at
- * provider dispose (wherever they were first constructed), root-resolved
- * transient and resolve-lifetime instances at provider dispose, scope-resolved
- * ones at their scope's dispose. A sync dispose of a provider holding an
- * async-only disposable throws — dispose it with `Symbol.asyncDispose`
- * (`await using`) instead.
- *
- * Resolving `IServiceProvider` — directly or through `@dependsOn` — yields the
- * root provider, from any surface.
+ * The provider root. Disposables are disposed at their owner's end: singletons
+ * at provider dispose, scope-resolved instances at their scope's. A sync dispose
+ * of a provider holding an async-only disposable throws; use `await using`.
  */
 export abstract class IServiceProvider extends IResolutionScope implements IDisposable, IAsyncDisposable {
   public abstract readonly Services: IServiceCollection;
@@ -74,7 +58,7 @@ export abstract class IServiceProvider extends IResolutionScope implements IDisp
    * Writes a human-readable visualisation of the built dependency graph to
    * `write` (default `console.log`), one line per call: each registered token,
    * its implementation and effective lifetime, its declared `@dependsOn` and
-   * forward edges. Reads the static graph derived at build — no construction.
+   * forward edges. Reads the static graph derived at build, with no construction.
    */
   public abstract printGraph(write?: (line: string) => void): void;
   public abstract [Symbol.dispose](): void;
@@ -82,17 +66,14 @@ export abstract class IServiceProvider extends IResolutionScope implements IDisp
 }
 
 /**
- * The builder for a concrete (newable) registration. `.as()` declares a
- * resolution face and type-checks that the implementation satisfies it;
- * `.asSelf()` declares the concrete itself as a face. The lifetime verbs are
- * the composed set; `.eager()` is reachable while the chosen lifetime is
- * singleton, in any chain order. `usingAsync` exists only on a collection
- * created with `{ async: true }`.
+ * The builder for a concrete (newable) registration. `.as()` / `.asSelf()`
+ * declare faces, `.using()` an optional factory, then a lifetime verb; `.eager()`
+ * while singleton. `usingAsync` exists only on an async collection.
  */
 export type INewableServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableNewableBuilder<T, ComposableLifetime, Async, Eager>;
 
 /**
- * The builder for an abstract registration. It has no `.asSelf()` — an abstract
+ * The builder for an abstract registration. It has no `.asSelf()`: an abstract
  * class cannot be built as itself, so identity is declared with `.as()` and the
  * instance is supplied by `.using()` (which returns the newable-flavoured
  * builder, since a factory can build the implementation as itself).
@@ -113,7 +94,7 @@ export abstract class IServiceCollection {
   /**
    * Registers an abstract implementation. An abstract class serves as the type
    * contract and cannot be built by zero-arg `new`, so the returned builder has
-   * no `.asSelf()` — supply a factory with `.using()`.
+   * no `.asSelf()`: supply a factory with `.using()`.
    * @param implementation The abstract class to register.
    * @throws {InvalidImplementationError} When the implementation is null or undefined.
    */
@@ -126,22 +107,15 @@ export abstract class IServiceCollection {
    */
   public abstract forward<S extends SourceType>(source: ServiceIdentifier<S>): IForwardBuilder<S>;
   /**
-   * Runs the wiring diagnostics (intended for CI). Reports problems without
-   * throwing; {@link buildProvider} stays lenient unless opted in.
-   *
-   * Reads the static dependency graph — declared `@dependsOn` edges, forward
-   * targets, and declared-deps factories — with no construction of any kind,
-   * so it is cheap to run anywhere, not just against a throwaway container.
-   * `Cycle`, `MissingTarget` and `AsyncThroughSyncPath` always run;
-   * `CaptiveDependency` runs the policy chosen by
-   * {@link ServiceCollectionOptions.captivePolicy} (default
-   * {@link CaptivePolicy.Disposal}).
+   * Runs the wiring diagnostics (intended for CI): reads the static dependency
+   * graph with no construction and reports problems without throwing.
+   * {@link buildProvider} stays lenient unless opted in.
    */
   public abstract validate(): ValidationReport;
   public abstract registerModules(...modules: ServiceModuleType[]): void;
   /**
    * Rewrites the lifetime of every non-forward registration under `identifier`.
-   * Pre-build only (v5): a provider's plans are derived at build, so overriding
+   * Pre-build only: a provider's plans are derived at build, so overriding
    * a lifetime after `buildProvider()` has been called throws.
    */
   public abstract overrideLifetime<T extends SourceType>(identifier: ServiceIdentifier<T>, lifetime: Lifetime): void;
@@ -151,12 +125,9 @@ export abstract class IServiceCollection {
 }
 
 /**
- * The collection surface of `createServiceCollection({ async: true })`
- * (decisions.md §8). Async-ness is declared at collection creation, not
- * inferred: only here do the builders carry `usingAsync`, and only here does
- * `buildProviderAsync` exist — while the synchronous `buildProvider` does not,
- * so an async collection cannot be consumed by a build path that could not
- * await its factories. On a sync collection neither member exists at all.
+ * The collection surface of `createServiceCollection({ async: true })`. Only here
+ * do the builders carry `usingAsync` and the collection `buildProviderAsync`; the
+ * synchronous `buildProvider` is absent, so async factories need the async build.
  */
 export type IAsyncServiceCollection = {
   readonly options: ServiceCollectionOptions;
@@ -170,7 +141,7 @@ export type IAsyncServiceCollection = {
   registerModules(...modules: ServiceModuleType[]): void;
   overrideLifetime<T extends SourceType>(identifier: ServiceIdentifier<T>, lifetime: Lifetime): void;
   /**
-   * The async build boundary (decisions.md §8): awaits async singleton
+   * The async build boundary: awaits async singleton
    * factories (`usingAsync`) in topological order, so their instances are
    * settled and every subsequent `resolve()` is synchronous.
    */
@@ -189,6 +160,6 @@ export abstract class IForwardBuilder<_S extends SourceType> {
 
 /**
  * The result of completing a forward. A forward is terminal and has no lifetime,
- * so this exposes nothing to chain — a lifetime verb on it does not typecheck.
+ * so this exposes nothing to chain; a lifetime verb on it does not typecheck.
  */
 export abstract class IForwardResult {}

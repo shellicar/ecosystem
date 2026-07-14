@@ -1,11 +1,5 @@
 import type { CacheKey, LifetimeFeature } from './lifetimeContracts';
 
-/**
- * Resolve: one instance per top-level resolve ("pass"), fresh on the next.
- * The contributor mints a fresh handle at each boundary; storage keys on
- * that handle, so composing this feature out means no pass handle is ever
- * created anywhere.
- */
 export const createResolveLifetime = (): LifetimeFeature => {
   const passKey = Symbol('pass');
   const tables = new WeakMap<object, Map<CacheKey, unknown>>();

@@ -32,7 +32,7 @@ describe('createCollection: the composed set generates the verbs', () => {
     expect(actual).toBeUndefined();
   });
 
-  it('always exposes transient — the floor, not a composed member', () => {
+  it('always exposes transient: the floor, not a composed member', () => {
     const services = createCollection([Lifetime.Singleton]);
     const expected = 'function';
 
@@ -151,11 +151,11 @@ describe('createCollection: the builder carries the register-side surface', () =
   });
 });
 
-// `.eager()` rides on a property of the registration — whether the chosen lifetime is
-// singleton — carried on the builder type and preserved across .as()/.asSelf()/.using()
+// `.eager()` rides on a property of the registration (whether the chosen lifetime is
+// singleton), carried on the builder type and preserved across .as()/.asSelf()/.using()
 // in any order. It is available whenever the current lifetime is singleton, and gone
 // once a later verb overrides it: `.scoped().eager()` and `.singleton().scoped().eager()`
-// are compile errors, not silent no-ops (decisions.md §8).
+// are compile errors, not silent no-ops.
 describe('createCollection: eager rides on the singleton lifetime, order-independently', () => {
   it('records eager when identity is declared before the singleton verb', () => {
     const services = createCollection([Lifetime.Singleton]);
@@ -196,7 +196,7 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
   it('does not expose a second lifetime verb once one is set', () => {
     // A registration has exactly one lifetime: once one is set the lifetime verbs
     // drop off the builder type, so a second is not expressible (and throws if
-    // forced past the type). Never invoked — the pin exists only for the compiler.
+    // forced past the type). Never invoked: the pin exists only for the compiler.
     const probe = () => {
       const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
 
@@ -215,14 +215,14 @@ abstract class IResource {}
 class Resource implements IResource {}
 
 // A member-bearing class, so Promise<Widget> and Widget are genuinely distinct
-// types — that is what makes the async/sync verb mismatch a real local error
+// types: that is what makes the async/sync verb mismatch a real local error
 // rather than a structural coincidence for an empty class.
 class Widget {
   readonly kind = 'widget' as const;
 }
 
-describe('createCollection: usingAsync exists only on an async collection (decisions.md §8)', () => {
-  it('rejects usingAsync at runtime on a sync collection (C3 — the runtime enforces what the type hides)', () => {
+describe('createCollection: usingAsync exists only on an async collection', () => {
+  it('rejects usingAsync at runtime on a sync collection (the runtime enforces what the type hides)', () => {
     const services = createCollection([Lifetime.Singleton]);
 
     const builder = services.register(Resource).asSelf() as Record<string, unknown>;
@@ -261,8 +261,8 @@ describe('createCollection: usingAsync declares async intent at the call site', 
     expect(actual).toBe(expected);
   });
 
-  // The field split (decisions.md §8): the async factory has its OWN field, so it
-  // cannot occupy the sync createInstance slot — the sync execution path reads
+  // The field split: the async factory has its OWN field, so it
+  // cannot occupy the sync createInstance slot: the sync execution path reads
   // createInstance alone and could never cache a returned Promise.
   it('leaves createInstance the default sync constructor when an async factory is supplied', () => {
     const services = createCollection([Lifetime.Singleton], { async: true });

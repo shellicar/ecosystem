@@ -27,9 +27,9 @@ class Target {
 }
 
 // Type-level pins: the declared deps' resolved types line up with the factory's
-// parameters, positionally. These are compile-time checks — the @ts-expect-error
+// parameters, positionally. These are compile-time checks: the @ts-expect-error
 // cases are the design's guarantee that a mismatched factory is rejected.
-describe('using([deps], factory) — type checking', () => {
+describe('using([deps], factory): type checking', () => {
   it('lines the resolved dep types up with the factory parameters', () => {
     const services = createServiceCollection();
 

@@ -1,11 +1,11 @@
 /**
- * The graph module — P3. Pure functions over declared edges: no engine, no
+ * The graph module. Pure functions over declared edges: no engine, no
  * container, no lifetime interpretation. This is the lite seam as code, so
  * every test drives the module directly against a hand-built `DescriptorMap`,
  * never through `createServiceCollection`.
  *
  * Promoted from `dag-build-experiment.spec.ts` (now retired), generalised to
- * respect multiplicity — a token maps to `descriptors[]`, not one graph node.
+ * respect multiplicity: a token maps to `descriptors[]`, not one graph node.
  */
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
@@ -13,7 +13,7 @@ import { Lifetime } from '../src/enums';
 import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, formatGraph, type GraphNode, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '../src/private/graph';
 import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type SourceType } from '../src/types';
 
-// A minimal, direct-to-map registration helper — deliberately bypassing
+// A minimal, direct-to-map registration helper, deliberately bypassing
 // ServiceBuilder/ServiceCollection so these tests exercise the graph module
 // against its actual input shape, not through the container.
 const register = <T extends SourceType>(services: DescriptorMap, identifier: ServiceIdentifier<T>, descriptor: Partial<ServiceDescriptor<T>> & Pick<ServiceDescriptor<T>, 'implementation'>): void => {

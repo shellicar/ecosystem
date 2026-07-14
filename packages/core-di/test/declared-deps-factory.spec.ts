@@ -34,9 +34,9 @@ class Composed implements IComposed {
 
 // The declared-deps factory: register(Foo).using([IDep1, IDep2], (d1, d2) => ...).
 // The container resolves the declared deps and hands them, positionally, to the
-// factory. Because the deps are declared, the factory is transparent — its
+// factory. Because the deps are declared, the factory is transparent: its
 // dependencies are visible to validate()'s dependency graph.
-describe('using([deps], factory) — declared-deps factory', () => {
+describe('using([deps], factory): declared-deps factory', () => {
   describe('the container resolves the declared deps and hands them to the factory', () => {
     const services = createServiceCollection();
     services.register(DependencyA).as(IDependencyA);

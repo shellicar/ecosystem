@@ -98,7 +98,7 @@ describe('a static DAG is derivable from declared edges alone', () => {
       [IController, Controller],
     ]);
 
-    // Static topological sort over declared edges — no instances.
+    // Static topological sort over declared edges: no instances.
     const order: ServiceIdentifier<SourceType>[] = [];
     const visited = new Set<ServiceIdentifier<SourceType>>();
     const visit = (face: ServiceIdentifier<SourceType>) => {
@@ -131,7 +131,7 @@ describe('the Symbol.metadata polyfill installs before any decorated class evalu
     const barrel = await import('../src/index');
 
     // A decorated class defined right here, in a file whose only import of
-    // the library is the barrel — if the polyfill were not installed before
+    // the library is the barrel: if the polyfill were not installed before
     // this module finished evaluating, this decoration would already have
     // thrown at module-load time, and this test would never run.
     abstract class IThing {}

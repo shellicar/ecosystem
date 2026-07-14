@@ -10,9 +10,7 @@ import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
 import { type AsyncInstanceFactory, createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '../src/types';
 
 // The engine is proven standalone, against hand-built descriptor maps and the
-// Phase 12 lifetime features — the same off-container discipline as graph.ts
-// (Phase 10) and the features (Phase 12). Wiring it into the public API and
-// deleting the old ServiceProvider is Phase 16.
+// lifetime features: the same off-container discipline as graph.ts.
 
 const composition = (): EngineComposition => ({
   singleton: createSingletonLifetime(),
@@ -132,12 +130,12 @@ class Level1 implements ILevel1 {
 
 abstract class IUnregistered {}
 
-// Singleton construction timing is design (A) (decisions.md §8): lazy by default,
+// Singleton construction timing: lazy by default,
 // `.eager()` the opt-in that pre-bakes at build. A plain singleton constructs on
 // its first resolve; an `.eager()` one constructs at build. Identity (one instance
 // for the provider) holds regardless of which.
 describe('boundaryEngine: singleton construction timing (lazy by default, eager opt-in)', () => {
-  it('does not construct a plain singleton at build — it is lazy', () => {
+  it('does not construct a plain singleton at build: it is lazy', () => {
     const expected = 0;
     buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton })]), composition());
 
@@ -197,14 +195,13 @@ describe('boundaryEngine: singleton construction timing (lazy by default, eager 
 });
 
 // The builder forbids `.eager()` on a non-singleton at the type level (see
-// composableBuilder.spec) — construct-at-build only makes sense for a singleton, the
-// sole build-time boundary that holds an instance (decisions.md §8). These engine
-// tests are the safety net for a hand-built DescriptorMap that carries eager on a
-// non-singleton anyway: the engine pre-bakes only singletons, so it constructs
-// nothing at build for them (the phase-8 experiment grounds that neither scoped nor
-// transient is pre-built).
+// composableBuilder.spec): construct-at-build only makes sense for a singleton, the
+// sole build-time boundary that holds an instance. These engine tests are the
+// safety net for a hand-built DescriptorMap that carries eager on a non-singleton
+// anyway: the engine pre-bakes only singletons, so it constructs nothing at build
+// for them.
 describe('boundaryEngine: eager on a non-singleton has no build-time construction', () => {
-  it('does not construct an eager transient at build — no build-time boundary holds it', () => {
+  it('does not construct an eager transient at build: no build-time boundary holds it', () => {
     const expected = 0;
     buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Transient, eager: true })]), composition());
 
@@ -213,7 +210,7 @@ describe('boundaryEngine: eager on a non-singleton has no build-time constructio
     expect(actual).toBe(expected);
   });
 
-  it('does not construct an eager scoped service at build — no build-time boundary holds it', () => {
+  it('does not construct an eager scoped service at build: no build-time boundary holds it', () => {
     const expected = 0;
     buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Scoped, eager: true })]), composition());
 
@@ -403,8 +400,8 @@ describe('boundaryEngine: creation-error wrapping', () => {
   });
 });
 
-// Held-error-at-build is now a property of a *pre-baked* singleton — an `.eager()`
-// (or async) one — since only those construct at build (design (A)). A failed eager
+// Held-error-at-build is a property of a *pre-baked* singleton (an `.eager()` or
+// async one), since only those construct at build. A failed eager
 // construction is held: lenient by default, thrown at build under validate.
 describe('boundaryEngine: held singleton errors and validate', () => {
   it('leaves a lenient build unthrown when an eager singleton fails to construct', () => {
@@ -473,8 +470,8 @@ describe('boundaryEngine: composition', () => {
 
 describe('boundaryEngine: default lifetime is an engine composition parameter', () => {
   // An un-verbed registration (no lifetime on its descriptor) resolves under the
-  // engine's composed defaultLifetime — not a register-layer default.
-  it('resolves an un-verbed registration under the composed default (resolve) — shared within a pass', () => {
+  // engine's composed defaultLifetime, not a register-layer default.
+  it('resolves an un-verbed registration under the composed default (resolve): shared within a pass', () => {
     const composed: EngineComposition = { ...composition(), defaultLifetime: Lifetime.Resolve };
     const engine = buildEngine(mapOf([IDep, descriptor(Dep)], [ITwoFields, descriptor(TwoFields)]), composed);
     const parent = engine.resolve(ITwoFields);
@@ -485,7 +482,7 @@ describe('boundaryEngine: default lifetime is an engine composition parameter', 
     expect(actual).toBe(expected);
   });
 
-  it('honours a different composed default — transient gives a distinct instance per injection point', () => {
+  it('honours a different composed default: transient gives a distinct instance per injection point', () => {
     const composed: EngineComposition = { ...composition(), defaultLifetime: Lifetime.Transient };
     const engine = buildEngine(mapOf([IDep, descriptor(Dep)], [ITwoFields, descriptor(TwoFields)]), composed);
     const parent = engine.resolve(ITwoFields);
@@ -496,7 +493,7 @@ describe('boundaryEngine: default lifetime is an engine composition parameter', 
   });
 });
 
-describe('boundaryEngine: disposal seam (surface — Phase 14 supplies the tracker)', () => {
+describe('boundaryEngine: disposal seam (surface)', () => {
   type Announcement = { readonly instance: unknown; readonly boundary: Boundary };
   const recordingSink = (): { readonly sink: DisposalSink; readonly announced: Announcement[]; readonly ended: Boundary[] } => {
     const announced: Announcement[] = [];
@@ -546,10 +543,7 @@ describe('boundaryEngine: disposal seam (surface — Phase 14 supplies the track
   });
 });
 
-// Phase 14 (P6a): the disposal feature composed onto the engine's seam. Promotes
-// the shapes from disposal-nearest-boundary-experiment.spec.ts onto the shipped
-// surface — proven now through buildEngine + createDisposal, not a toy provider.
-describe('boundaryEngine: disposal feature — nearest-boundary tracker (decisions.md §8)', () => {
+describe('boundaryEngine: disposal feature: nearest-boundary tracker', () => {
   abstract class IResource {
     abstract readonly disposed: boolean;
   }
@@ -696,10 +690,10 @@ describe('boundaryEngine: disposal feature — nearest-boundary tracker (decisio
   });
 });
 
-// Phase 15 (P6b): async at the build boundary (decisions.md §8). buildEngineAsync
-// awaits async singleton factories (usingAsync) in topo order, so their instances
-// are settled before any synchronous resolve. resolve() stays synchronous, always.
-describe('boundaryEngine: async at the build boundary — buildEngineAsync (decisions.md §8)', () => {
+// buildEngineAsync awaits async singleton factories (usingAsync) in topo order, so
+// their instances are settled before any synchronous resolve. resolve() stays
+// synchronous, always.
+describe('boundaryEngine: async at the build boundary: buildEngineAsync', () => {
   abstract class IAsyncResource {}
   class AsyncResource implements IAsyncResource {
     constructor() {
@@ -763,7 +757,7 @@ describe('boundaryEngine: async at the build boundary — buildEngineAsync (deci
     expect(actual).toBe(expected);
   });
 
-  it('does not pre-bake a plain synchronous singleton in an async build — only the async node bakes', async () => {
+  it('does not pre-bake a plain synchronous singleton in an async build: only the async node bakes', async () => {
     const expected = 0;
     await buildEngineAsync(mapOf([ISyncDep, descriptor(SyncDep, { lifetime: Lifetime.Singleton })], [IAsyncResource, asyncSingleton()]), composition());
 
@@ -811,7 +805,7 @@ describe('boundaryEngine: async at the build boundary — buildEngineAsync (deci
     expect(actual).toBeInstanceOf(ServiceCreationError);
   });
 
-  // The sync build boundary refuses an async factory outright (decisions.md §8): a raw
+  // The sync build boundary refuses an async factory outright: a raw
   // DescriptorMap can carry an async-factory node past the type-level guard, so the engine
   // backstops it at build, naming the token and pointing to the async builder.
   it('refuses an async singleton at build under the synchronous buildEngine', () => {

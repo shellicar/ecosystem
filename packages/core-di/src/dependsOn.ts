@@ -4,13 +4,9 @@ import { tagFieldMetadata } from './private/metadata';
 import type { ServiceIdentifier, SourceType } from './types';
 
 /**
- * declares a dependency, use on a class field.
- * Can also depend on {@link IServiceProvider}, {@link IResolutionScope}, or {@link IScopedProvider}.
- * @param identifier the identifier to depend on, i.e. the interface
- *
- * Recorded at class DEFINITION time via `ctx.metadata` (stage-3 decorator
- * metadata) — the edge is readable off the class the moment the class
- * statement is evaluated, with zero construction.
+ * Declares a dependency on a class field (the identifier, i.e. the interface).
+ * Can also depend on {@link IServiceProvider}, {@link IResolutionScope}, or
+ * {@link IScopedProvider}. Recorded at class-definition time, with zero construction.
  */
 export const dependsOn = <T extends SourceType>(identifier: ServiceIdentifier<T>) => {
   return (_value: undefined, ctx: ClassFieldDecoratorContext): void => {

@@ -61,7 +61,7 @@ describe('createSingletonLifetime', () => {
     expect(actual).toBe(expected);
   });
 
-  it('contributes no boundary handle — its storage needs none', () => {
+  it('contributes no boundary handle: its storage needs none', () => {
     const feature = createSingletonLifetime();
 
     const actual = feature.contribute;

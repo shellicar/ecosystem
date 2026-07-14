@@ -5,13 +5,13 @@ import { BuilderError } from '../src/errors';
 // The type is the friendly surface; a runtime exception exists only where forcing
 // past the type corrupts runtime behaviour. Each invalid operation gets a pair: a
 // type pin proving it does not compile, and a runtime test proving what happens
-// when a caller forces past — it throws where forcing past corrupts, and works
+// when a caller forces past: it throws where forcing past corrupts, and works
 // where it does not.
 
 abstract class IThing {}
 class Thing implements IThing {}
 
-describe('Invalid operations — forcing past the type corrupts, so the runtime throws', () => {
+describe('Invalid operations: forcing past the type corrupts, so the runtime throws', () => {
   describe('usingAsync on a sync builder', () => {
     it('does not expose usingAsync on a sync collection', () => {
       // Never invoked: usingAsync is absent at runtime on a sync collection, so
@@ -135,7 +135,7 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
   });
 });
 
-describe('Invalid operations — forcing past the type corrupts nothing, so the runtime works', () => {
+describe('Invalid operations: forcing past the type corrupts nothing, so the runtime works', () => {
   describe('asSelf() on an abstract builder', () => {
     abstract class IAbstractThing {}
 
@@ -148,7 +148,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
         .asSelf();
     });
 
-    it('registers and resolves when forced past the type — abstract erases at runtime, so there is nothing to throw for', () => {
+    it('registers and resolves when forced past the type: abstract erases at runtime, so there is nothing to throw for', () => {
       const services = createServiceCollection();
       // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       (services.register(IAbstractThing) as any).asSelf();
@@ -172,7 +172,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
         .eager();
     });
 
-    it('records a harmless dead flag when forced past the type — nothing reads eager on a non-singleton, so there is nothing to throw for', () => {
+    it('records a harmless dead flag when forced past the type: nothing reads eager on a non-singleton, so there is nothing to throw for', () => {
       const services = createServiceCollection();
       // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       (services.register(Thing).as(IThing).scoped() as any).eager();
@@ -198,7 +198,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
         .as(IUnrelated);
     });
 
-    it('registers and resolves the implementation under the mismatched face when forced past the type — JS is structurally free, so there is nothing to throw for', () => {
+    it('registers and resolves the implementation under the mismatched face when forced past the type: JS is structurally free, so there is nothing to throw for', () => {
       const services = createServiceCollection();
       // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
       (services.register(Thing) as any).as(IUnrelated);
@@ -219,7 +219,7 @@ describe('Invalid operations — forcing past the type corrupts nothing, so the 
       services.buildProviderAsync();
     });
 
-    it('builds and resolves when forced past the type — building a sync collection async is a harmless no-op difference', async () => {
+    it('builds and resolves when forced past the type: building a sync collection async is a harmless no-op difference', async () => {
       const services = createServiceCollection();
       services.register(Thing).as(IThing).singleton();
 

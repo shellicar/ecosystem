@@ -10,7 +10,7 @@ class Concrete implements IAbstract {
 }
 
 // v5 behaviour change (decided): overrideLifetime works on a collection and
-// throws once buildProvider() has been called — the provider derives its plans
+// throws once buildProvider() has been called: the provider derives its plans
 // at build, so a later rewrite could not reach them. This is the one frozen
 // test the mission authorised rewriting: the ruling falsified the old
 // override-after-build shape.

@@ -12,7 +12,7 @@ class Connection implements IConnection {
 }
 
 // `async: true` is declared at collection creation. Only then do the builders
-// carry `usingAsync`, and only then does `buildProviderAsync` exist — a
+// carry `usingAsync`, and only then does `buildProviderAsync` exist; a
 // synchronous build could not await the factory.
 const services = createServiceCollection({ async: true });
 services

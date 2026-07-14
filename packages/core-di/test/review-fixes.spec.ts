@@ -165,7 +165,7 @@ describe('cycle diagnostics de-duplicate on identity, not name', () => {
   });
 });
 
-// Fixing every reported problem and re-validating yields a clean report — no
+// Fixing every reported problem and re-validating yields a clean report: no
 // fresh batch hidden behind the first.
 describe('validate() completeness', () => {
   it('is clean after the reported captive is fixed', () => {

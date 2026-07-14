@@ -15,12 +15,11 @@ const composition = (): EngineComposition => ({
 abstract class IResource {}
 class Resource implements IResource {}
 
-// The async build guard is declared at collection creation, not inferred
-// (decisions.md §8): the async brand carried from createCollection through
-// toDescriptorMap decides which build path may consume the map. buildEngine
-// accepts only a sync-branded map; an async collection is consumed only by
-// buildEngineAsync.
-describe('async collection build guard (decisions.md §8)', () => {
+// The async build guard is declared at collection creation, not inferred: the
+// async brand carried from createCollection through toDescriptorMap decides which
+// build path may consume the map. buildEngine accepts only a sync-branded map; an
+// async collection is consumed only by buildEngineAsync.
+describe('async collection build guard', () => {
   it('lets the synchronous buildEngine consume a sync collection', () => {
     const services = createCollection([Lifetime.Singleton]);
     services.register(Resource).asSelf().singleton();

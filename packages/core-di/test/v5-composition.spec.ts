@@ -1,5 +1,5 @@
 /**
- * Cross-feature seams of the assembled v5 surface (Phase 17 — composition).
+ * Cross-feature seams of the assembled v5 surface.
  * Each describe pins one seam where two independently built layers meet on the
  * public API: the async collection flag, the assembled `.eager()` verb, the
  * engine-owned default lifetime, the self-tokens as boundary surfaces, and
@@ -16,7 +16,7 @@ class Resource implements IResource {
   constructor(public readonly label: string = 'made') {}
 }
 
-describe('the async flag declares the surface at collection creation (decisions.md §8)', () => {
+describe('the async flag declares the surface at collection creation', () => {
   it('builds an async registration through buildProviderAsync and resolves it synchronously', async () => {
     const services = createServiceCollection({ async: true });
     services
@@ -53,7 +53,7 @@ describe('the async flag declares the surface at collection creation (decisions.
   });
 });
 
-describe('.eager() is assembled onto the public surface (built in Phase 16)', () => {
+describe('.eager() is assembled onto the public surface', () => {
   it('constructs an eager singleton at build, before any resolve', () => {
     let constructions = 0;
     class Eagerly {
@@ -85,7 +85,7 @@ describe('.eager() is assembled onto the public surface (built in Phase 16)', ()
   });
 });
 
-describe('the engine owns the default lifetime — the register layer stamps nothing', () => {
+describe('the engine owns the default lifetime: the register layer stamps nothing', () => {
   it('leaves an un-verbed registration with no lifetime on its descriptor', () => {
     const services = createServiceCollection();
     services.register(Resource).as(IResource);
@@ -123,7 +123,7 @@ describe('an injected IScopedProvider is the boundary surface, not the in-pass s
     const scoped = provider.createScope();
 
     const svc = scoped.resolve(UsesScopeLater);
-    // Each call through the injected surface is a fresh pass — an in-pass
+    // Each call through the injected surface is a fresh pass: an in-pass
     // surface would replay the pass cache and hand back a stale instance.
     const first = svc.scope.resolve(ICounter);
     const actual = svc.scope.resolve(ICounter);
@@ -147,8 +147,7 @@ class AsyncOnlyDisposable implements IAsyncDisposable {
 }
 
 describe('disposal through the public surface', () => {
-  // The pin Phase 16's verification flagged as missing: a disposable resolved
-  // *through a scope* is tracked and dies at that scope's end.
+  // A disposable resolved *through a scope* is tracked and dies at that scope's end.
   it('disposes a scope-resolved resolve-lifetime disposable at scope dispose', () => {
     const services = createServiceCollection();
     services.register(DisposableService).asSelf();
