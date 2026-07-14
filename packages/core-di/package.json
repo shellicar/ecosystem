@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/core-di",
   "private": false,
-  "version": "4.0.2",
+  "version": "5.0.0-alpha.1",
   "type": "module",
   "license": "MIT",
   "author": "Stephen Hellicar",
@@ -62,8 +62,7 @@
   "sideEffects": [
     "./dist/esm/index.js",
     "./dist/cjs/index.cjs",
-    "./dist/esm/polyfill.js",
-    "./dist/cjs/polyfill.cjs"
+    "**/polyfill.*"
   ],
   "files": [
     "dist",
@@ -80,6 +79,7 @@
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
     "@vitest/coverage-v8": "^4.1.6",
+    "esbuild": "^0.28.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.6"

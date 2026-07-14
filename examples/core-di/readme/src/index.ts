@@ -26,5 +26,13 @@ import './override-lifetime.js';
 import './logging-options.js';
 // * Service modules
 import './service-modules.js';
+// * Async build with usingAsync and buildProviderAsync
+import './async-build.js';
+// * Eager singleton construction at build
+import './eager-construction.js';
+// * Per-lifetime disposal (Symbol.dispose / Symbol.asyncDispose)
+import './disposal.js';
+// * Static validation with validate() and buildProvider({ validate: true })
+import './validation.js';
 // * Circular dependency detection
 import './circular-dependency.js';

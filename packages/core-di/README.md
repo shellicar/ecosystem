@@ -11,6 +11,9 @@
 * 🏭 Factory method support
 * 🎨 Decorator-based property injection
 * 🔄 Flexible lifetime management
+* ⏳ Async factories awaited at the build boundary
+* 🔥 Eager or lazy singleton construction
+* 🧹 Deterministic per-lifetime disposal
 * 📦 Service modules for organization
 * 🔍 Circular dependency detection at resolution time
 * 🚨 Clear error messages with dependency chain tracking
@@ -114,7 +117,7 @@ services
   .asSelf();
 ```
 
-* Use property injection with decorators for simple dependency definition.
+* Declare dependencies with the `@dependsOn` decorator on a class field. Edges are recorded at class-definition time, so `validate()` reads the dependency graph with no construction.
 
 ```ts
 abstract class IDependency {}
@@ -208,6 +211,62 @@ const services = createServiceCollection();
 services.registerModules(MyModule);
 const provider = services.buildProvider();
 const svc = provider.resolve(IAbstract);
+```
+
+* Build asynchronously. Declare `{ async: true }` at creation and the builders carry `usingAsync` and the collection carries `buildProviderAsync`; on a synchronous collection neither exists. Async singleton factories are awaited at the build boundary, so `resolve` stays synchronous.
+
+```ts
+abstract class IConnection {}
+class Connection implements IConnection {
+  constructor(private readonly dsn: string) {}
+}
+
+const services = createServiceCollection({ async: true });
+services
+  .register(Connection)
+  .usingAsync(async () => new Connection('postgres://localhost'))
+  .as(IConnection)
+  .singleton();
+const provider = await services.buildProviderAsync();
+const connection = provider.resolve(IConnection);
+```
+
+* Construct a singleton eagerly at build with `.eager()`, instead of lazily at first resolve. It composes with the lifetime verbs in any chain order and is offered only on a singleton.
+
+```ts
+services.register(Warmup).asSelf().singleton().eager();
+const provider = services.buildProvider();
+// Warmup was constructed during buildProvider(), before any resolve.
+```
+
+* Dispose deterministically. A disposable is tracked against the boundary that resolved it and torn down at that owner's end: a scoped instance at scope dispose, a singleton at provider dispose, a transient or resolve instance at the boundary that resolved it. An async-only disposable is torn down through `Symbol.asyncDispose` (`await using`); a synchronous dispose of a boundary holding one throws.
+
+```ts
+class Connection implements IDisposable {
+  public [Symbol.dispose]() {
+    // close the handle
+  }
+}
+
+services.register(Connection).asSelf().scoped();
+const provider = services.buildProvider();
+using scope = provider.createScope();
+scope.resolve(Connection);
+// the scoped Connection is disposed when the scope is disposed
+```
+
+* Validate the wiring statically. `validate()` reads the dependency graph — unregistered targets, cycles, captive dependencies — with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`.
+
+```ts
+const report = services.validate();
+if (!report.valid) {
+  for (const problem of report.problems) {
+    console.warn(problem.kind, problem.message);
+  }
+}
+
+// Or fail fast at build:
+const provider = services.buildProvider({ validate: true });
 ```
 
 ## Usage
