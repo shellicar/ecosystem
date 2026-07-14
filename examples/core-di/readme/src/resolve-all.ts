@@ -3,7 +3,7 @@ import { createServiceCollection } from '@shellicar/core-di';
 const services = createServiceCollection();
 
 import { deepEqual } from 'node:assert/strict';
-import { HealthCheck1, HealthCheck2, IHealthCheck } from './helpers/examples';
+import { HealthCheck1, HealthCheck2, IHealthCheck } from './helpers/examples.js';
 
 services.register(HealthCheck1).as(IHealthCheck);
 services.register(HealthCheck2).as(IHealthCheck);

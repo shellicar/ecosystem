@@ -1,4 +1,4 @@
-import { provider } from './helpers/provider';
+import { provider } from './helpers/provider.js';
 
 abstract class IContext {
   abstract userId(): string;

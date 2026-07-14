@@ -74,7 +74,13 @@ export const deriveFacts = (services: DescriptorMap): Graph => {
         continue;
       }
       if (descriptor.usesFactory) {
-        graph.set(descriptor, { lifetime: descriptor.lifetime, owner, owners: [owner], deps: [...(descriptor.declaredDeps ?? [])], isAsync });
+        // A factory-registered class still gets its `@dependsOn` fields injected
+        // at runtime — the plan wires them regardless of `usesFactory` — so those
+        // field edges are real out-edges. Union them with the declared deps so
+        // `validate()` sees the whole graph the engine actually wires: a cycle or
+        // captive running through a factory node's field is caught (C4).
+        const fieldDeps = declaredDeps(descriptor.implementation);
+        graph.set(descriptor, { lifetime: descriptor.lifetime, owner, owners: [owner], deps: [...(descriptor.declaredDeps ?? []), ...fieldDeps], isAsync });
         continue;
       }
       graph.set(descriptor, { lifetime: descriptor.lifetime, owner, owners: [owner], deps: declaredDeps(descriptor.implementation), isAsync });
@@ -118,8 +124,12 @@ export const findUnregisteredEdges = (graph: Graph): UnregisteredEdge[] => {
 };
 
 /**
- * Every distinct cycle in the graph, deduped by the set of owners involved.
- * A dependency edge naming an unregistered identifier is skipped here (see
+ * Every distinct cycle in the graph, deduped by the set of registrations
+ * involved. The de-duplication keys on node *identity*, not owner name: two
+ * distinct cycles whose classes happen to share names are different registration
+ * sets, so both are reported rather than merged (Inv14) — upholding the
+ * validate-completeness principle (fix one, re-validate, no hidden second). A
+ * dependency edge naming an unregistered identifier is skipped here (see
  * {@link findUnregisteredEdges}); it cannot participate in a cycle.
  */
 export const detectCycles = (graph: Graph): Cycle[] => {
@@ -129,10 +139,21 @@ export const detectCycles = (graph: Graph): Cycle[] => {
   const cycles: Cycle[] = [];
   const reported = new Set<string>();
 
+  // A stable id per node (assigned on first sight), so a cycle's signature keys
+  // on which actual registrations form it, not on their name strings.
+  const nodeIds = new Map<GraphNode, number>();
+  const idOf = (node: GraphNode): number => {
+    let id = nodeIds.get(node);
+    if (id === undefined) {
+      id = nodeIds.size;
+      nodeIds.set(node, id);
+    }
+    return id;
+  };
   const signature = (nodes: Cycle): string =>
     nodes
-      .map((node) => graph.get(node)?.owner.name ?? '')
-      .sort()
+      .map(idOf)
+      .sort((a, b) => a - b)
       .join('|');
 
   const visit = (node: GraphNode): void => {
@@ -239,7 +260,6 @@ export type PlanStep =
       readonly node: GraphNode;
       readonly token: ServiceIdentifier<SourceType>;
       readonly lifetime: Lifetime;
-      readonly usesFactory: boolean;
       readonly fields: readonly { readonly field: string; readonly slot: number }[];
     }
   | {
@@ -318,7 +338,16 @@ export const buildPlan = (
   const steps: PlanStep[] = [];
   const sharedSlot = new Map<GraphNode, number>();
 
-  const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+  const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => {
+    const facts = graph.get(node);
+    if (facts === undefined) {
+      // Unreachable: every node emitted here is derived from the graph (root node
+      // and every edge target), so its facts are present. Throw rather than
+      // laundering a `Newable` into a `ServiceIdentifier` on a case that cannot occur.
+      throw new Error('buildPlan reached a node with no graph facts; every emitted node is derived from the graph, so this cannot happen.');
+    }
+    return facts.owner;
+  };
 
   const push = (step: PlanStep): number => {
     steps.push(step);
@@ -362,7 +391,7 @@ export const buildPlan = (
       }
       fields.push({ field, slot: emitToken(identifier, nextPath) });
     }
-    const slot = push({ kind: 'build', node, token, lifetime, usesFactory: node.usesFactory === true, fields });
+    const slot = push({ kind: 'build', node, token, lifetime, fields });
     if (cached) {
       sharedSlot.set(node, slot);
     }

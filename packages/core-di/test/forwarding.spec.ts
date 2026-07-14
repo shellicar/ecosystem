@@ -81,13 +81,18 @@ describe('A forward has no lifetime of its own', () => {
   class Target implements IAlias {}
 
   it('does not accept a lifetime verb on a forward', () => {
-    const services = createServiceCollection();
-    services.register(Target).asSelf().singleton();
+    // Never invoked: a verb on a forward result throws at runtime (Inv13c — the
+    // runtime enforces what the type hides), so the pin exists only for the compiler.
+    const probe = () => {
+      const services = createServiceCollection();
+      services.register(Target).asSelf().singleton();
 
-    services
-      .forward(IAlias)
-      .to(Target)
-      // @ts-expect-error - a forward is a pure redirect and takes no lifetime verb
-      .transient();
+      services
+        .forward(IAlias)
+        .to(Target)
+        // @ts-expect-error - a forward is a pure redirect and takes no lifetime verb
+        .transient();
+    };
+    void probe;
   });
 });

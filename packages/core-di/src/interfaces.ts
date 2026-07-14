@@ -1,5 +1,4 @@
-import type { Lifetime } from './enums';
-import { ResolveMultipleMode } from './enums';
+import type { Lifetime, ResolveMultipleMode } from './enums';
 import type { ComposableAbstractBuilder, ComposableLifetime, ComposableNewableBuilder } from './private/composableBuilder';
 import type { AbstractNewable, BuildProviderOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationReport } from './types';
 

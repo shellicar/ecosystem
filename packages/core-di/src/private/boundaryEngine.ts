@@ -1,5 +1,5 @@
-import { Lifetime, ResolveMultipleMode } from '../enums';
-import { MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
+import { CaptivePolicy, Lifetime, ResolveMultipleMode } from '../enums';
+import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
 import type { AsyncInstanceFactory, DescriptorMap, ServiceDescriptor, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { buildPlan, concreteNode, deriveFacts, followForward, type Graph, type GraphNode, indexByOwner, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
@@ -50,6 +50,14 @@ export type EngineComposition = {
    * and never announced to disposal.
    */
   readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
+  /**
+   * The captive policy governing the runtime captive (decisions.md §8; SC ruling,
+   * Phase 21): a singleton that pulls a scoped instance through an opaque factory
+   * at resolve — an edge `validate()` cannot see. Under `Strict` this is caught at
+   * resolution; under `None`/`Disposal`/absent it is not (the same-off-switch logic
+   * as the static captive — a thing a user can switch off is not a correctness error).
+   */
+  readonly captivePolicy?: CaptivePolicy;
 };
 
 /** A resolution boundary — the root, or a scope — that constructions are announced to and that has an end. */
@@ -112,6 +120,15 @@ export type Engine = Scope & {
 };
 
 /**
+ * The engine type for a given composition: `createScope` is present only when the
+ * composition composes the scoped feature. Keyed on whether `scoped` is a key of
+ * the composition type at all — an inline literal without a `scoped` key has no
+ * `createScope`, so calling it is a compile error; a composition typed as the full
+ * {@link EngineComposition} carries it (decisions.md §7; Phase 21 define-by-test).
+ */
+export type EngineFor<C extends EngineComposition> = Scope & ('scoped' extends keyof C ? { createScope(overlay?: ScopeOverlay): Scope } : Record<never, never>);
+
+/**
  * One token's resolution, worked out once and held: the instance, or the error
  * that stands as that token's resolution (decisions.md §7). Plan execution
  * fills a slot with an `Outcome` rather than throwing, so a dependent can read
@@ -169,6 +186,13 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const defaultLifetime = composition.defaultLifetime ?? Lifetime.Resolve;
   /** The disposal seam (Phase 14 supplies the tracker); inert here. */
   const disposal = composition.disposal;
+  /** The captive policy governing the runtime captive check (decisions.md §8). */
+  const captivePolicy = composition.captivePolicy;
+  /** Nodes whose factory is mid-construction in the current pass — a re-entry is a runtime cycle (C2). */
+  const constructing = new Set<GraphNode>();
+  /** Depth of in-flight singleton constructions, and the token of the innermost — the runtime captive check reads these. */
+  let singletonDepth = 0;
+  let currentSingletonToken: ServiceIdentifier<SourceType> | undefined;
   /** The root's own boundary — every root-resolved construction is announced against it. */
   const rootBoundary: Boundary = { id: Symbol('root') };
   /** Each boundary's bound surface — what its surface tokens resolve to (see {@link EngineComposition.surfaceTokens}). */
@@ -268,10 +292,29 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     }
     const build = (): unknown => {
       let instance: object;
+      const isSingletonConstruction = step.lifetime === Lifetime.Singleton;
+      const previousSingletonToken = currentSingletonToken;
+      if (isSingletonConstruction) {
+        singletonDepth++;
+        currentSingletonToken = step.token;
+      }
+      constructing.add(step.node);
       try {
         instance = step.node.createInstance(inPassScope(view, env, boundary)) as object;
       } catch (err) {
+        // A runtime cycle or captive that surfaced through the factory stands as
+        // itself; only a genuine construction fault is wrapped as this token's
+        // creation error.
+        if (err instanceof CircularDependencyError || err instanceof CaptiveDependencyError) {
+          throw err;
+        }
         throw new ServiceCreationError(step.token, err instanceof Error ? err : undefined, step.node.implementation);
+      } finally {
+        constructing.delete(step.node);
+        if (isSingletonConstruction) {
+          singletonDepth--;
+          currentSingletonToken = previousSingletonToken;
+        }
       }
       for (const { field, slot } of step.fields) {
         (instance as Record<string, unknown>)[field] = (locals[slot] as { value: unknown }).value;
@@ -316,6 +359,17 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     const node = concreteNode(view.index, token);
     if (node === undefined) {
       throw new UnregisteredServiceError(token);
+    }
+    if (constructing.has(node)) {
+      // Re-entered while this node's factory is still constructing: a runtime
+      // cycle through an opaque or declared-deps factory (C2). Throw a clean
+      // CircularDependencyError rather than recursing to stack exhaustion.
+      throw new CircularDependencyError(token);
+    }
+    if (singletonDepth > 0 && captivePolicy === CaptivePolicy.Strict && effectiveLifetime(node) === Lifetime.Scoped) {
+      // A singleton is pulling a scoped instance through a factory the static
+      // graph cannot see (the runtime captive). Under Strict, that is forbidden.
+      throw new CaptiveDependencyError(currentSingletonToken ?? token, token);
     }
     const outcome = execute(view, planFor(view, node), env, boundary);
     if (!outcome.ok) {
@@ -404,7 +458,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       // naming the token and pointing to the async builder (decisions.md §8).
       if (isAsyncNode(node)) {
         const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
-        throw new Error(`Cannot build '${token.name}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`);
+        throw new InvalidOperationError(`Cannot build '${token.name}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`);
       }
       hold(node, execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
     }
@@ -429,7 +483,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
     const createScope = (overlay?: ScopeOverlay): Scope => {
       if (composition.scoped === undefined) {
-        throw new Error('createScope requires a scoped lifetime to be composed');
+        throw new InvalidOperationError('createScope requires a scoped lifetime to be composed. This composition omits it, so it has no scope to open.');
       }
       // A scope is its own boundary — constructions it resolves are announced there
       // and end when it is disposed. That per-boundary filing is the nearest-boundary
@@ -477,11 +531,11 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
  * thrown here under `validate`. `resolve` executes a static plan and never
  * re-enters itself.
  */
-export const buildEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions = {}): Engine => {
+export const buildEngine = <C extends EngineComposition>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}): EngineFor<C> => {
   const engine = setupEngine(services, composition, options);
   engine.prebakeSync();
   engine.throwIfValidating();
-  return engine.assemble();
+  return engine.assemble() as EngineFor<C>;
 };
 
 /**
@@ -494,11 +548,11 @@ export const buildEngine = (services: DescriptorMap, composition: EngineComposit
  * sync path (one not pre-baked as a singleton) is an `asyncThroughSyncPathPolicy`
  * problem for `validate()`, not a runtime check.
  */
-export const buildEngineAsync = async (services: DescriptorMap<SourceType, boolean>, composition: EngineComposition, options: BuildEngineOptions = {}): Promise<Engine> => {
+export const buildEngineAsync = async <C extends EngineComposition>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions = {}): Promise<EngineFor<C>> => {
   // The phantom async brand exists only to steer the sync/async build choice at
   // the public boundary; setupEngine treats every map alike, so erase it here.
   const engine = setupEngine(services as DescriptorMap, composition, options);
   await engine.prebakeAsync();
   engine.throwIfValidating();
-  return engine.assemble();
+  return engine.assemble() as EngineFor<C>;
 };

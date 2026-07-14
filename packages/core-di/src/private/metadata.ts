@@ -1,12 +1,13 @@
 import '../polyfill';
 import type { MetadataType, ServiceIdentifier, SourceType } from '../types';
 
-// The polyfill import above guarantees this is installed before this module
-// finishes evaluating. Capturing it as a symbol const (rather than reading
-// `Symbol.metadata` inline at each use) is required for tsc: without it, code
-// referencing `Symbol.metadata` passes vitest (the runtime value is there)
-// but fails tsc (the property is not declared on `SymbolConstructor` here).
-const MetadataKey: symbol = ((Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata'));
+// The polyfill import above installs `Symbol.metadata`, so this module only
+// reads it — it does not install it again. Capturing it as a symbol const
+// (rather than reading `Symbol.metadata` inline at each use) is required for
+// tsc: without it, code referencing `Symbol.metadata` passes vitest (the
+// runtime value is there) but fails tsc (the property is not declared on
+// `SymbolConstructor` here).
+const MetadataKey: symbol = (Symbol as { metadata?: symbol }).metadata ?? Symbol.for('Symbol.metadata');
 
 type ClassMetadata = Record<string | symbol, unknown>;
 

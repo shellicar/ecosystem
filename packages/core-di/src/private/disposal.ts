@@ -1,3 +1,4 @@
+import { InvalidOperationError } from '../errors';
 import type { Boundary, DisposalSink } from './boundaryEngine';
 
 /**
@@ -57,7 +58,7 @@ export const createDisposal = (): Disposal => {
       // touching anything, leaving the list intact so the caller can end the
       // boundary asynchronously instead of losing half its teardown.
       if (list.some((instance) => asSyncDisposable(instance) === undefined)) {
-        throw new Error('Cannot synchronously dispose a boundary holding an async-only disposable; dispose it asynchronously.');
+        throw new InvalidOperationError('Cannot synchronously dispose a boundary holding an async-only disposable; dispose it asynchronously (Symbol.asyncDispose / await using).');
       }
       lists.delete(boundary.id);
       // Reverse (LIFO): a dependant is torn down before what it depended on.

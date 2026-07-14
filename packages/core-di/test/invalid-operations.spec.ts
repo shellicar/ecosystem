@@ -38,14 +38,19 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
     class Target implements IAlias {}
 
     it('exposes no verb on a forward result', () => {
-      const services = createServiceCollection();
-      services.register(Target).asSelf().singleton();
+      // Never invoked: a verb on a forward result throws at runtime (the runtime
+      // enforces what the type hides), so the pin exists only for the compiler.
+      const probe = () => {
+        const services = createServiceCollection();
+        services.register(Target).asSelf().singleton();
 
-      services
-        .forward(IAlias)
-        .to(Target)
-        // @ts-expect-error - a forward is terminal; it carries no lifetime verb
-        .singleton();
+        services
+          .forward(IAlias)
+          .to(Target)
+          // @ts-expect-error - a forward is terminal; it carries no lifetime verb
+          .singleton();
+      };
+      void probe;
     });
 
     it('throws a BuilderError when a lifetime verb is forced past the type', () => {
@@ -92,14 +97,19 @@ describe('Invalid operations — forcing past the type corrupts, so the runtime 
 
   describe('a second lifetime after one is set (.singleton().scoped())', () => {
     it('does not expose a second lifetime verb once one is set', () => {
-      const services = createServiceCollection();
+      // Never invoked: a second lifetime verb throws at runtime (the runtime
+      // enforces what the type hides), so the pin exists only for the compiler.
+      const probe = () => {
+        const services = createServiceCollection();
 
-      services
-        .register(Thing)
-        .as(IThing)
-        .singleton()
-        // @ts-expect-error - a lifetime is already set; a second lifetime verb must not be expressible
-        .scoped();
+        services
+          .register(Thing)
+          .as(IThing)
+          .singleton()
+          // @ts-expect-error - a lifetime is already set; a second lifetime verb must not be expressible
+          .scoped();
+      };
+      void probe;
     });
 
     it('throws a BuilderError when a second lifetime is forced past the type (it silently picks last-wins otherwise)', () => {

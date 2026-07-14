@@ -1,5 +1,5 @@
 import { createServiceCollection, type IServiceCollection, type IServiceModule } from '@shellicar/core-di';
-import { Concrete, IAbstract } from './helpers/examples';
+import { Concrete, IAbstract } from './helpers/examples.js';
 
 const services = createServiceCollection();
 

@@ -462,7 +462,12 @@ describe('boundaryEngine: unregistered and multiplicity', () => {
 
 describe('boundaryEngine: composition', () => {
   it('throws from createScope when no scoped lifetime is composed', () => {
-    const engine = buildEngine(mapOf([IDep, descriptor(Dep)]), { singleton: createSingletonLifetime(), resolve: createResolveLifetime() });
+    // Typed as EngineComposition so createScope is on the type (the scoped feature
+    // could be composed): a composition that omits it has no scope to open, so the
+    // call throws at runtime. An inline literal without a scoped key would have no
+    // createScope on its type at all (see createScope-behaviour.spec).
+    const composition: EngineComposition = { singleton: createSingletonLifetime(), resolve: createResolveLifetime() };
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep)]), composition);
 
     const actual = () => engine.createScope();
 

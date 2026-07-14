@@ -1,6 +1,6 @@
 import { ok } from 'node:assert/strict';
 import { createServiceCollection, Lifetime, LogLevel } from '@shellicar/core-di';
-import { Concrete, IAbstract } from './helpers/examples';
+import { Concrete, IAbstract } from './helpers/examples.js';
 
 const services = createServiceCollection({ logLevel: LogLevel.Debug });
 services.register(Concrete).as(IAbstract).singleton();

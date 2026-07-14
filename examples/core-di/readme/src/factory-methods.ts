@@ -1,5 +1,5 @@
 import { createServiceCollection } from '@shellicar/core-di';
-import { IRedisOptions, Redis } from './helpers/examples';
+import { IRedisOptions, Redis } from './helpers/examples.js';
 
 const services = createServiceCollection();
 

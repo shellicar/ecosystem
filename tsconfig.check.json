@@ -5,6 +5,7 @@
     "skipLibCheck": true,
     "composite": false,
     "isolatedDeclarations": false,
+    "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["**/*.ts"],

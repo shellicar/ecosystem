@@ -1,4 +1,4 @@
-import { InvalidServiceIdentifierError } from '../errors';
+import { InvalidOperationError, InvalidServiceIdentifierError } from '../errors';
 import type { IForwardBuilder, IForwardResult } from '../interfaces';
 import type { ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 
@@ -6,16 +6,25 @@ type AddService = (identifier: ServiceIdentifier<SourceType>, descriptor: Servic
 
 /**
  * The terminal returned by `.to()`. Its type ({@link IForwardResult}) exposes no
- * lifetime verb, so `forward(X).to(Y).transient()` does not typecheck. The no-op
- * verbs exist only so a call forced past the type system (via `@ts-expect-error`
- * or plain JS) is harmless rather than a runtime crash — a forward has no lifetime
- * to set.
+ * verb, so `forward(X).to(Y).transient()` does not typecheck. A verb forced past
+ * the type (via `as any` or a plain-JS consumer) throws {@link InvalidOperationError}:
+ * a forward is a pure redirect with no lifetime of its own, so setting one is
+ * invalid, not a silent no-op. The runtime enforces what the type surfaces.
  */
 const forwardResult = (): IForwardResult => {
-  const result = {
-    singleton: () => result,
-    scoped: () => result,
-    transient: () => result,
+  const reject = (): never => {
+    throw new InvalidOperationError('A forward registration is terminal: it is a pure redirect with no lifetime of its own, so no verb can be chained after .to().');
+  };
+  const result: IForwardResult = {
+    singleton: reject,
+    scoped: reject,
+    transient: reject,
+    resolve: reject,
+    eager: reject,
+    as: reject,
+    asSelf: reject,
+    using: reject,
+    usingAsync: reject,
   };
   return result;
 };

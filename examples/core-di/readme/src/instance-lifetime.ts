@@ -1,6 +1,6 @@
 import { equal } from 'node:assert/strict';
 import { createServiceCollection } from '@shellicar/core-di';
-import { Concrete, IAbstract } from './helpers/examples';
+import { Concrete, IAbstract } from './helpers/examples.js';
 
 const services = createServiceCollection();
 

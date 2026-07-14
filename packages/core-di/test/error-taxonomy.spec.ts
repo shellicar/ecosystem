@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createServiceCollection, type IDisposable, Lifetime } from '../src';
+import { createServiceCollection, Lifetime } from '../src';
 import { BuilderError, InvalidImplementationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../src/errors';
 
 // The error families, each catchable by its family type: ServiceError for
@@ -91,21 +91,19 @@ describe('consumer-facing misuse throws are a BuilderError', () => {
     expect(actual).toThrow(BuilderError);
   });
 
-  it('a sync dispose of a scope holding an async-only disposable throws a BuilderError', async () => {
+  it('a sync dispose of a scope holding an async-only disposable throws a BuilderError', () => {
     abstract class IAsyncOnly {}
-    class AsyncOnly implements IAsyncOnly, IDisposable {
+    // Async-only: it carries Symbol.asyncDispose and no sync Symbol.dispose, so a
+    // sync dispose of the scope holding it cannot tear it down.
+    class AsyncOnly implements IAsyncOnly {
       async [Symbol.asyncDispose]() {}
-      [Symbol.dispose]() {}
     }
     const services = createServiceCollection();
     services.register(AsyncOnly).as(IAsyncOnly).scoped();
     const provider = services.buildProvider();
     const scope = provider.createScope();
 
-    const instance = scope.resolve(IAsyncOnly) as AsyncOnly;
-    // Model an async-only disposable: strip the sync disposer so only
-    // Symbol.asyncDispose remains.
-    delete (instance as any)[Symbol.dispose];
+    scope.resolve(IAsyncOnly);
 
     const actual = () => scope[Symbol.dispose]();
 

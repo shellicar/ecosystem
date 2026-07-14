@@ -4,7 +4,7 @@ export { createServiceCollection, type CreateServiceCollectionOptions } from './
 export { DefaultServiceCollectionOptions } from './defaults';
 export { dependsOn } from './dependsOn';
 export { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, ValidationProblemKind } from './enums';
-export { CircularDependencyError, InvalidImplementationError, InvalidServiceIdentifierError, MultipleRegistrationError, ScopedSingletonRegistrationError, SelfDependencyError, ServiceCreationError, ServiceError, UnregisteredServiceError, ValidationError } from './errors';
+export { BuilderError, CaptiveDependencyError, CircularDependencyError, InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, MultipleRegistrationError, ScopedSingletonRegistrationError, SelfDependencyError, ServiceCreationError, ServiceError, UnregisteredServiceError, ValidationError } from './errors';
 export { IAsyncDisposable, IDisposable, IForwardBuilder, IForwardResult, IResolutionScope, IScopedProvider, IServiceCollection, IServiceModule, IServiceProvider } from './interfaces';
 export type { IAbstractServiceBuilder, IAsyncServiceCollection, INewableServiceBuilder } from './interfaces';
 export { ILogger } from './logger';

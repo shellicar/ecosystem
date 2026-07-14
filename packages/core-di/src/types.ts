@@ -62,8 +62,12 @@ export type ServiceDescriptor<T extends SourceType> = {
   readonly forwardTarget?: ServiceIdentifier<T>;
   /**
    * Whether a user factory (`using()`) supplies the instance, rather than the
-   * default zero-arg `new`. A factory-built registration has opted out of
-   * declarative `@dependsOn` wiring, so `validate()` never probe-constructs it.
+   * default zero-arg `new`. A factory-built registration is never
+   * probe-constructed by `validate()` — its edges are read statically. It has
+   * *not* opted out of `@dependsOn` wiring: a factory-registered class still gets
+   * its `@dependsOn` fields injected at runtime, and `validate()` unions those
+   * field edges with the declared deps (C4), so it sees the whole graph the
+   * engine actually wires.
    */
   usesFactory?: boolean;
   /**
@@ -168,7 +172,7 @@ declare const asyncBrand: unique symbol;
  * is sync-branded and so slips past this at the type level — which is why the
  * engine also refuses an async-factory node at build, a runtime backstop.
  */
-export type DescriptorMap<T extends SourceType = any, Async extends boolean = false> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]> & {
+export type DescriptorMap<T extends SourceType = SourceType, Async extends boolean = false> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]> & {
   readonly [asyncBrand]?: Async;
 };
 

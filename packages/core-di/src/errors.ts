@@ -56,7 +56,7 @@ export class CircularDependencyError extends ServiceError {
   }
 }
 
-export class ScopedSingletonRegistrationError extends ServiceError {
+export class ScopedSingletonRegistrationError extends BuilderError {
   name = 'ScopedSingletonRegistrationError';
   constructor() {
     super('Cannot register a singleton in a scoped service collection');
@@ -64,7 +64,7 @@ export class ScopedSingletonRegistrationError extends ServiceError {
   }
 }
 
-export class InvalidServiceIdentifierError extends ServiceError {
+export class InvalidServiceIdentifierError extends BuilderError {
   name = 'InvalidServiceIdentifierError';
   constructor() {
     super('Cannot register null or undefined service identifier');
@@ -72,7 +72,7 @@ export class InvalidServiceIdentifierError extends ServiceError {
   }
 }
 
-export class InvalidImplementationError<T extends object> extends ServiceError {
+export class InvalidImplementationError<T extends object> extends BuilderError {
   name = 'InvalidImplementationError';
   constructor(identifier: ServiceIdentifier<T> | undefined) {
     super(`Invalid implementation provided for service: ${identifier?.name ?? 'undefined'}`);
@@ -90,5 +90,37 @@ export class ValidationError extends ServiceError {
   static getErrorMessage(problems: ValidationProblem[]): string {
     const detail = problems.map((problem) => `- ${problem.kind}: ${problem.message}`).join('\n');
     return `Service wiring validation failed with ${problems.length} problem(s):\n${detail}`;
+  }
+}
+
+/**
+ * A build/registration operation the type surface hides because it is invalid,
+ * forced past the types (via `as any` or a plain-JS consumer) — `usingAsync` on
+ * a sync builder, a verb on a terminal forward, a second lifetime after one is
+ * set, a sync build of an async collection, `overrideLifetime` after build,
+ * `createScope` with no scoped feature composed, a sync dispose of an async-only
+ * boundary. The type is the friendly surface; the runtime enforces correctness,
+ * so each of these throws rather than silently corrupting.
+ */
+export class InvalidOperationError extends BuilderError {
+  name = 'InvalidOperationError';
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/**
+ * A singleton that reaches a scoped instance at resolve — through an opaque
+ * factory the static graph cannot see — under a `captivePolicy` that forbids it
+ * (`Strict`). The static captive is reported by `validate()`; this is its
+ * runtime half, caught at resolution because the factory hid the edge. A
+ * resolve-time error, so it is a {@link ServiceError}.
+ */
+export class CaptiveDependencyError extends ServiceError {
+  name = 'CaptiveDependencyError';
+  constructor(singleton: ServiceIdentifier<object>, captured: ServiceIdentifier<object>) {
+    super(`${singleton.name} (singleton) captured ${captured.name} (scoped) at resolve, through a factory the static graph cannot see — forbidden by the Strict captive policy`);
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }

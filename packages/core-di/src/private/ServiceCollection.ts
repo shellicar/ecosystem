@@ -1,10 +1,10 @@
 import { Lifetime, ValidationProblemKind } from '../enums';
-import { InvalidServiceIdentifierError, ValidationError } from '../errors';
+import { InvalidOperationError, InvalidServiceIdentifierError, ValidationError } from '../errors';
 import type { IAbstractServiceBuilder, IForwardBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
 import { IResolutionScope, IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { AbstractNewable, BuildProviderOptions, DescriptorMap, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationProblem, ValidationReport } from '../types';
-import { buildEngine, buildEngineAsync, type EngineComposition } from './boundaryEngine';
+import { buildEngine, buildEngineAsync } from './boundaryEngine';
 import { type ComposableCollection, type ComposableLifetime, createCollection } from './composableBuilder';
 import { createDisposal } from './disposal';
 import { ForwardBuilder } from './ForwardBuilder';
@@ -38,7 +38,6 @@ export class ServiceCollection implements IServiceCollection {
     public readonly options: ServiceCollectionOptions,
     private readonly isScoped: boolean,
     private readonly isAsync: boolean,
-    initial?: DescriptorMap,
   ) {
     this.composed = createCollection(composedLifetimes, {
       async: this.isAsync,
@@ -48,11 +47,6 @@ export class ServiceCollection implements IServiceCollection {
         this.version++;
       },
     });
-    if (initial !== undefined) {
-      for (const [token, descriptors] of initial) {
-        this.composed.regs.set(token, descriptors);
-      }
-    }
   }
 
   /** The registrations, as the map the graph and engine consume. */
@@ -76,7 +70,7 @@ export class ServiceCollection implements IServiceCollection {
     // are derived at build, so a lifetime rewrite after buildProvider() could not
     // reach them — it would silently disagree with the running engine.
     if (this.built) {
-      throw new Error('overrideLifetime is pre-build only: the provider derives its plans at buildProvider(), so a lifetime cannot be overridden afterwards. Override before building.');
+      throw new InvalidOperationError('overrideLifetime is pre-build only: the provider derives its plans at buildProvider(), so a lifetime cannot be overridden afterwards. Override before building.');
     }
     for (const descriptor of this.get(identifier)) {
       if (descriptor.forwardTarget == null) {
@@ -124,7 +118,10 @@ export class ServiceCollection implements IServiceCollection {
       });
     }
     const graph = deriveFacts(this.services);
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor[this.options.captivePolicy]]));
+    // The composed default lifetime for an un-verbed registration is Lifetime.Resolve
+    // (the main surface's composition() default) — the captive check judges deps by
+    // that effective lifetime (C1).
+    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy, Lifetime.Resolve)]));
     return { valid: problems.length === 0, problems };
   }
 
@@ -174,13 +171,14 @@ export class ServiceCollection implements IServiceCollection {
    * (supplied by the engine, never stamped by the register layer), the
    * disposal tracker, and the three self-tokens mapped to their surfaces.
    */
-  private composition(): EngineComposition {
+  private composition() {
     return {
       singleton: createSingletonLifetime(),
       scoped: createScopedLifetime(),
       resolve: createResolveLifetime(),
       defaultLifetime: Lifetime.Resolve,
       disposal: createDisposal(),
+      captivePolicy: this.options.captivePolicy,
       surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
         [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
         [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],

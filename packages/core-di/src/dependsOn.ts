@@ -1,4 +1,4 @@
-import { IResolutionScope, IScopedProvider, IServiceProvider } from './interfaces';
+import type { IResolutionScope, IScopedProvider, IServiceProvider } from './interfaces';
 import { DesignDependenciesKey } from './private/constants';
 import { tagFieldMetadata } from './private/metadata';
 import type { ServiceIdentifier, SourceType } from './types';

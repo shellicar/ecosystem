@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Lifetime } from '../src/enums';
 import type { IResolutionScope } from '../src/interfaces';
+import { BuilderError } from '../src/errors';
 import { createCollection } from '../src/private/composableBuilder';
 
 abstract class IThing {}
@@ -192,16 +193,21 @@ describe('createCollection: eager rides on the singleton lifetime, order-indepen
       .eager;
   });
 
-  it('rejects eager once a later lifetime verb overrides singleton at compile time', () => {
-    const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
+  it('does not expose a second lifetime verb once one is set', () => {
+    // A registration has exactly one lifetime: once one is set the lifetime verbs
+    // drop off the builder type, so a second is not expressible (and throws if
+    // forced past the type). Never invoked — the pin exists only for the compiler.
+    const probe = () => {
+      const services = createCollection([Lifetime.Singleton, Lifetime.Scoped]);
 
-    services
-      .register(Thing)
-      .asSelf()
-      .singleton()
-      .scoped()
-      // @ts-expect-error - scoped() overrode the singleton choice, so eager is no longer available
-      .eager;
+      services
+        .register(Thing)
+        .asSelf()
+        .singleton()
+        // @ts-expect-error - a lifetime is already set; a second lifetime verb is not expressible
+        .scoped();
+    };
+    void probe;
   });
 });
 
@@ -217,13 +223,13 @@ class Widget {
 }
 
 describe('createCollection: usingAsync exists only on an async collection (decisions.md §8)', () => {
-  it('has no runtime usingAsync verb on a sync collection', () => {
+  it('rejects usingAsync at runtime on a sync collection (C3 — the runtime enforces what the type hides)', () => {
     const services = createCollection([Lifetime.Singleton]);
 
     const builder = services.register(Resource).asSelf() as Record<string, unknown>;
-    const actual = builder.usingAsync;
+    const actual = () => (builder.usingAsync as () => unknown)();
 
-    expect(actual).toBeUndefined();
+    expect(actual).toThrow(BuilderError);
   });
 
   it('rejects usingAsync on a sync collection at compile time', () => {

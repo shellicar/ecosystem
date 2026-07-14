@@ -30,15 +30,20 @@ export const missingTargetPolicy: GraphPolicy = (graph) =>
 
 /**
  * Builds a captive-dependency policy from a predicate over a reachable dep's
- * lifetime. "Should a singleton only hold singletons?" is answered by which
- * predicate is composed, not by the lifetime features themselves (§8) — there
- * is no rank between the choices below, each is a different, equally valid
- * answer. A dep with an `undefined` lifetime is a forward (no lifetime of its
- * own — the walk already passes through it to its target) and is never itself
- * reported as captured.
+ * *effective* lifetime. "Should a singleton only hold singletons?" is answered by
+ * which predicate is composed, not by the lifetime features themselves (§8) —
+ * there is no rank between the choices below, each is a different, equally valid
+ * answer.
+ *
+ * The effective lifetime is what the dep actually resolves under: an un-verbed
+ * dependency declares none on its descriptor, so it resolves under the composed
+ * `defaultLifetime` (effectively `Resolve`) — the policy judges *that*, so a
+ * singleton capturing an un-verbed dep is seen (C1). A forward is the one node
+ * that genuinely has no lifetime of its own (the walk already passes through it
+ * to its target), so it is skipped, never itself reported as captured.
  */
 const captivePolicy =
-  (isCaptured: (lifetime: Lifetime) => boolean): GraphPolicy =>
+  (defaultLifetime: Lifetime, isCaptured: (lifetime: Lifetime) => boolean): GraphPolicy =>
   (graph) => {
     const problems: ValidationProblem[] = [];
     for (const [node, facts] of graph) {
@@ -47,10 +52,13 @@ const captivePolicy =
       }
       for (const dep of reachableFrom(graph, node)) {
         const depFacts = graph.get(dep);
-        if (depFacts?.lifetime != null && isCaptured(depFacts.lifetime)) {
+        // A forward carries no lifetime; every other node resolves under its own
+        // declared lifetime, or the composed default when un-verbed.
+        const effectiveLifetime = depFacts?.lifetime ?? (dep.forwardTarget != null ? undefined : defaultLifetime);
+        if (effectiveLifetime != null && isCaptured(effectiveLifetime)) {
           problems.push({
             kind: ValidationProblemKind.CaptiveDependency,
-            message: `${facts.owner.name} (singleton) captures ${depFacts.owner.name} (${depFacts.lifetime}) in its dependency tree — a captive dependency`,
+            message: `${facts.owner.name} (singleton) captures ${depFacts?.owner.name} (${effectiveLifetime}) in its dependency tree — a captive dependency`,
           });
         }
       }
@@ -58,11 +66,11 @@ const captivePolicy =
     return problems;
   };
 
-/** A singleton may only reach singletons — flags any scoped or transient dep, anywhere in the tree. */
-export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !== Lifetime.Singleton);
+/** A singleton may only reach singletons — flags any scoped, transient or resolve dep (by effective lifetime), anywhere in the tree. */
+export const strictCaptive = (defaultLifetime: Lifetime): GraphPolicy => captivePolicy(defaultLifetime, (lifetime) => lifetime !== Lifetime.Singleton);
 
 /** The MS-DI-style rule: flags only deps whose table is torn down before the singleton is — scope-owned deps. */
-export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped);
+export const disposalCaptive = (defaultLifetime: Lifetime): GraphPolicy => captivePolicy(defaultLifetime, (lifetime) => lifetime === Lifetime.Scoped);
 
 /**
  * An async factory (`usingAsync`) reachable through a synchronous path
@@ -88,14 +96,20 @@ export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
 };
 
 /**
- * Maps each {@link CaptivePolicy} option to its graph policy. Total over the
- * enum, so a new enum member without an entry here is a compile error rather
- * than a silent fall-through.
+ * The graph policy for each {@link CaptivePolicy} option, given the composed
+ * `defaultLifetime` the un-verbed deps resolve under (C1). Total over the enum,
+ * so a new enum member without a branch here is a compile error rather than a
+ * silent fall-through.
  */
-export const captivePolicyFor: Record<CaptivePolicy, GraphPolicy> = {
-  [CaptivePolicy.Disposal]: disposalCaptive,
-  [CaptivePolicy.Strict]: strictCaptive,
-  [CaptivePolicy.None]: () => [],
+export const captivePolicyFor = (policy: CaptivePolicy, defaultLifetime: Lifetime): GraphPolicy => {
+  switch (policy) {
+    case CaptivePolicy.Disposal:
+      return disposalCaptive(defaultLifetime);
+    case CaptivePolicy.Strict:
+      return strictCaptive(defaultLifetime);
+    case CaptivePolicy.None:
+      return () => [];
+  }
 };
 
 /** Runs a composed set of graph policies and flattens their problems. */

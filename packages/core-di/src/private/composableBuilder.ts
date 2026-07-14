@@ -30,7 +30,7 @@
  * `register()` call shares one node (one instance).
  */
 import { Lifetime } from '../enums';
-import { InvalidImplementationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
+import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import { createDescriptorMap } from '../types';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 
@@ -68,14 +68,23 @@ type EagerVerb<B> = {
   eager(): B;
 };
 
-/** The verbs generated for a newable-flavoured composition. `.singleton()` sets the `Eager` flag `true`; every other lifetime `false`. */
+/**
+ * The verbs generated for a newable-flavoured composition. `.singleton()` sets
+ * the `Eager` flag `true`; every other lifetime `false`. Each verb sets the
+ * `LifeSet` flag `true` on the returned builder, so a second lifetime verb is no
+ * longer expressible — a registration has exactly one lifetime, explicit and local.
+ */
 type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false>;
+  readonly [K in L as VerbName<K>]: () => ComposableNewableBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false, true>;
 };
 
-/** The verbs generated for an abstract-flavoured composition. `.singleton()` sets the `Eager` flag `true`; every other lifetime `false`. */
+/**
+ * The verbs generated for an abstract-flavoured composition. `.singleton()` sets
+ * the `Eager` flag `true`; every other lifetime `false`. Each verb sets the
+ * `LifeSet` flag `true`, dropping the lifetime verbs once one is chosen.
+ */
 type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
-  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false>;
+  readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false, true>;
 };
 
 /**
@@ -107,14 +116,14 @@ type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean, 
  * be built as itself. `usingAsync` is present only on an async composition (see
  * {@link AsyncVerb}).
  */
-export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async, Eager>;
-  asSelf(): ComposableNewableBuilder<T, L, Async, Eager>;
+export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false, LifeSet extends boolean = false> = {
+  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
+  asSelf(): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
+  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager>;
-} & NewableLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async>> : unknown);
+  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
+} & (LifeSet extends true ? unknown : NewableLifetimeVerbs<T, L | Lifetime.Transient, Async>) & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async, false, LifeSet>> : unknown);
 
 /**
  * The builder for an abstract registration. It has no `.asSelf()` — an
@@ -124,13 +133,13 @@ export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, A
  * newable-flavoured builder (with `asSelf`). `usingAsync` is present only on an
  * async composition (see {@link AsyncVerb}).
  */
-export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false> = {
-  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async, Eager>;
+export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false, LifeSet extends boolean = false> = {
+  as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async, Eager, LifeSet>;
   /** Supply an opaque factory. Its dependencies are not declared, so the graph chain terminates here. */
-  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
+  using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   /** Supply a factory with declared dependencies, resolved and handed to it positionally. */
-  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager>;
-} & AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async> & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async>> : unknown);
+  using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
+} & (LifeSet extends true ? unknown : AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async>) & AsyncVerb<T, L, Async, Eager> & (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async, false, LifeSet>> : unknown);
 
 /**
  * One registration: the shared node every face of a `register()` call points
@@ -233,6 +242,14 @@ export const createCollection = <const L extends ComposableLifetime, const Async
         return builder;
       },
     };
+    if (!async) {
+      // A sync collection has no usingAsync on its type. Forced past the type it
+      // must not silently cache a Promise as the instance, so the runtime rejects
+      // it (decisions.md §8; the runtime enforces what the type surfaces).
+      builder.usingAsync = () => {
+        throw new InvalidOperationError('usingAsync is available only on a collection created with { async: true }: a sync collection cannot await a factory at build.');
+      };
+    }
     if (async) {
       // usingAsync exists only on an async collection — folded on from the same
       // flag the collection type is marked with, so runtime and type cannot disagree.
@@ -268,6 +285,12 @@ export const createCollection = <const L extends ComposableLifetime, const Async
     // the composed type and the composed runtime methods cannot disagree.
     for (const lifetime of [...lifetimes, Lifetime.Transient]) {
       builder[lifetimeVerbNames[lifetime]] = () => {
+        // A registration has exactly one lifetime. The type drops the lifetime
+        // verbs once one is set; forced past that, a second verb must not silently
+        // last-win — it throws (decisions.md §8).
+        if (node.lifetime !== undefined) {
+          throw new InvalidOperationError(`A lifetime (${node.lifetime}) is already set on this registration; a registration has exactly one lifetime.`);
+        }
         if (lifetime === Lifetime.Singleton && options.scoped === true) {
           throw new ScopedSingletonRegistrationError();
         }
