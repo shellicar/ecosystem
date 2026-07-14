@@ -1,6 +1,7 @@
 import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
 import type { ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, type Graph, reachableFrom } from './graph';
+import { Messages } from './messages';
 
 export type GraphPolicy = (graph: Graph) => ValidationProblem[];
 
@@ -9,14 +10,14 @@ export const cyclePolicy: GraphPolicy = (graph) =>
     const names = cycle.map((node) => graph.get(node)?.owner.name ?? '');
     return {
       kind: ValidationProblemKind.Cycle,
-      message: `Dependency cycle: ${names.join(' -> ')} -> ${names[0]}`,
+      message: Messages.dependencyCycle(names),
     };
   });
 
 export const missingTargetPolicy: GraphPolicy = (graph) =>
   findUnregisteredEdges(graph).map((edge) => ({
     kind: ValidationProblemKind.MissingTarget,
-    message: `${graph.get(edge.from)?.owner.name} depends on ${edge.missing.name}, which is not registered`,
+    message: Messages.missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
   }));
 
 const captivePolicy =
@@ -33,7 +34,7 @@ const captivePolicy =
         if (effectiveLifetime != null && isCaptured(effectiveLifetime)) {
           problems.push({
             kind: ValidationProblemKind.CaptiveDependency,
-            message: `${facts.owner.name} (singleton) captures ${depFacts?.owner.name} (${effectiveLifetime}) in its dependency tree, a captive dependency`,
+            message: Messages.captiveDependency(facts.owner.name, depFacts?.owner.name, effectiveLifetime),
           });
         }
       }
@@ -51,7 +52,7 @@ export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
     if (facts.isAsync && facts.lifetime !== Lifetime.Singleton) {
       problems.push({
         kind: ValidationProblemKind.AsyncThroughSyncPath,
-        message: `${facts.owner.name} is an async factory resolving under ${facts.lifetime ?? 'the default lifetime'}, an async factory reachable through a synchronous path; register it as a singleton and build with buildProviderAsync`,
+        message: Messages.asyncThroughSyncPath(facts.owner.name, facts.lifetime),
       });
     }
   }

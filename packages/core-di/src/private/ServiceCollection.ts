@@ -12,6 +12,7 @@ import { deriveFacts } from './graph';
 import { createResolveLifetime } from './lifetimeResolve';
 import { createScopedLifetime } from './lifetimeScoped';
 import { createSingletonLifetime } from './lifetimeSingleton';
+import { Messages } from './messages';
 import { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
 import { ServiceProvider } from './provider';
 
@@ -57,7 +58,7 @@ export class ServiceCollection implements IServiceCollection {
 
   public overrideLifetime<T extends SourceType>(identifier: ServiceIdentifier<T>, lifetime: Lifetime): void {
     if (this.built) {
-      throw new InvalidOperationError('overrideLifetime is pre-build only: the provider derives its plans at buildProvider(), so a lifetime cannot be overridden afterwards. Override before building.');
+      throw new InvalidOperationError(Messages.overrideLifetimePreBuildOnly);
     }
     for (const descriptor of this.get(identifier)) {
       if (descriptor.forwardTarget == null) {
@@ -93,7 +94,7 @@ export class ServiceCollection implements IServiceCollection {
     for (const node of this.composed.unfaced()) {
       problems.push({
         kind: ValidationProblemKind.NoIdentity,
-        message: `${node.implementation.name} was registered without a declared identity (no .as() or .asSelf())`,
+        message: Messages.noDeclaredIdentity(node.implementation.name),
       });
     }
     const graph = deriveFacts(this.services);

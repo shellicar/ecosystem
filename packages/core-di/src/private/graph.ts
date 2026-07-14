@@ -2,6 +2,7 @@ import type { Lifetime } from '../enums';
 import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError } from '../errors';
 import type { DescriptorMap, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 import { DesignDependenciesKey } from './constants';
+import { Messages } from './messages';
 import { getMetadata } from './metadata';
 
 export type GraphFacts = {
@@ -245,7 +246,7 @@ export const buildPlan = (
   const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => {
     const facts = graph.get(node);
     if (facts === undefined) {
-      throw new Error('buildPlan reached a node with no graph facts; every emitted node is derived from the graph, so this cannot happen.');
+      throw new Error(Messages.buildPlanMissingFacts);
     }
     return facts.owner;
   };

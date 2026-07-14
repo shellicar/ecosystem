@@ -5,6 +5,7 @@ import type { AsyncInstanceFactory, DescriptorMap, ServiceIdentifier, ServiceReg
 import { buildPlan, deriveFacts, followForward, formatGraph, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import type { Env, LifetimeFeature } from './lifetimeContracts';
 import type { ScopedLifetime } from './lifetimeScoped';
+import { Messages } from './messages';
 
 type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceType> };
 
@@ -293,7 +294,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     for (const node of prebakedNodes()) {
       if (isAsyncNode(node)) {
         const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
-        throw new InvalidOperationError(`Cannot build '${token.name}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`);
+        throw new InvalidOperationError(Messages.syncBuildOfAsyncFactory(token.name));
       }
       hold(node, execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
     }
@@ -316,7 +317,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
     const createScope = (overlay?: ScopeOverlay): Scope => {
       if (composition.scoped === undefined) {
-        throw new InvalidOperationError('createScope requires a scoped lifetime to be composed. This composition omits it, so it has no scope to open.');
+        throw new InvalidOperationError(Messages.createScopeRequiresScoped);
       }
       let cached: { readonly view: View; readonly version: number } | undefined;
       const viewOf = (): View => {

@@ -1,5 +1,6 @@
 import { InvalidOperationError } from '../errors';
 import type { Boundary, DisposalSink } from './boundaryEngine';
+import { Messages } from './messages';
 
 type SyncDisposable = { [Symbol.dispose](): void };
 type AsyncDisposable = { [Symbol.asyncDispose](): PromiseLike<void> };
@@ -30,7 +31,7 @@ export const createDisposal = (): Disposal => {
         return;
       }
       if (list.some((instance) => asSyncDisposable(instance) === undefined)) {
-        throw new InvalidOperationError('Cannot synchronously dispose a boundary holding an async-only disposable; dispose it asynchronously (Symbol.asyncDispose / await using).');
+        throw new InvalidOperationError(Messages.syncDisposeOfAsyncOnly);
       }
       lists.delete(boundary.id);
       for (let i = list.length - 1; i >= 0; i--) {

@@ -2,6 +2,7 @@ import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 import { createDescriptorMap } from '../types';
+import { Messages } from './messages';
 
 const lifetimeVerbNames = {
   [Lifetime.Singleton]: 'singleton',
@@ -126,7 +127,7 @@ export const createCollection = <const L extends ComposableLifetime, const Async
     builder.usingAsync = async
       ? (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => setFactory('createInstanceAsync', depsOrFactory, factory)
       : () => {
-          throw new InvalidOperationError('usingAsync is available only on a collection created with { async: true }: a sync collection cannot await a factory at build.');
+          throw new InvalidOperationError(Messages.usingAsyncRequiresAsyncCollection);
         };
     builder.eager = () => {
       node.eager = true;
@@ -135,7 +136,7 @@ export const createCollection = <const L extends ComposableLifetime, const Async
     for (const lifetime of [...lifetimes, Lifetime.Transient]) {
       builder[lifetimeVerbNames[lifetime]] = () => {
         if (node.lifetime !== undefined) {
-          throw new InvalidOperationError(`A lifetime (${node.lifetime}) is already set on this registration; a registration has exactly one lifetime.`);
+          throw new InvalidOperationError(Messages.lifetimeAlreadySet(node.lifetime));
         }
         if (lifetime === Lifetime.Singleton && options.scoped === true) {
           throw new ScopedSingletonRegistrationError();
