@@ -2,7 +2,7 @@ import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
 import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
 import type { AsyncInstanceFactory, DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
-import { buildPlan, concreteNode, deriveFacts, followForward, formatGraph, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
+import { buildPlan, deriveFacts, followForward, formatGraph, type Graph, type GraphNode, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import type { Env, LifetimeFeature } from './lifetimeContracts';
 import type { ScopedLifetime } from './lifetimeScoped';
 
@@ -16,6 +16,9 @@ type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceT
  * reads only `createInstance`, so an async factory is structurally unreachable there.
  */
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
+
+/** A shared empty registration list, so a token miss in resolveValue allocates nothing. */
+const EMPTY_BUCKET: readonly GraphNode[] = [];
 
 /**
  * The lifetime features an engine composes (decisions.md §8). Each is
@@ -220,8 +223,21 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   /** A node's effective lifetime — its own explicit choice, or the engine default when un-verbed. */
   const effectiveLifetime = (node: GraphNode): Lifetime => node.lifetime ?? defaultLifetime;
 
+  // The surface tokens as an identity-scanned list, not a map probe. There are at
+  // most three (the self-tokens) and surfaceAt is on the hot edge-resolution path,
+  // so a few reference comparisons beat hashing the token every resolve (Phase 26
+  // instrumentation finding). Identity is exactly Map key equality, so the result
+  // is unchanged.
+  const surfaceEntries: readonly (readonly [ServiceIdentifier<SourceType>, 'root' | 'boundary'])[] = composition.surfaceTokens ? [...composition.surfaceTokens] : [];
   /** Which boundary's surface a token resolves to, when it is a surface token at all. */
-  const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => composition.surfaceTokens?.get(token);
+  const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => {
+    for (const [surfaceToken, at] of surfaceEntries) {
+      if (surfaceToken === token) {
+        return at;
+      }
+    }
+    return undefined;
+  };
 
   /**
    * The registrationMode policy over a token's registrations: a single resolve
@@ -293,6 +309,14 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         return failed(wrapForToken(dependency.error, step.token, step.node.implementation));
       }
     }
+    // A declared-deps factory's arguments are plan slots too: a failed one wraps
+    // as this token's creation error, exactly like a field.
+    for (const slot of step.args) {
+      const dependency = locals[slot];
+      if (!dependency.ok) {
+        return failed(wrapForToken(dependency.error, step.token, step.node.implementation));
+      }
+    }
     const build = (): unknown => {
       let instance: object;
       const isSingletonConstruction = step.lifetime === Lifetime.Singleton;
@@ -301,9 +325,21 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         singletonDepth++;
         currentSingletonToken = step.token;
       }
-      constructing.add(step.node);
+      // A declared-deps factory is wired from plan slots (its `args`), like an
+      // @dependsOn field, so it never re-enters resolve and needs no cycle
+      // tracking — its cycles are caught statically in the plan. Only an opaque
+      // factory (`createFromDeps` absent, `usesFactory` true) re-enters, so only
+      // it is tracked (Phase 26 instrumentation finding).
+      const factory = step.node.createFromDeps;
+      const tracksCycle = step.node.usesFactory === true && factory === undefined;
+      if (tracksCycle) {
+        constructing.add(step.node);
+      }
       try {
-        instance = step.node.createInstance(inPassScope(view, env, boundary)) as object;
+        // A declared-deps factory takes its args from the plan slots; every other
+        // node constructs through `createInstance` (a class's `new`, or an opaque
+        // factory joining the pass via `scope.resolve`).
+        instance = (factory !== undefined ? factory(step.args.map((slot) => (locals[slot] as { value: SourceType }).value)) : step.node.createInstance(inPassScope(view, env, boundary))) as object;
       } catch (err) {
         // A runtime cycle or captive that surfaced through the factory stands as
         // itself; only a genuine construction fault is wrapped as this token's
@@ -313,7 +349,9 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         }
         throw new ServiceCreationError(step.token, err instanceof Error ? err : undefined, step.node.implementation);
       } finally {
-        constructing.delete(step.node);
+        if (tracksCycle) {
+          constructing.delete(step.node);
+        }
         if (isSingletonConstruction) {
           singletonDepth--;
           currentSingletonToken = previousSingletonToken;
@@ -355,15 +393,23 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     if (at !== undefined) {
       return surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
     }
-    const guardError = guardToken(token, view.index.get(token) ?? []);
-    if (guardError !== undefined) {
-      throw guardError;
+    // One index lookup, shared by the multiplicity guard and the concrete-node
+    // pick — the old guardToken + concreteNode each probed the map for the same
+    // token (Phase 26 instrumentation finding). guardToken's Error-mode throw and
+    // concreteNode's last-registration-forwards-followed pick are inlined here.
+    const bucket = view.index.get(token) ?? EMPTY_BUCKET;
+    if (bucket.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
+      throw new MultipleRegistrationError(token);
     }
-    const node = concreteNode(view.index, token);
+    const last = bucket[bucket.length - 1];
+    const node = last === undefined ? undefined : last.forwardTarget != null ? followForward(view.index, last) : last;
     if (node === undefined) {
       throw new UnregisteredServiceError(token);
     }
-    if (constructing.has(node)) {
+    // The runtime cycle guard applies only to factory nodes: a plain `new`
+    // construction cannot re-enter resolve, so a non-factory node is never in
+    // `constructing`, and probing it for one is wasted work.
+    if (node.usesFactory === true && constructing.has(node)) {
       // Re-entered while this node's factory is still constructing: a runtime
       // cycle through an opaque or declared-deps factory (C2). Throw a clean
       // CircularDependencyError rather than recursing to stack exhaustion.

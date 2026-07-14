@@ -250,9 +250,11 @@ export type OwnerIndex = ReadonlyMap<ServiceIdentifier<SourceType>, readonly Gra
 
 /**
  * One pre-computed step of a node's execution plan. A `build` step constructs a
- * node, wiring each `@dependsOn` field from an earlier slot in the same plan. An
- * `error` step is a fault determined statically here (a cycle, a self-dependency,
- * an unregistered edge), held as a slot value to surface at execution.
+ * node, wiring each `@dependsOn` field from an earlier slot in the same plan and
+ * feeding each declared-deps factory argument (`using([deps], factory)`) from an
+ * earlier slot, positionally. An `error` step is a fault determined statically
+ * here (a cycle, a self-dependency, an unregistered edge), held as a slot value
+ * to surface at execution.
  */
 export type PlanStep =
   | {
@@ -261,6 +263,8 @@ export type PlanStep =
       readonly token: ServiceIdentifier<SourceType>;
       readonly lifetime: Lifetime;
       readonly fields: readonly { readonly field: string; readonly slot: number }[];
+      /** The slots holding this node's declared-deps factory arguments, in declaration order. Empty for a class or an opaque factory. */
+      readonly args: readonly number[];
     }
   | {
       readonly kind: 'error';
@@ -391,7 +395,19 @@ export const buildPlan = (
       }
       fields.push({ field, slot: emitToken(identifier, nextPath) });
     }
-    const slot = push({ kind: 'build', node, token, lifetime, fields });
+    // Declared-deps factory arguments are static edges too: resolve each into its
+    // own slot, in declaration order, so the engine hands the factory already-built
+    // dependencies instead of it re-entering `resolve`. Same faults as a field —
+    // a cycle, a self-dependency, an unregistered edge — become error slots here.
+    const args: number[] = [];
+    for (const identifier of node.declaredDeps ?? []) {
+      if (identifier === token) {
+        args.push(push({ kind: 'error', token, error: new SelfDependencyError() }));
+        continue;
+      }
+      args.push(emitToken(identifier, nextPath));
+    }
+    const slot = push({ kind: 'build', node, token, lifetime, fields, args });
     if (cached) {
       sharedSlot.set(node, slot);
     }

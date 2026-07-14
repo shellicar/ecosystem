@@ -103,6 +103,18 @@ export type ServiceDescriptor<T extends SourceType> = {
    * `using(factory)` form (which terminates the chain) and for `@dependsOn` classes.
    */
   declaredDeps?: readonly ServiceIdentifier<SourceType>[];
+  /**
+   * The engine-facing form of a declared-deps factory (`using([deps], factory)`):
+   * it takes the container-resolved dependencies positionally, rather than a
+   * resolution scope. Present only for a declared-deps factory. The plan resolves
+   * each declared dep into its own slot — exactly like an `@dependsOn` field — and
+   * hands the built instances here, so a declared-deps factory never re-enters
+   * `resolve` (its dependencies are static edges the plan wires). `createInstance`
+   * stays a valid scope-resolving fallback; the engine prefers this when present.
+   * The opaque `using(factory)` form has no `createFromDeps` and keeps re-entering
+   * `resolve` — its dependencies are deliberately undeclared (the escape hatch).
+   */
+  createFromDeps?: (deps: readonly SourceType[]) => T;
 };
 
 export type MetadataType<T extends SourceType> = Record<string | symbol, ServiceIdentifier<T>>;

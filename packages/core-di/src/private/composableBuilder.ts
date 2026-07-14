@@ -233,10 +233,14 @@ export const createCollection = <const L extends ComposableLifetime, const Async
           node.usesFactory = true;
           return builder;
         }
-        // Declared-deps form: `using([deps], factory)`. The container resolves
-        // each declared dep and hands them, positionally, to the factory.
+        // Declared-deps form: `using([deps], factory)`. The declared deps are
+        // static edges, so the engine resolves them through the plan (like
+        // `@dependsOn` fields) and hands the built instances to `createFromDeps`
+        // positionally — the factory never re-enters `resolve`. `createInstance`
+        // stays a scope-resolving fallback for any path that builds off-plan.
         const deps = depsOrFactory;
         const build = factory as (...args: SourceType[]) => SourceType;
+        node.createFromDeps = (args) => build(...args);
         node.createInstance = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
         node.usesFactory = true;
         node.declaredDeps = deps;

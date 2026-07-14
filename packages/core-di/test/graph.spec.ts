@@ -258,6 +258,24 @@ describe('buildPlan: a flat plan of per-injection steps', () => {
 
     expect(actual).toEqual(expected);
   });
+
+  it('emits an arg slot per declared-deps factory dependency, wired to the dep build step', () => {
+    abstract class IDep {}
+    abstract class IFactory {}
+    class Dep implements IDep {}
+    class Factory implements IFactory {}
+    const services = createDescriptorMap();
+    register(services, IDep, { implementation: Dep, lifetime: Lifetime.Singleton });
+    register(services, IFactory, { implementation: Factory, usesFactory: true, declaredDeps: [IDep], lifetime: Lifetime.Singleton });
+
+    const plan = planFor(services, IFactory);
+    const factoryStep = plan.find((step) => step.kind === 'build' && step.token === IFactory);
+    const args = factoryStep?.kind === 'build' ? factoryStep.args : [];
+    const expected = [IDep];
+    const actual = args.map((slot) => plan[slot].token);
+
+    expect(actual).toEqual(expected);
+  });
 });
 
 describe('detectCycles: pure cycle detection over the graph', () => {
