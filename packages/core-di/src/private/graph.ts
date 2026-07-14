@@ -81,6 +81,17 @@ export const findUnregisteredEdges = (graph: Graph): UnregisteredEdge[] => {
   return problems;
 };
 
+// Every walker follows the same edges: a node's dep tokens, fanned out to every node
+// registered under each token. One generator carries that shape; the walkers keep only
+// their own traversal state (cycle capture, post-order, discovery), which genuinely differs.
+function* depNodes(graph: Graph, index: OwnerIndex, node: GraphNode): Generator<GraphNode> {
+  for (const dep of graph.get(node)?.deps ?? []) {
+    for (const depNode of index.get(dep) ?? []) {
+      yield depNode;
+    }
+  }
+}
+
 export const detectCycles = (graph: Graph): Cycle[] => {
   const index = indexByOwner(graph);
   const state = new Map<GraphNode, 'visiting' | 'done'>();
@@ -106,19 +117,17 @@ export const detectCycles = (graph: Graph): Cycle[] => {
   const visit = (node: GraphNode): void => {
     state.set(node, 'visiting');
     stack.push(node);
-    for (const dep of graph.get(node)?.deps ?? []) {
-      for (const depNode of index.get(dep) ?? []) {
-        const depState = state.get(depNode);
-        if (depState === 'visiting') {
-          const cycle = stack.slice(stack.indexOf(depNode));
-          const sig = signature(cycle);
-          if (!reported.has(sig)) {
-            reported.add(sig);
-            cycles.push(cycle);
-          }
-        } else if (depState === undefined) {
-          visit(depNode);
+    for (const depNode of depNodes(graph, index, node)) {
+      const depState = state.get(depNode);
+      if (depState === 'visiting') {
+        const cycle = stack.slice(stack.indexOf(depNode));
+        const sig = signature(cycle);
+        if (!reported.has(sig)) {
+          reported.add(sig);
+          cycles.push(cycle);
         }
+      } else if (depState === undefined) {
+        visit(depNode);
       }
     }
     stack.pop();
@@ -144,10 +153,8 @@ export const topologicalOrder = (graph: Graph): GraphNode[] => {
       return;
     }
     visiting.add(node);
-    for (const dep of graph.get(node)?.deps ?? []) {
-      for (const depNode of index.get(dep) ?? []) {
-        visit(depNode);
-      }
+    for (const depNode of depNodes(graph, index, node)) {
+      visit(depNode);
     }
     visiting.delete(node);
     done.add(node);
@@ -166,15 +173,13 @@ export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
   const seen = new Set<GraphNode>([start]);
 
   const walk = (node: GraphNode): void => {
-    for (const dep of graph.get(node)?.deps ?? []) {
-      for (const depNode of index.get(dep) ?? []) {
-        if (seen.has(depNode)) {
-          continue;
-        }
-        seen.add(depNode);
-        found.push(depNode);
-        walk(depNode);
+    for (const depNode of depNodes(graph, index, node)) {
+      if (seen.has(depNode)) {
+        continue;
       }
+      seen.add(depNode);
+      found.push(depNode);
+      walk(depNode);
     }
   };
   walk(start);

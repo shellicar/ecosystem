@@ -92,15 +92,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const effectiveLifetime = (node: GraphNode): Lifetime => node.lifetime ?? defaultLifetime;
 
-  const surfaceEntries: readonly (readonly [ServiceIdentifier<SourceType>, 'root' | 'boundary'])[] = composition.surfaceTokens ? [...composition.surfaceTokens] : [];
-  const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => {
-    for (const [surfaceToken, at] of surfaceEntries) {
-      if (surfaceToken === token) {
-        return at;
-      }
-    }
-    return undefined;
-  };
+  const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => composition.surfaceTokens?.get(token);
 
   const guardToken = (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]): unknown | undefined => {
     if (nodes.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
@@ -218,8 +210,9 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       return surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
     }
     const bucket = view.index.get(token) ?? EMPTY_BUCKET;
-    if (bucket.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
-      throw new MultipleRegistrationError(token);
+    const guardError = guardToken(token, bucket);
+    if (guardError !== undefined) {
+      throw guardError;
     }
     const last = bucket[bucket.length - 1];
     const node = last === undefined ? undefined : last.forwardTarget != null ? followForward(view.index, last) : last;

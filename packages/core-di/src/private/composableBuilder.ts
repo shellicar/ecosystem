@@ -94,6 +94,24 @@ export const createCollection = <const L extends ComposableLifetime, const Async
       }
       options.onFace?.(token, node);
     };
+    // One body serves both using and usingAsync: they differ only in which descriptor
+    // field the factory lands on. Only the sync deps form gains createFromDeps — that is
+    // the engine's static-plan fast path, and an async factory never runs on it.
+    const setFactory = (field: 'createInstance' | 'createInstanceAsync', depsOrFactory: InstanceFactory<SourceType> | AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => SourceType | Promise<SourceType>) => {
+      node.usesFactory = true;
+      if (typeof depsOrFactory === 'function') {
+        node[field] = depsOrFactory as InstanceFactory<SourceType> & AsyncInstanceFactory<SourceType>;
+        return builder;
+      }
+      const deps = depsOrFactory;
+      const build = factory as (...args: SourceType[]) => SourceType & Promise<SourceType>;
+      if (field === 'createInstance') {
+        node.createFromDeps = (args) => build(...args);
+      }
+      node[field] = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
+      node.declaredDeps = deps;
+      return builder;
+    };
     const builder: Record<string, unknown> = {
       as(token: ServiceIdentifier<SourceType>) {
         addFace(token);
@@ -103,41 +121,13 @@ export const createCollection = <const L extends ComposableLifetime, const Async
         addFace(node.implementation as ServiceIdentifier<SourceType>);
         return builder;
       },
-      using(depsOrFactory: InstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => SourceType) {
-        if (typeof depsOrFactory === 'function') {
-          node.createInstance = depsOrFactory;
-          node.usesFactory = true;
-          return builder;
-        }
-        const deps = depsOrFactory;
-        const build = factory as (...args: SourceType[]) => SourceType;
-        node.createFromDeps = (args) => build(...args);
-        node.createInstance = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
-        node.usesFactory = true;
-        node.declaredDeps = deps;
-        return builder;
-      },
+      using: (depsOrFactory: InstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => SourceType) => setFactory('createInstance', depsOrFactory, factory),
     };
-    if (!async) {
-      builder.usingAsync = () => {
-        throw new InvalidOperationError('usingAsync is available only on a collection created with { async: true }: a sync collection cannot await a factory at build.');
-      };
-    }
-    if (async) {
-      builder.usingAsync = (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => {
-        if (typeof depsOrFactory === 'function') {
-          node.createInstanceAsync = depsOrFactory;
-          node.usesFactory = true;
-          return builder;
-        }
-        const deps = depsOrFactory;
-        const build = factory as (...args: SourceType[]) => Promise<SourceType>;
-        node.createInstanceAsync = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
-        node.usesFactory = true;
-        node.declaredDeps = deps;
-        return builder;
-      };
-    }
+    builder.usingAsync = async
+      ? (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => setFactory('createInstanceAsync', depsOrFactory, factory)
+      : () => {
+          throw new InvalidOperationError('usingAsync is available only on a collection created with { async: true }: a sync collection cannot await a factory at build.');
+        };
     builder.eager = () => {
       node.eager = true;
       return builder;

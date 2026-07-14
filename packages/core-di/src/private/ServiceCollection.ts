@@ -101,8 +101,18 @@ export class ServiceCollection implements IServiceCollection {
     return { valid: problems.length === 0, problems };
   }
 
+  // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
+  // copy (a multi-face descriptor stays one object in the clone), cloneShared shares the
+  // descriptor itself so scope overlays see the same nodes.
+  private cloneWith(isScoped: boolean, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>): ServiceCollection {
+    const cloned = new ServiceCollection(this.logger, this.options, isScoped, this.isAsync);
+    for (const [key, descriptors] of this.services) {
+      cloned.services.set(key, descriptors.map(copyOf));
+    }
+    return cloned;
+  }
+
   public clone(scoped?: unknown): IServiceCollection {
-    const cloned = new ServiceCollection(this.logger, this.options, scoped === true, this.isAsync);
     const copies = new Map<ServiceDescriptor<SourceType>, ServiceDescriptor<SourceType>>();
     const copyOf = (descriptor: ServiceDescriptor<SourceType>): ServiceDescriptor<SourceType> => {
       let copy = copies.get(descriptor);
@@ -112,18 +122,11 @@ export class ServiceCollection implements IServiceCollection {
       }
       return copy;
     };
-    for (const [key, descriptors] of this.services) {
-      cloned.services.set(key, descriptors.map(copyOf));
-    }
-    return cloned;
+    return this.cloneWith(scoped === true, copyOf);
   }
 
   public cloneShared(): ServiceCollection {
-    const cloned = new ServiceCollection(this.logger, this.options, true, this.isAsync);
-    for (const [key, descriptors] of this.services) {
-      cloned.services.set(key, [...descriptors]);
-    }
-    return cloned;
+    return this.cloneWith(true, (descriptor) => descriptor);
   }
 
   public snapshot(): { readonly services: DescriptorMap; readonly version: number } {
@@ -159,41 +162,31 @@ export class ServiceCollection implements IServiceCollection {
     return frozen;
   }
 
+  private engineOptions(options?: BuildProviderOptions) {
+    return { validate: options?.validate, registrationMode: this.options.registrationMode };
+  }
+
+  private finish(frozen: ServiceCollection, engine: Parameters<typeof ServiceProvider.createRoot>[2], onTiming: InstrumentationHook | undefined, start: number | undefined): IServiceProvider {
+    const provider = ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
+    return provider;
+  }
+
   public buildProvider(options?: BuildProviderOptions): IServiceProvider {
     const onTiming = activeHook(options?.instrument);
-    const build = (): IServiceProvider => {
-      const frozen = this.freeze(options);
-      const engine = buildEngine(frozen.services, this.composition(), {
-        validate: options?.validate,
-        registrationMode: this.options.registrationMode,
-      });
-      return ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
-    };
-    if (onTiming === undefined) {
-      return build();
-    }
-    const start = performance.now();
-    const provider = build();
-    onTiming({ kind: 'build', durationMs: performance.now() - start });
-    return provider;
+    const start = onTiming === undefined ? undefined : performance.now();
+    const frozen = this.freeze(options);
+    const engine = buildEngine(frozen.services, this.composition(), this.engineOptions(options));
+    return this.finish(frozen, engine, onTiming, start);
   }
 
   public async buildProviderAsync(options?: BuildProviderOptions): Promise<IServiceProvider> {
     const onTiming = activeHook(options?.instrument);
-    const build = async (): Promise<IServiceProvider> => {
-      const frozen = this.freeze(options);
-      const engine = await buildEngineAsync(frozen.services, this.composition(), {
-        validate: options?.validate,
-        registrationMode: this.options.registrationMode,
-      });
-      return ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
-    };
-    if (onTiming === undefined) {
-      return build();
-    }
-    const start = performance.now();
-    const provider = await build();
-    onTiming({ kind: 'build', durationMs: performance.now() - start });
-    return provider;
+    const start = onTiming === undefined ? undefined : performance.now();
+    const frozen = this.freeze(options);
+    const engine = await buildEngineAsync(frozen.services, this.composition(), this.engineOptions(options));
+    return this.finish(frozen, engine, onTiming, start);
   }
 }
