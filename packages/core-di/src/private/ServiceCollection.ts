@@ -178,7 +178,7 @@ export class ServiceCollection implements IServiceCollection {
       resolve: createResolveLifetime(),
       defaultLifetime: Lifetime.Resolve,
       disposal: createDisposal(),
-      captivePolicy: this.options.captivePolicy,
+      runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
       surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
         [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
         [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],

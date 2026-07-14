@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CaptivePolicy, createServiceCollection, dependsOn, ValidationProblemKind } from '../src';
+import { CaptiveDependencyError, CaptivePolicy, createServiceCollection, dependsOn, RuntimeCaptivePolicy, ValidationProblemKind } from '../src';
 
 abstract class IScopedDep {}
 class ScopedDep implements IScopedDep {}
@@ -60,10 +60,10 @@ describe('CaptivePolicy configuration', () => {
 });
 
 // A singleton reaching a scoped instance through an opaque factory is the same
-// singleton-to-scoped mismatch as the static captive, hidden from validate() by
-// the factory. It follows the same captivePolicy: allowed under None, an error
-// under Strict.
-describe('CaptivePolicy governs the runtime captive (a singleton reaching scoped through an opaque factory)', () => {
+// singleton-to-scoped mismatch as the static captive, but hidden from validate()
+// by the factory. It is governed by its own axis — runtimeCaptivePolicy, separate
+// from the static captivePolicy: allowed under None, thrown at resolve under Throw.
+describe('RuntimeCaptivePolicy governs the runtime captive (a singleton reaching scoped through an opaque factory)', () => {
   abstract class IScopedThing {}
   class ScopedThing implements IScopedThing {}
   abstract class ISingletonHolder {}
@@ -72,7 +72,7 @@ describe('CaptivePolicy governs the runtime captive (a singleton reaching scoped
   }
 
   it('None allows a singleton to pull a scoped instance through an opaque factory at resolve', () => {
-    const services = createServiceCollection({ captivePolicy: CaptivePolicy.None });
+    const services = createServiceCollection({ runtimeCaptivePolicy: RuntimeCaptivePolicy.None });
     services.register(ScopedThing).as(IScopedThing).scoped();
     services
       .register(SingletonHolder)
@@ -86,8 +86,8 @@ describe('CaptivePolicy governs the runtime captive (a singleton reaching scoped
     expect(actual).toBeInstanceOf(SingletonHolder);
   });
 
-  it('Strict makes the same runtime capture an error at resolve', () => {
-    const services = createServiceCollection({ captivePolicy: CaptivePolicy.Strict });
+  it('Throw makes the same runtime capture an error at resolve', () => {
+    const services = createServiceCollection({ runtimeCaptivePolicy: RuntimeCaptivePolicy.Throw });
     services.register(ScopedThing).as(IScopedThing).scoped();
     services
       .register(SingletonHolder)
@@ -96,10 +96,10 @@ describe('CaptivePolicy governs the runtime captive (a singleton reaching scoped
       .singleton();
     const provider = services.buildProvider();
 
-    // The opaque factory hides the edge from validate(), so under Strict the
-    // capture is caught at resolve.
+    // The opaque factory hides the edge from validate(), so under the Throw
+    // policy the capture is caught at resolve as a CaptiveDependencyError.
     const actual = () => provider.resolve(ISingletonHolder);
 
-    expect(actual).toThrow();
+    expect(actual).toThrow(CaptiveDependencyError);
   });
 });

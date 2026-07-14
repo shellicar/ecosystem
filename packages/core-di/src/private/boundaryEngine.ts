@@ -1,4 +1,4 @@
-import { CaptivePolicy, Lifetime, ResolveMultipleMode } from '../enums';
+import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
 import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
 import type { AsyncInstanceFactory, DescriptorMap, ServiceDescriptor, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
@@ -51,13 +51,14 @@ export type EngineComposition = {
    */
   readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
   /**
-   * The captive policy governing the runtime captive (decisions.md §8; SC ruling,
-   * Phase 21): a singleton that pulls a scoped instance through an opaque factory
-   * at resolve — an edge `validate()` cannot see. Under `Strict` this is caught at
-   * resolution; under `None`/`Disposal`/absent it is not (the same-off-switch logic
-   * as the static captive — a thing a user can switch off is not a correctness error).
+   * Whether resolve throws on the runtime captive (decisions.md §8): a singleton
+   * that pulls a scoped instance through an opaque factory at resolve — an edge
+   * `validate()` cannot see. Under {@link RuntimeCaptivePolicy.Throw} it is caught
+   * at resolution; under `None`/absent it is not. This is a *separate* axis from
+   * the static captive report (`captivePolicy`, which lives entirely in `validate()`);
+   * the engine only ever consumes this runtime switch.
    */
-  readonly captivePolicy?: CaptivePolicy;
+  readonly runtimeCaptivePolicy?: RuntimeCaptivePolicy;
 };
 
 /** A resolution boundary — the root, or a scope — that constructions are announced to and that has an end. */
@@ -186,8 +187,8 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const defaultLifetime = composition.defaultLifetime ?? Lifetime.Resolve;
   /** The disposal seam (Phase 14 supplies the tracker); inert here. */
   const disposal = composition.disposal;
-  /** The captive policy governing the runtime captive check (decisions.md §8). */
-  const captivePolicy = composition.captivePolicy;
+  /** Whether resolve throws on the runtime captive (decisions.md §8). */
+  const runtimeCaptivePolicy = composition.runtimeCaptivePolicy;
   /** Nodes whose factory is mid-construction in the current pass — a re-entry is a runtime cycle (C2). */
   const constructing = new Set<GraphNode>();
   /** Depth of in-flight singleton constructions, and the token of the innermost — the runtime captive check reads these. */
@@ -366,9 +367,9 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       // CircularDependencyError rather than recursing to stack exhaustion.
       throw new CircularDependencyError(token);
     }
-    if (singletonDepth > 0 && captivePolicy === CaptivePolicy.Strict && effectiveLifetime(node) === Lifetime.Scoped) {
+    if (singletonDepth > 0 && runtimeCaptivePolicy === RuntimeCaptivePolicy.Throw && effectiveLifetime(node) === Lifetime.Scoped) {
       // A singleton is pulling a scoped instance through a factory the static
-      // graph cannot see (the runtime captive). Under Strict, that is forbidden.
+      // graph cannot see (the runtime captive). Under the Throw policy, forbidden.
       throw new CaptiveDependencyError(currentSingletonToken ?? token, token);
     }
     const outcome = execute(view, planFor(view, node), env, boundary);

@@ -1,4 +1,4 @@
-import type { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, ValidationProblemKind } from './enums';
+import type { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy, ValidationProblemKind } from './enums';
 import type { IResolutionScope, IServiceModule } from './interfaces';
 import type { ILogger } from './logger';
 import type { ConsoleLogger } from './private/consoleLogger';
@@ -123,12 +123,22 @@ export type ServiceCollectionOptions = {
    */
   logger?: ILogger;
   /**
-   * How captive dependencies (a singleton reaching a shorter-lived service) are
-   * reported by {@link IServiceCollection.validate}. The only configurable
-   * policy — the others always run.
+   * How a *static* captive dependency (a singleton reaching a shorter-lived
+   * service in the static graph) is reported by {@link IServiceCollection.validate}.
+   * A build-time diagnostic only — enforced as a thrown `ValidationError` solely
+   * under `buildProvider({ validate: true })`. Does not affect resolve; the
+   * runtime captive is a separate switch, {@link runtimeCaptivePolicy}.
    * @default CaptivePolicy.Disposal
    */
   captivePolicy: CaptivePolicy;
+  /**
+   * Whether `resolve()` throws on a *runtime* captive — a singleton that pulls a
+   * scoped instance through an opaque factory, an edge the static graph (and so
+   * {@link captivePolicy}) cannot see. Independent of {@link captivePolicy}, and
+   * off by default: the runtime path adds no throw unless opted in.
+   * @default RuntimeCaptivePolicy.None
+   */
+  runtimeCaptivePolicy: RuntimeCaptivePolicy;
 };
 
 /**

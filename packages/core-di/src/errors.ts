@@ -112,15 +112,15 @@ export class InvalidOperationError extends BuilderError {
 
 /**
  * A singleton that reaches a scoped instance at resolve — through an opaque
- * factory the static graph cannot see — under a `captivePolicy` that forbids it
- * (`Strict`). The static captive is reported by `validate()`; this is its
- * runtime half, caught at resolution because the factory hid the edge. A
- * resolve-time error, so it is a {@link ServiceError}.
+ * factory the static graph cannot see — when the `runtimeCaptivePolicy` forbids it
+ * (`RuntimeCaptivePolicy.Throw`). The static captive is reported by `validate()`;
+ * this is its runtime half, caught at resolution because the factory hid the edge.
+ * A resolve-time error, so it is a {@link ServiceError}.
  */
 export class CaptiveDependencyError extends ServiceError {
   name = 'CaptiveDependencyError';
   constructor(singleton: ServiceIdentifier<object>, captured: ServiceIdentifier<object>) {
-    super(`${singleton.name} (singleton) captured ${captured.name} (scoped) at resolve, through a factory the static graph cannot see — forbidden by the Strict captive policy`);
+    super(`${singleton.name} (singleton) captured ${captured.name} (scoped) at resolve, through a factory the static graph cannot see — forbidden by RuntimeCaptivePolicy.Throw`);
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
