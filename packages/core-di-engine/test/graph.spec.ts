@@ -27,7 +27,7 @@ import {
   type ServiceIdentifier,
   type SourceType,
   topologicalOrder,
-} from '@shellicar/core-di-engine';
+} from '../src';
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 

@@ -18,7 +18,7 @@ import {
   type ServiceImplementation,
   type SourceType,
   type StrategyFactory,
-} from '@shellicar/core-di-engine';
+} from '../src';
 import { describe, expect, it } from 'vitest';
 
 // resolve() and resolveAll() are the engine's two resolution doors. The

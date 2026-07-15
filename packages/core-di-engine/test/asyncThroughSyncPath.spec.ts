@@ -1,4 +1,4 @@
-import { asyncThroughSyncPathPolicy, createDescriptorMap, type DescriptorMap, deriveFacts, Lifetime, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '@shellicar/core-di-engine';
+import { asyncThroughSyncPathPolicy, createDescriptorMap, type DescriptorMap, deriveFacts, Lifetime, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '../src';
 import { describe, expect, it } from 'vitest';
 
 // The async-through-sync-path policy is proven standalone against a hand-built

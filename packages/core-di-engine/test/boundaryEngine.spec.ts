@@ -21,7 +21,7 @@ import {
   type ServiceImplementation,
   type SourceType,
   UnregisteredServiceError,
-} from '@shellicar/core-di-engine';
+} from '../src';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 import { holder } from './strategyHolder';

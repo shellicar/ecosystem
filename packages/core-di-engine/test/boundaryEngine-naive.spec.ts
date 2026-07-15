@@ -1,4 +1,4 @@
-import { createNaiveStrategy } from '@shellicar/core-di-engine';
+import { createNaiveStrategy } from '../src';
 import { holder } from './strategyHolder';
 
 // The parity run: the entire engine suite, executed under the naive strategy.

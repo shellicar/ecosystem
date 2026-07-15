@@ -1,5 +1,5 @@
-import type { StrategyFactory } from '@shellicar/core-di-engine';
-import { createPlanStrategy } from '@shellicar/core-di-engine';
+import type { StrategyFactory } from '../src';
+import { createPlanStrategy } from '../src';
 
 /**
  * The strategy the engine specs compose with. Plan by default; the naive parity

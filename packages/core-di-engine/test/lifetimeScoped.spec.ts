@@ -1,4 +1,4 @@
-import { createScopedLifetime } from '@shellicar/core-di-engine';
+import { createScopedLifetime } from '../src';
 import { describe, expect, it } from 'vitest';
 
 const makeCounter = () => {

@@ -5,8 +5,8 @@
  * shipped `dependsOn` decorator and `getMetadata`.
  */
 
-import type { ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
-import { DesignDependenciesKey, getMetadata } from '@shellicar/core-di-engine';
+import type { ServiceIdentifier, SourceType } from '../src';
+import { DesignDependenciesKey, getMetadata } from '../src';
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 

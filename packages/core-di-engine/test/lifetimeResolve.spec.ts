@@ -1,4 +1,4 @@
-import { createResolveLifetime } from '@shellicar/core-di-engine';
+import { createResolveLifetime } from '../src';
 import { describe, expect, it } from 'vitest';
 
 const makeCounter = () => {

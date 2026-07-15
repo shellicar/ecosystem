@@ -1,5 +1,5 @@
-import type { IResolutionScope } from '@shellicar/core-di-engine';
-import { createCollection, Lifetime } from '@shellicar/core-di-engine';
+import type { IResolutionScope } from '../src';
+import { createCollection, Lifetime } from '../src';
 import { describe, expect, it } from 'vitest';
 
 abstract class IThing {}

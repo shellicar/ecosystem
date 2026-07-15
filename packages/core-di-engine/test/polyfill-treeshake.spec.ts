@@ -22,8 +22,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // The polyfill's assignment lives in the engine package (core-di's own
 // src/polyfill.ts is a re-export shim), so the source under test and the
 // sideEffects field protecting it are the engine's.
-const polyfillSource = new URL('../../core-di-engine/src/polyfill.ts', import.meta.url);
-const packageJson = new URL('../../core-di-engine/package.json', import.meta.url);
+const polyfillSource = new URL('../src/polyfill.ts', import.meta.url);
+const packageJson = new URL('../package.json', import.meta.url);
 
 /** The polyfill's one statement, as it reads once bundled: present iff the module survived. */
 const polyfillAssignment = /Symbol\.for\(['"]Symbol\.metadata['"]\)/;

@@ -1,4 +1,4 @@
-import { createSingletonLifetime } from '@shellicar/core-di-engine';
+import { createSingletonLifetime } from '../src';
 import { describe, expect, it } from 'vitest';
 
 const makeCounter = () => {

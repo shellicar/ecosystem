@@ -70,13 +70,16 @@
   ],
   "scripts": {
     "build": "tsup",
+    "test": "vitest run",
     "type-check": "tsc -p tsconfig.check.json",
     "watch": "tsup --watch"
   },
   "devDependencies": {
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
+    "esbuild": "^0.28.1",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.6"
   }
 }
