@@ -22,7 +22,7 @@ const pkg = JSON.parse(readFileSync(resolve(absDir, 'package.json'), 'utf8'));
 const shortName: string = pkg.name.split('/').pop();
 
 type Entry = { description: string; category: string; metadata?: Record<string, unknown> };
-type ReleaseMarker = { type: 'release'; version: string; date: string; tag?: string };
+type ReleaseMarker = { type: 'release'; version: string; date: string; tag?: string; description?: string };
 type Group = { entries: Entry[]; release: ReleaseMarker };
 
 const rawLines = readFileSync(resolve(absDir, 'changes.jsonl'), 'utf8')
@@ -85,6 +85,10 @@ if (unreleased.length > 0) {
 
 for (const { entries, release } of [...groups].reverse()) {
   parts.push(`\n## [${release.version}] - ${release.date}`);
+  // The release-wide story, above the categorised lines.
+  if (release.description != null) {
+    parts.push(`\n${release.description}`);
+  }
   if (entries.length > 0) {
     parts.push(`\n${renderEntries(entries)}`);
   }

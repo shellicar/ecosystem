@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configure the captive-dependency check with `CaptivePolicy` (build-time) and `RuntimeCaptivePolicy` (resolve-time)
 - `validate()` reports problems as a `ValidationReport` of `ValidationProblem` entries classified by `ValidationProblemKind`
 - New error types: `BuilderError`, `ValidationError`, `CaptiveDependencyError`, and `InvalidOperationError`
+- Inspect the built graph with `provider.printGraph(write = console.log)` — a human-readable visualisation of the registered tokens, their `@dependsOn` and forward edges, and their lifetimes
+- Time `buildProvider` and each `resolve` with `buildProvider({ instrument: { enabled, onTiming } })` — off by default, so a provider without it pays nothing
 
 ### Changed
 

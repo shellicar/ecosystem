@@ -5,3 +5,12 @@
 {"type":"release","version":"1.0.1","date":"2026-05-08","tag":"core-di-lite@1.0.1"}
 {"description":"Updated patch and minor dependencies","category":"changed"}
 {"type":"release","version":"1.0.2","date":"2026-05-17","tag":"core-di-lite@1.0.2"}
+{"description":"**Breaking:** the registration API is now the same grammar as core-di: `register(Implementation).as(Identifier)`, `.asSelf()`, and `.using(factory)` or `.using([deps], factory)`. `register(identifier).to(implementation)` is gone.","category":"changed"}
+{"description":"**Breaking:** registering the same identifier twice no longer throws at registration. Multiple registrations are allowed; `resolve()` throws `MultipleRegistrationError` for an ambiguous identifier, and `resolveAll()` returns every registration.","category":"changed"}
+{"description":"Errors and `dependsOn` come from the shared engine, so `instanceof` checks and decorator metadata are compatible with core-di.","category":"changed"}
+{"description":"Shared identity across faces: every identifier declared from one `register()` call resolves to the same instance, including when the instance comes from a factory.","category":"added"}
+{"description":"`forward(source).to(target)` to redirect one identifier to another registration.","category":"added"}
+{"description":"`validate()` reports wiring problems (missing registrations, cycles) from the static graph without constructing anything, for CI.","category":"added"}
+{"description":"`resolveAll(identifier)` returns one instance per registration.","category":"added"}
+{"description":"`DuplicateRegistrationError`. Duplicate registration is no longer an error at register time.","category":"removed"}
+{"type":"release","version":"5.0.0","date":"2026-07-16","tag":"core-di-lite@5.0.0","description":"Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di also composes from. The version jumps to match core-di and core-di-engine: the three packages now release in lockstep so a single engine copy resolves across them. Lite keeps its purpose: everything is a singleton, everything is constructed at `buildProvider()`, and a resolve after build is a pure lookup."}
