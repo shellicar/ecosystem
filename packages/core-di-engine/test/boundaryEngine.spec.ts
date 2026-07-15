@@ -755,6 +755,21 @@ describe('boundaryEngine: disposal feature: nearest-boundary tracker', () => {
 
     expect(actual).toThrow();
   });
+
+  // The recovery the sync-dispose error message promises: the boundary's
+  // tracking survives the throw, so a caller who catches and disposes
+  // asynchronously loses nothing. This pins the ordering inside end():
+  // clearing the tracking BEFORE throwing would strand the instances,
+  // permanently undisposable, and this test would catch it.
+  it('still disposes everything through asyncDispose after a failed sync dispose', async () => {
+    const engine = withAsyncDisposal();
+    const instance = engine.resolve(IAsyncResource);
+    expect(() => engine[Symbol.dispose]()).toThrow();
+
+    await engine[Symbol.asyncDispose]();
+
+    expect(instance.disposed).toBe(true);
+  });
 });
 
 // buildEngineAsync awaits async singleton factories (usingAsync) in topo order, so
