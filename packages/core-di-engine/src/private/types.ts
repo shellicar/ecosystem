@@ -1,9 +1,10 @@
 import type { Lifetime } from '../enums';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ResolvedDeps, ServiceDescriptor, ServiceIdentifier, SourceType, ValidationProblem } from '../types';
-import type { DisposalSink, Boundary } from './boundaryEngine';
+import type { Boundary, DisposalSink } from './boundaryEngine';
 import type { lifetimeVerbNames } from './composableBuilder';
 
-export type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceType>; };export type VerbName<L extends Lifetime> = (typeof lifetimeVerbNames)[L];
+export type AsyncNode = GraphNode & { createInstanceAsync: AsyncInstanceFactory<SourceType> };
+export type VerbName<L extends Lifetime> = (typeof lifetimeVerbNames)[L];
 export type EagerVerb<B> = {
   eager(): B;
 };
@@ -13,10 +14,12 @@ export type NewableLifetimeVerbs<T extends SourceType, L extends Lifetime, Async
 export type AbstractLifetimeVerbs<T extends SourceType, L extends Lifetime, Async extends boolean> = {
   readonly [K in L as VerbName<K>]: () => ComposableAbstractBuilder<T, L, Async, K extends Lifetime.Singleton ? true : false, true>;
 };
-export type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean> = Async extends true ? {
-  usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
-  usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async, Eager>;
-} : unknown;
+export type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean> = Async extends true
+  ? {
+      usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
+      usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async, Eager>;
+    }
+  : unknown;
 
 export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false, LifeSet extends boolean = false> = {
   as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
@@ -49,8 +52,8 @@ export type CreateCollectionOptions<Async extends boolean> = {
   readonly scoped?: boolean;
   readonly onFace?: (token: ServiceIdentifier<SourceType>, descriptor: ComposableNode) => void;
 };
-export type SyncDisposable = { [Symbol.dispose](): void; };
-export type AsyncDisposable = { [Symbol.asyncDispose](): PromiseLike<void>; };
+export type SyncDisposable = { [Symbol.dispose](): void };
+export type AsyncDisposable = { [Symbol.asyncDispose](): PromiseLike<void> };
 
 export type Disposal = DisposalSink & {
   endAsync(boundary: Boundary): Promise<void>;
@@ -81,7 +84,7 @@ export type BuildFn = () => unknown;
 export type CacheKey = object;
 
 export type LifetimeFeature = {
-  readonly facts: { readonly owner: string; };
+  readonly facts: { readonly owner: string };
   readonly getInstance: (key: CacheKey, env: Env, build: BuildFn) => unknown;
   readonly contribute?: (env: Env) => Env;
   // A feature that opens a boundary (scoped): the engine derives createScope from its presence.

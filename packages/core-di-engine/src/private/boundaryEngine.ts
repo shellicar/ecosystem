@@ -247,8 +247,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const rootBase: Env = boundaryFeature?.beginScope?.() ?? {};
 
-  const prebakedNodes = (): GraphNode[] =>
-    strategy.prebakeCandidates(rootView).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
+  const prebakedNodes = (): GraphNode[] => strategy.prebakeCandidates(rootView).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
 
   const hold = (node: GraphNode, outcome: Outcome): void => {
     if (!outcome.ok) {

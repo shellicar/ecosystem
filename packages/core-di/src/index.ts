@@ -4,6 +4,20 @@
 // this impure barrel and resolves to the engine's own (impure) polyfill file.
 import '@shellicar/core-di-engine/polyfill';
 
+export type {
+  AbstractNewable,
+  AsyncInstanceFactory,
+  InstanceFactory,
+  MetadataType,
+  Newable,
+  ServiceDescriptor,
+  ServiceIdentifier,
+  ServiceImplementation,
+  ServiceRegistration,
+  SourceType,
+  ValidationProblem,
+  ValidationReport,
+} from '@shellicar/core-di-engine';
 // The public barrel: core-di's own surface plus the parts of the shared engine
 // it re-exposes (enums, errors, dependsOn, the core service types). These are
 // the package's API, re-exported from their one definition in the engine so
@@ -32,20 +46,6 @@ export {
   UnregisteredServiceError,
   ValidationError,
   ValidationProblemKind,
-} from '@shellicar/core-di-engine';
-export type {
-  AbstractNewable,
-  AsyncInstanceFactory,
-  InstanceFactory,
-  MetadataType,
-  Newable,
-  ServiceDescriptor,
-  ServiceIdentifier,
-  ServiceImplementation,
-  ServiceRegistration,
-  SourceType,
-  ValidationProblem,
-  ValidationReport,
 } from '@shellicar/core-di-engine';
 export { type CreateServiceCollectionOptions, createServiceCollection } from './createServiceCollection';
 export { DefaultServiceCollectionOptions } from './defaults';

@@ -5,5 +5,5 @@ import type { IServiceCollection } from '../interfaces';
 
 export type ScopeServicesSource = IServiceCollection & {
   cloneShared(): ScopeServicesSource;
-  snapshot(): { readonly services: DescriptorMap; readonly version: number; };
+  snapshot(): { readonly services: DescriptorMap; readonly version: number };
 };

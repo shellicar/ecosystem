@@ -2,8 +2,8 @@ import type { Lifetime } from '../enums';
 import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError } from '../errors';
 import type { DescriptorMap, ServiceIdentifier, SourceType } from '../types';
 import { DesignDependenciesKey } from './constants';
-import { buildPlanMissingFacts } from './messages';
 import { followForward } from './followForward';
+import { buildPlanMissingFacts } from './messages';
 import { getMetadata } from './metadata';
 import { pushBucket } from './pushBucket';
 import type { Cycle, Graph, GraphFacts, GraphNode, UnregisteredEdge } from './types';
@@ -166,8 +166,9 @@ export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
   return found;
 };
 
-export type { OwnerIndex } from './strategy';
 export { followForward } from './followForward';
+export type { OwnerIndex } from './strategy';
+
 import type { OwnerIndex } from './strategy';
 
 export type PlanStep =

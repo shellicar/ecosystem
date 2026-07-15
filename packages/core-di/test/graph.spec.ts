@@ -7,11 +7,29 @@
  * Promoted from `dag-build-experiment.spec.ts` (now retired), generalised to
  * respect multiplicity: a token maps to `descriptors[]`, not one graph node.
  */
+
+import {
+  buildPlan,
+  concreteNode,
+  createDescriptorMap,
+  type DescriptorMap,
+  deriveFacts,
+  detectCycles,
+  findUnregisteredEdges,
+  formatGraph,
+  type GraphNode,
+  type InstanceFactory,
+  indexByOwner,
+  Lifetime,
+  type Plan,
+  type PlanStep,
+  type ServiceDescriptor,
+  type ServiceIdentifier,
+  type SourceType,
+  topologicalOrder,
+} from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
-import { Lifetime } from '@shellicar/core-di-engine';
-import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, formatGraph, type GraphNode, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '@shellicar/core-di-engine';
-import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type SourceType } from '@shellicar/core-di-engine';
 
 // A minimal, direct-to-map registration helper, deliberately bypassing
 // ServiceBuilder/ServiceCollection so these tests exercise the graph module

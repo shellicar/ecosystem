@@ -1,20 +1,5 @@
-import {
-  buildEngine,
-  createCollection,
-  createNaiveStrategy,
-  createSingletonLifetime,
-  cyclePolicy,
-  deriveFacts,
-  ForwardBuilder,
-  InvalidServiceIdentifierError,
-  Lifetime,
-  missingTargetPolicy,
-  noDeclaredIdentity,
-  pushBucket,
-  runGraphPolicies,
-  ValidationProblemKind,
-} from '@shellicar/core-di-engine';
 import type { EngineComposition, ServiceIdentifier, SourceType, ValidationProblem, ValidationReport } from '@shellicar/core-di-engine';
+import { buildEngine, createCollection, createNaiveStrategy, createSingletonLifetime, cyclePolicy, deriveFacts, ForwardBuilder, InvalidServiceIdentifierError, Lifetime, missingTargetPolicy, noDeclaredIdentity, pushBucket, runGraphPolicies, ValidationProblemKind } from '@shellicar/core-di-engine';
 import type { IServiceCollection, IServiceProvider } from './interfaces';
 
 // Lite is the focused composition of the shared engine: the singleton feature

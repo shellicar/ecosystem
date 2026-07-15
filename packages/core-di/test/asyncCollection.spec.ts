@@ -1,10 +1,5 @@
+import { buildEngine, buildEngineAsync, createCollection, createPlanStrategy, createResolveLifetime, createScopedLifetime, createSingletonLifetime, type EngineComposition, Lifetime } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
-import { Lifetime } from '@shellicar/core-di-engine';
-import { buildEngine, buildEngineAsync, createPlanStrategy, type EngineComposition } from '@shellicar/core-di-engine';
-import { createCollection } from '@shellicar/core-di-engine';
-import { createResolveLifetime } from '@shellicar/core-di-engine';
-import { createScopedLifetime } from '@shellicar/core-di-engine';
-import { createSingletonLifetime } from '@shellicar/core-di-engine';
 
 const composition = (): EngineComposition => ({
   features: {

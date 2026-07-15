@@ -21,7 +21,7 @@ import type { Env, GraphNode } from './types';
 export const createNaiveStrategy =
   () =>
   (kit: StrategyKit): ResolutionStrategy => {
-    const valueOf = (view: EngineView, node: GraphNode, env: Env, boundary: Boundary, path: ReadonlySet<GraphNode>): unknown => {
+    const nodeValue = (view: EngineView, node: GraphNode, env: Env, boundary: Boundary, path: ReadonlySet<GraphNode>): unknown => {
       const token = kit.ownerOf(view, node);
       const lifetime = kit.effectiveLifetime(node);
       const held = kit.heldErrorFor(node);
@@ -39,7 +39,7 @@ export const createNaiveStrategy =
           if (at !== undefined) {
             return kit.surfaceValue(at, boundary);
           }
-          return valueOf(view, kit.nodeForToken(view, identifier), env, boundary, nextPath);
+          return nodeValue(view, kit.nodeForToken(view, identifier), env, boundary, nextPath);
         } catch (err) {
           throw kit.wrapForToken(err, token, node.implementation);
         }
@@ -101,7 +101,7 @@ export const createNaiveStrategy =
       createView: (_services: DescriptorMap): undefined => undefined,
       instanceFor: (view, node, env, boundary) => {
         try {
-          return ok(valueOf(view, node, env, boundary, new Set()));
+          return ok(nodeValue(view, node, env, boundary, new Set()));
         } catch (err) {
           return failed(err);
         }

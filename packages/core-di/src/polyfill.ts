@@ -3,5 +3,3 @@
  * moved to @shellicar/core-di-engine; this subpath stays for explicit control.
  */
 import '@shellicar/core-di-engine/polyfill';
-
-export {};

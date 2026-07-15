@@ -1,6 +1,6 @@
+import { Lifetime } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
-import { Lifetime } from '@shellicar/core-di-engine';
 
 abstract class IAbstract {}
 class Concrete implements IAbstract {}

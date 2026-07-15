@@ -1,6 +1,6 @@
+import { BuilderError } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
-import { BuilderError } from '@shellicar/core-di-engine';
 
 // The type is the friendly surface; a runtime exception exists only where forcing
 // past the type corrupts runtime behaviour. Each invalid operation gets a pair: a

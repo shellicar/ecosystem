@@ -1,6 +1,6 @@
+import { MultipleRegistrationError, ServiceError, UnregisteredServiceError } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection, ResolveMultipleMode } from '../src';
-import { MultipleRegistrationError, ServiceError, UnregisteredServiceError } from '@shellicar/core-di-engine';
 
 abstract class IService {}
 class Service implements IService {}

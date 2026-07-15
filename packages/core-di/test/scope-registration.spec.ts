@@ -1,6 +1,6 @@
+import { UnregisteredServiceError } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
-import { UnregisteredServiceError } from '@shellicar/core-di-engine';
 
 abstract class IContext {
   public abstract readonly user: string;

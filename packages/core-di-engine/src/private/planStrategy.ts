@@ -2,7 +2,7 @@ import { Lifetime } from '../enums';
 import type { DescriptorMap, SourceType } from '../types';
 import type { Boundary } from './boundaryEngine';
 import { buildPlan, deriveFacts, formatGraph, type Plan, type PlanStep, topologicalOrder } from './graph';
-import { type EngineView, failed, ok, type Outcome, type ResolutionStrategy, type StrategyKit } from './strategy';
+import { type EngineView, failed, type Outcome, ok, type ResolutionStrategy, type StrategyKit } from './strategy';
 import type { Env, Graph, GraphNode } from './types';
 
 type PlanView = {

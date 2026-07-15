@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { createSingletonLifetime } from '@shellicar/core-di-engine';
+import { describe, expect, it } from 'vitest';
 
 const makeCounter = () => {
   let count = 0;

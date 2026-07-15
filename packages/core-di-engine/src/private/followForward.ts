@@ -1,5 +1,5 @@
-import type { GraphNode } from './types';
 import type { OwnerIndex } from './strategy';
+import type { GraphNode } from './types';
 
 /** Follows a forward chain to its concrete node; undefined on a broken or cyclic chain. */
 export const followForward = (index: OwnerIndex, descriptor: GraphNode): GraphNode | undefined => {

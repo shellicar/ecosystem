@@ -4,11 +4,11 @@
  * `depends-on-definition-time-experiment.spec.ts` (now retired) onto the
  * shipped `dependsOn` decorator and `getMetadata`.
  */
+
+import type { ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
+import { DesignDependenciesKey, getMetadata } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
-import { DesignDependenciesKey } from '@shellicar/core-di-engine';
-import { getMetadata } from '@shellicar/core-di-engine';
-import type { ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
 
 const getDeclaredDeps = (ctor: object) => getMetadata<SourceType>(DesignDependenciesKey, ctor) ?? {};
 

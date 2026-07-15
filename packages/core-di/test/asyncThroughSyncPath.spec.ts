@@ -1,8 +1,5 @@
+import { asyncThroughSyncPathPolicy, createDescriptorMap, type DescriptorMap, deriveFacts, Lifetime, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
-import { Lifetime, ValidationProblemKind } from '@shellicar/core-di-engine';
-import { deriveFacts } from '@shellicar/core-di-engine';
-import { asyncThroughSyncPathPolicy } from '@shellicar/core-di-engine';
-import { createDescriptorMap, type DescriptorMap, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '@shellicar/core-di-engine';
 
 // The async-through-sync-path policy is proven standalone against a hand-built
 // graph: the same off-container discipline as the other graph policies.
