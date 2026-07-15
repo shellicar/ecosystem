@@ -1,14 +1,2 @@
-import type { CacheKey, LifetimeFeature } from './types';
-
-export const createSingletonLifetime = (): LifetimeFeature => {
-  const table = new Map<CacheKey, unknown>();
-  return {
-    facts: { owner: 'provider' },
-    getInstance: (key, _env, build) => {
-      if (!table.has(key)) {
-        table.set(key, build());
-      }
-      return table.get(key);
-    },
-  };
-};
+// Moved to @shellicar/core-di-engine; shim keeps core-di's internal import paths stable.
+export { createSingletonLifetime } from '@shellicar/core-di-engine';

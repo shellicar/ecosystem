@@ -1,55 +1,33 @@
-import type { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy, ValidationProblemKind } from './enums';
-import type { IResolutionScope, IServiceModule } from './interfaces';
+// The core service types moved to @shellicar/core-di-engine and are re-exported
+// here; core-di keeps only the collection-level types that reference its own
+// surfaces (logger, modules, provider options).
+import type { CaptivePolicy, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy } from './enums';
+import type { IServiceModule } from './interfaces';
 import type { ILogger } from './logger';
 import type { ConsoleLogger } from './private/consoleLogger';
+import type { Newable } from '@shellicar/core-di-engine';
 
-export type SourceType = object;
-
-// biome-ignore lint/suspicious/noExplicitAny: constraint position: `unknown[]` params would reject real constructors (contravariance); the generic still carries T
-export type AbstractNewable<T> = abstract new (...args: any[]) => T;
-// biome-ignore lint/suspicious/noExplicitAny: constraint position: `unknown[]` params would reject real constructors (contravariance); the generic still carries T
-export type Newable<T> = new (...args: any[]) => T;
-
-export type ServiceIdentifier<T extends SourceType> = { prototype: T; name: string };
-export type ServiceImplementation<T extends SourceType> = Newable<T>;
-export type ServiceRegistration<T extends SourceType> = ServiceIdentifier<T> | ServiceImplementation<T>;
-
-/** The symbol arm is the per-register-call identity token: each `register()` call mints a fresh one, shared by its faces. */
-export type CacheKey<T extends SourceType> = ServiceRegistration<T> | InstanceFactory<T> | symbol;
-
-export type InstanceFactory<T extends SourceType> = (x: IResolutionScope) => T;
-
-/** An async factory (`usingAsync`) returning `Promise<T>`, awaited at the build boundary; `resolve()` stays synchronous. */
-export type AsyncInstanceFactory<T extends SourceType> = (x: IResolutionScope) => Promise<T>;
-
-/** The instance type a service identifier resolves to. */
-export type ResolvedDep<I> = I extends ServiceIdentifier<infer T> ? T : never;
-/**
- * The resolved instance types of a tuple of declared dependencies, in order.
- * A declared-deps factory's parameters line up with this positionally.
- */
-export type ResolvedDeps<D extends readonly unknown[]> = { [K in keyof D]: ResolvedDep<D[K]> };
+export type {
+  AbstractNewable,
+  AsyncInstanceFactory,
+  CacheKey,
+  DescriptorMap,
+  InstanceFactory,
+  MetadataType,
+  Newable,
+  ResolvedDep,
+  ResolvedDeps,
+  ServiceDescriptor,
+  ServiceIdentifier,
+  ServiceImplementation,
+  ServiceRegistration,
+  SourceType,
+  ValidationProblem,
+  ValidationReport,
+} from '@shellicar/core-di-engine';
+export { createDescriptorMap } from '@shellicar/core-di-engine';
 
 export type ServiceModuleType = Newable<IServiceModule>;
-
-/**
- * A registration descriptor: implementation, cache key, lifetime, and the
- * factory that builds it. A forward's instance/key/lifetime fields are inert.
- */
-export type ServiceDescriptor<T extends SourceType> = {
-  readonly implementation: ServiceRegistration<T>;
-  readonly cacheKey: CacheKey<T>;
-  lifetime?: Lifetime;
-  createInstance: InstanceFactory<T>;
-  readonly forwardTarget?: ServiceIdentifier<T>;
-  usesFactory?: boolean;
-  createInstanceAsync?: AsyncInstanceFactory<T>;
-  eager?: boolean;
-  declaredDeps?: readonly ServiceIdentifier<SourceType>[];
-  createFromDeps?: (deps: readonly SourceType[]) => T;
-};
-
-export type MetadataType<T extends SourceType> = Record<string | symbol, ServiceIdentifier<T>>;
 
 export type ServiceCollectionOptions = {
   /**
@@ -104,27 +82,4 @@ export type InstrumentationOptions = {
 export type BuildProviderOptions = {
   validate?: boolean;
   instrument?: InstrumentationOptions;
-};
-
-/** A single wiring problem reported by {@link IServiceCollection.validate}. */
-export type ValidationProblem = {
-  readonly kind: ValidationProblemKind;
-  readonly message: string;
-};
-
-/** The diagnostic report returned by {@link IServiceCollection.validate}. */
-export type ValidationReport = {
-  readonly valid: boolean;
-  readonly problems: ValidationProblem[];
-};
-
-declare const asyncBrand: unique symbol;
-
-/** A registered token to its descriptors, optionally branded async so the sync `buildEngine` rejects an async map. */
-export type DescriptorMap<T extends SourceType = SourceType, Async extends boolean = false> = Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]> & {
-  readonly [asyncBrand]?: Async;
-};
-
-export const createDescriptorMap = <T extends SourceType = SourceType>(): DescriptorMap<T> => {
-  return new Map<ServiceIdentifier<T>, ServiceDescriptor<T>[]>();
 };

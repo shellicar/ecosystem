@@ -1,6 +1,13 @@
+// IResolutionScope, IForwardBuilder, and IForwardResult moved to
+// @shellicar/core-di-engine (the engine and ForwardBuilder depend on them);
+// re-exported here so core-di's public surface and token identity are unchanged.
+import { IResolutionScope } from '@shellicar/core-di-engine';
 import type { Lifetime, ResolveMultipleMode } from './enums';
 import type { ComposableAbstractBuilder, ComposableNewableBuilder } from './private/types';
 import type { AbstractNewable, BuildProviderOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationReport } from './types';
+
+export { IForwardBuilder, IForwardResult, IResolutionScope } from '@shellicar/core-di-engine';
+import type { IForwardBuilder } from '@shellicar/core-di-engine';
 
 export abstract class IDisposable {
   public abstract [Symbol.dispose](): void;
@@ -13,26 +20,6 @@ export abstract class IAsyncDisposable {
 
 export abstract class IServiceModule {
   public abstract registerServices(services: IServiceCollection): void;
-}
-
-export abstract class IResolutionScope {
-  /**
-   * Resolves a single implementation for the given identifier.
-   * @template T The type of service to resolve
-   * @param identifier The service identifier
-   * @returns The resolved instance
-   * @throws {MultipleRegistrationError} When multiple implementations exist (unless {@link ServiceCollectionOptions.registrationMode} is set to {@link ResolveMultipleMode.LastRegistered}).
-   * @throws {UnregisteredServiceError} When no implementation exists
-   */
-  public abstract resolve<T extends SourceType>(identifier: ServiceIdentifier<T>): T;
-
-  /**
-   * Resolves all implementations for the given identifier.
-   * @template T The type of service to resolve
-   * @param identifier The service identifier
-   * @returns Array of resolved instances
-   */
-  public abstract resolveAll<T extends SourceType>(identifier: ServiceIdentifier<T>): T[];
 }
 
 /**
@@ -149,17 +136,3 @@ export type IAsyncServiceCollection = {
   clone(): IAsyncServiceCollection;
   clone(scoped: true): IAsyncServiceCollection;
 };
-
-/**
- * The builder for a forward. `.to()` names the target and completes the redirect;
- * a forward has no lifetime, so there is no lifetime verb to chain.
- */
-export abstract class IForwardBuilder<_S extends SourceType> {
-  public abstract to<Target extends SourceType>(target: ServiceIdentifier<Target>): IForwardResult;
-}
-
-/**
- * The result of completing a forward. A forward is terminal and has no lifetime,
- * so this exposes nothing to chain; a lifetime verb on it does not typecheck.
- */
-export abstract class IForwardResult {}
