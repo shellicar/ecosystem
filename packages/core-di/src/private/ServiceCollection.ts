@@ -12,7 +12,7 @@ import { deriveFacts } from './graph';
 import { createResolveLifetime } from './lifetimeResolve';
 import { createScopedLifetime } from './lifetimeScoped';
 import { createSingletonLifetime } from './lifetimeSingleton';
-import { Messages } from './messages';
+import { noDeclaredIdentity, overrideLifetimePreBuildOnly } from './messages';
 import { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
 import { ServiceProvider } from './provider';
 import { pushBucket } from './pushBucket';
@@ -62,7 +62,7 @@ export class ServiceCollection implements IServiceCollection {
 
   public overrideLifetime<T extends SourceType>(identifier: ServiceIdentifier<T>, lifetime: Lifetime): void {
     if (this.built) {
-      throw new InvalidOperationError(Messages.overrideLifetimePreBuildOnly);
+      throw new InvalidOperationError(overrideLifetimePreBuildOnly);
     }
     for (const descriptor of this.get(identifier)) {
       if (descriptor.forwardTarget == null) {
@@ -93,7 +93,7 @@ export class ServiceCollection implements IServiceCollection {
     for (const node of this.composed.unfaced()) {
       problems.push({
         kind: ValidationProblemKind.NoIdentity,
-        message: Messages.noDeclaredIdentity(node.implementation.name),
+        message: noDeclaredIdentity(node.implementation.name),
       });
     }
     const graph = deriveFacts(this.services);

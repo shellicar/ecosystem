@@ -3,7 +3,7 @@ import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError,
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { buildPlan, deriveFacts, followForward, formatGraph, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
-import { Messages } from './messages';
+import { createScopeRequiresScoped, syncBuildOfAsyncFactory } from './messages';
 import type { AsyncNode, Env, Graph, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
 
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
@@ -289,7 +289,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     for (const node of prebakedNodes()) {
       if (isAsyncNode(node)) {
         const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
-        throw new InvalidOperationError(Messages.syncBuildOfAsyncFactory(token.name));
+        throw new InvalidOperationError(syncBuildOfAsyncFactory(token.name));
       }
       hold(node, execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
     }
@@ -312,7 +312,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
     const createScope = (overlay?: ScopeOverlay): Scope => {
       if (boundaryFeature?.beginScope == null) {
-        throw new InvalidOperationError(Messages.createScopeRequiresScoped);
+        throw new InvalidOperationError(createScopeRequiresScoped);
       }
       const beginScope = boundaryFeature.beginScope;
       let cached: { readonly view: View; readonly version: number } | undefined;

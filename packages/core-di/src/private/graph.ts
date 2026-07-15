@@ -2,7 +2,7 @@ import type { Lifetime } from '../enums';
 import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError } from '../errors';
 import type { DescriptorMap, ServiceIdentifier, SourceType } from '../types';
 import { DesignDependenciesKey } from './constants';
-import { Messages } from './messages';
+import { buildPlanMissingFacts } from './messages';
 import { getMetadata } from './metadata';
 import { pushBucket } from './pushBucket';
 import type { Cycle, Graph, GraphFacts, GraphNode, UnregisteredEdge } from './types';
@@ -224,7 +224,7 @@ export const buildPlan = (
   const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => {
     const facts = graph.get(node);
     if (facts === undefined) {
-      throw new Error(Messages.buildPlanMissingFacts);
+      throw new Error(buildPlanMissingFacts);
     }
     return facts.owner;
   };

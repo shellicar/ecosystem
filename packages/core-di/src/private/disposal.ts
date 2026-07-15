@@ -1,5 +1,5 @@
 import { InvalidOperationError } from '../errors';
-import { Messages } from './messages';
+import { syncDisposeOfAsyncOnly } from './messages';
 import type { AsyncDisposable, Disposal, SyncDisposable } from './types';
 
 const asSyncDisposable = (value: unknown): SyncDisposable | undefined => (typeof (value as Partial<SyncDisposable>)[Symbol.dispose] === 'function' ? (value as SyncDisposable) : undefined);
@@ -24,7 +24,7 @@ export const createDisposal = (): Disposal => {
         return;
       }
       if (list.some((instance) => asSyncDisposable(instance) === undefined)) {
-        throw new InvalidOperationError(Messages.syncDisposeOfAsyncOnly);
+        throw new InvalidOperationError(syncDisposeOfAsyncOnly);
       }
       lists.delete(boundary.id);
       for (let i = list.length - 1; i >= 0; i--) {

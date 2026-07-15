@@ -2,7 +2,7 @@ import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ServiceIdentifier, SourceType } from '../types';
 import { createDescriptorMap } from '../types';
-import { Messages } from './messages';
+import { lifetimeAlreadySet, usingAsyncRequiresAsyncCollection } from './messages';
 import { pushBucket } from './pushBucket';
 import type { ComposableAbstractBuilder, ComposableCollection, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
 
@@ -69,7 +69,7 @@ export const createCollection = <const L extends Lifetime, const Async extends b
     builder.usingAsync = async
       ? (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => setFactory('createInstanceAsync', depsOrFactory, factory)
       : () => {
-          throw new InvalidOperationError(Messages.usingAsyncRequiresAsyncCollection);
+          throw new InvalidOperationError(usingAsyncRequiresAsyncCollection);
         };
     builder.eager = () => {
       node.eager = true;
@@ -81,7 +81,7 @@ export const createCollection = <const L extends Lifetime, const Async extends b
     for (const lifetime of lifetimes) {
       builder[lifetimeVerbNames[lifetime]] = () => {
         if (node.lifetime !== undefined) {
-          throw new InvalidOperationError(Messages.lifetimeAlreadySet(node.lifetime));
+          throw new InvalidOperationError(lifetimeAlreadySet(node.lifetime));
         }
         if (lifetime === Lifetime.Singleton && options.scoped === true) {
           throw new ScopedSingletonRegistrationError();

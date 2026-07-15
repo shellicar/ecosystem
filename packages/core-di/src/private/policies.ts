@@ -1,7 +1,7 @@
 import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
 import type { ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, reachableFrom } from './graph';
-import { Messages } from './messages';
+import { asyncThroughSyncPath, captiveDependency, dependencyCycle, missingTarget } from './messages';
 import type { Graph, GraphPolicy } from './types';
 
 export const cyclePolicy: GraphPolicy = (graph) =>
@@ -9,14 +9,14 @@ export const cyclePolicy: GraphPolicy = (graph) =>
     const names = cycle.map((node) => graph.get(node)?.owner.name ?? '');
     return {
       kind: ValidationProblemKind.Cycle,
-      message: Messages.dependencyCycle(names),
+      message: dependencyCycle(names),
     };
   });
 
 export const missingTargetPolicy: GraphPolicy = (graph) =>
   findUnregisteredEdges(graph).map((edge) => ({
     kind: ValidationProblemKind.MissingTarget,
-    message: Messages.missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
+    message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
   }));
 
 const captivePolicy =
@@ -33,7 +33,7 @@ const captivePolicy =
         if (effectiveLifetime != null && isCaptured(effectiveLifetime)) {
           problems.push({
             kind: ValidationProblemKind.CaptiveDependency,
-            message: Messages.captiveDependency(facts.owner.name, depFacts?.owner.name, effectiveLifetime),
+            message: captiveDependency(facts.owner.name, depFacts?.owner.name, effectiveLifetime),
           });
         }
       }
@@ -51,7 +51,7 @@ export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
     if (facts.isAsync && facts.lifetime !== Lifetime.Singleton) {
       problems.push({
         kind: ValidationProblemKind.AsyncThroughSyncPath,
-        message: Messages.asyncThroughSyncPath(facts.owner.name, facts.lifetime),
+        message: asyncThroughSyncPath(facts.owner.name, facts.lifetime),
       });
     }
   }

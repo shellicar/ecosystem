@@ -1,12 +1,12 @@
 import { InvalidOperationError, InvalidServiceIdentifierError } from '../errors';
 import type { IForwardBuilder, IForwardResult } from '../interfaces';
 import type { ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
-import { Messages } from './messages';
+import { forwardIsTerminal } from './messages';
 import type { AddService } from './types';
 
 const forwardResult = (): IForwardResult => {
   const reject = (): never => {
-    throw new InvalidOperationError(Messages.forwardIsTerminal);
+    throw new InvalidOperationError(forwardIsTerminal);
   };
   const result: IForwardResult = {
     singleton: reject,
