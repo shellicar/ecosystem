@@ -1223,6 +1223,10 @@ importers:
         version: 5.9.3
 
   packages/core-di-lite:
+    dependencies:
+      '@shellicar/core-di-engine':
+        specifier: workspace:^
+        version: link:../core-di-engine
     devDependencies:
       '@shellicar/typescript-config':
         specifier: workspace:^

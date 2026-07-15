@@ -44,6 +44,9 @@
     "dist",
     "*.md"
   ],
+  "dependencies": {
+    "@shellicar/core-di-engine": "workspace:^"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
