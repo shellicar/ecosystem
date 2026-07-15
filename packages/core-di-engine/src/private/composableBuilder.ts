@@ -37,21 +37,35 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       pushBucket(regs, token, node);
       options.onFace?.(token, node);
     };
-    // One body serves both using and usingAsync: they differ only in which descriptor
-    // field the factory lands on. Only the sync deps form gains createFromDeps — that is
-    // the engine's static-plan fast path, and an async factory never runs on it.
-    const setFactory = (field: 'createInstance' | 'createInstanceAsync', depsOrFactory: InstanceFactory<SourceType> | AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => SourceType | Promise<SourceType>) => {
+    // using and usingAsync are two bodies on purpose. A shared body keyed by field
+    // name (node[field] = ...) cannot be type-checked: the compiler demands a value
+    // legal for both slots at once, which forces impossible casts and disables the
+    // very check the sync/async field split exists for. Named assignments keep each
+    // factory compiler-bound to its own slot; the one duplicated line is the price.
+    const using = (depsOrFactory: InstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => SourceType) => {
       node.usesFactory = true;
       if (typeof depsOrFactory === 'function') {
-        node[field] = depsOrFactory as InstanceFactory<SourceType> & AsyncInstanceFactory<SourceType>;
+        node.createInstance = depsOrFactory;
         return builder;
       }
       const deps = depsOrFactory;
-      const build = factory as (...args: SourceType[]) => SourceType & Promise<SourceType>;
-      if (field === 'createInstance') {
-        node.createFromDeps = (args) => build(...args);
+      const build = factory as (...args: SourceType[]) => SourceType;
+      // The static-plan fast path exists only for the sync deps form: an async
+      // factory never runs on it.
+      node.createFromDeps = (args) => build(...args);
+      node.createInstance = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
+      node.declaredDeps = deps;
+      return builder;
+    };
+    const usingAsync = (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => {
+      node.usesFactory = true;
+      if (typeof depsOrFactory === 'function') {
+        node.createInstanceAsync = depsOrFactory;
+        return builder;
       }
-      node[field] = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
+      const deps = depsOrFactory;
+      const build = factory as (...args: SourceType[]) => Promise<SourceType>;
+      node.createInstanceAsync = (scope) => build(...deps.map((dep) => scope.resolve(dep)));
       node.declaredDeps = deps;
       return builder;
     };
@@ -64,10 +78,10 @@ export const createCollection = <const L extends Lifetime, const Async extends b
         addFace(node.implementation as ServiceIdentifier<SourceType>);
         return builder;
       },
-      using: (depsOrFactory: InstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => SourceType) => setFactory('createInstance', depsOrFactory, factory),
+      using,
     };
     builder.usingAsync = async
-      ? (depsOrFactory: AsyncInstanceFactory<SourceType> | readonly ServiceIdentifier<SourceType>[], factory?: (...args: SourceType[]) => Promise<SourceType>) => setFactory('createInstanceAsync', depsOrFactory, factory)
+      ? usingAsync
       : () => {
           throw new InvalidOperationError(usingAsyncRequiresAsyncCollection);
         };
