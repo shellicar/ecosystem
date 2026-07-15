@@ -15,6 +15,7 @@ export const forwardIsTerminal = 'A forward registration is terminal: it is a pu
 export const noDeclaredIdentity = (implementationName: string): string => `${implementationName} was registered without a declared identity (no .as() or .asSelf())`;
 export const lifetimeAlreadySet = (lifetime: Lifetime): string => `A lifetime (${lifetime}) is already set on this registration; a registration has exactly one lifetime.`;
 export const syncBuildOfAsyncFactory = (tokenName: string): string => `Cannot build '${tokenName}' synchronously: it is registered with an async factory (usingAsync). Use buildProviderAsync to build a provider with async registrations.`;
+export const asyncFactoryOnSyncPath = (tokenName: string): string => `Cannot construct '${tokenName}' synchronously: its factory is async (usingAsync), and only a singleton settles at the async build boundary. Register it as a singleton and build with buildProviderAsync.`;
 export const dependencyCycle = (names: readonly string[]): string => `Dependency cycle: ${names.join(' -> ')} -> ${names[0]}`;
 export const missingTarget = (fromName: string | undefined, missingName: string): string => `${fromName} depends on ${missingName}, which is not registered`;
 export const captiveDependency = (ownerName: string | undefined, depName: string | undefined, lifetime: Lifetime): string => `${ownerName} (singleton) captures ${depName} (${lifetime}) in its dependency tree, a captive dependency`;

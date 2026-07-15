@@ -3,7 +3,7 @@ import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError,
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { followForward } from './followForward';
-import { createScopeRequiresScoped, syncBuildOfAsyncFactory } from './messages';
+import { asyncFactoryOnSyncPath, createScopeRequiresScoped, syncBuildOfAsyncFactory } from './messages';
 import type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory } from './strategy';
 import type { AsyncNode, Env, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
 
@@ -134,6 +134,14 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   };
 
   const construct = (view: EngineView, node: GraphNode, token: ServiceIdentifier<SourceType>, lifetime: Lifetime, env: Env, boundary: Boundary, args: readonly SourceType[] | undefined, fields: readonly ResolvedField[]): object => {
+    // An async factory can only be honoured at the async build boundary, and
+    // prebake settles async singletons there: an async node reaching synchronous
+    // construction is therefore on a wrong path (a non-singleton lifetime, or a
+    // sync build), and running createInstance would silently discard the factory
+    // and hand back the bare default. Refuse loudly instead.
+    if (isAsyncNode(node)) {
+      throw new InvalidOperationError(asyncFactoryOnSyncPath(token.name));
+    }
     let instance: object;
     const isSingletonConstruction = lifetime === Lifetime.Singleton;
     const previousSingletonToken = currentSingletonToken;
@@ -279,7 +287,26 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     }
   };
 
+  // An async non-singleton is statically dead wiring: prebake settles async
+  // SINGLETONS at the async build boundary, and no synchronous resolve can ever
+  // honour the factory, so every resolve of such a node is a certain failure.
+  // The descriptor says so before anything constructs, but one errant
+  // registration does not explode the build: the error is HELD, per the
+  // engine's lenient constitution, thrown at resolve (the construct backstop)
+  // and at build under validate. Scope overlays never pass a build, which is
+  // what the construct() backstop remains for.
+  const holdAsyncNonSingletons = (): void => {
+    for (const [token, descriptors] of rootView.services) {
+      for (const node of descriptors) {
+        if (node.forwardTarget == null && isAsyncNode(node) && effectiveLifetime(node) !== Lifetime.Singleton) {
+          heldErrors.set(node, new InvalidOperationError(asyncFactoryOnSyncPath(token.name)));
+        }
+      }
+    }
+  };
+
   const prebakeSync = (): void => {
+    holdAsyncNonSingletons();
     for (const node of prebakedNodes()) {
       if (isAsyncNode(node)) {
         const token = ownerOf(rootView, node);
@@ -290,6 +317,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   };
 
   const prebakeAsync = async (): Promise<void> => {
+    holdAsyncNonSingletons();
     for (const node of prebakedNodes()) {
       hold(node, isAsyncNode(node) ? await constructAsyncSingleton(node) : strategy.instanceFor(rootView, node, freshPass(rootBase), rootBoundary));
     }
