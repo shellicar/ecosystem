@@ -2,9 +2,10 @@ import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
 import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
-import { buildPlan, deriveFacts, followForward, formatGraph, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
+import { followForward } from './followForward';
 import { createScopeRequiresScoped, syncBuildOfAsyncFactory } from './messages';
-import type { AsyncNode, Env, Graph, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
+import type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory } from './strategy';
+import type { AsyncNode, Env, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
 
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
 
@@ -13,6 +14,13 @@ const EMPTY_BUCKET: readonly GraphNode[] = [];
 export type EngineComposition = {
   readonly features?: LifetimeFeatures;
   readonly defaultLifetime?: Lifetime;
+  /**
+   * How construction is driven: the plan strategy (compile once, replay) or the
+   * naive strategy (recursive walk, no graph machinery). Semantics are
+   * identical; the choice trades compile cost and bundle bytes. Required so the
+   * engine itself imports neither — the composition decides what gets bundled.
+   */
+  readonly strategy: StrategyFactory;
   /**
    * Construct every singleton at build, not just the `.eager()` and async ones.
    * Only singletons can prebake: the singleton table is the sole boundary that
@@ -55,18 +63,6 @@ export type Engine = Scope & {
 
 export type EngineFor<C extends EngineComposition> = Scope & (Lifetime.Scoped extends keyof NonNullable<C['features']> ? { createScope(overlay?: ScopeOverlay): Scope } : Record<never, never>);
 
-type Outcome = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly error: unknown };
-
-const ok = (value: unknown): Outcome => ({ ok: true, value });
-const failed = (error: unknown): Outcome => ({ ok: false, error });
-
-type View = {
-  readonly services: DescriptorMap;
-  readonly graph: Graph;
-  readonly index: OwnerIndex;
-  readonly planCache: Map<GraphNode, Plan>;
-};
-
 const setupEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions) => {
   const heldErrors = new Map<GraphNode, unknown>();
   const defaultLifetime = composition.defaultLifetime ?? Lifetime.Resolve;
@@ -89,6 +85,8 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => composition.surfaceTokens?.get(token);
 
+  const surfaceValue = (at: 'root' | 'boundary', boundary: Boundary): unknown => surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
+
   const guardToken = (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]): unknown | undefined => {
     if (nodes.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
       return new MultipleRegistrationError(token);
@@ -98,112 +96,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const contributors = Object.values(features).filter((feature): feature is LifetimeFeature & { contribute: NonNullable<LifetimeFeature['contribute']> } => feature.contribute != null);
 
-  const makeView = (viewServices: DescriptorMap): View => {
-    const graph = deriveFacts(viewServices);
-    return { services: viewServices, graph, index: viewServices, planCache: new Map() };
-  };
-
-  const rootView = makeView(services);
-
-  const planFor = (view: View, node: GraphNode): Plan => {
-    let plan = view.planCache.get(node);
-    if (plan === undefined) {
-      plan = buildPlan(view.graph, view.index, node, effectiveLifetime, isCached, surfaceAt, guardToken);
-      view.planCache.set(node, plan);
-    }
-    return plan;
-  };
-
-  const inPassScope = (view: View, env: Env, boundary: Boundary): IResolutionScope => ({
-    resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolveValue(view, token, env, boundary) as T,
-    resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(view, token, env, boundary) as T[],
-  });
-
-  const wrapForToken = (error: unknown, token: ServiceIdentifier<SourceType>, implementation: ServiceRegistration<SourceType>): unknown => {
-    if (error instanceof ServiceCreationError && error.identifier !== token) {
-      return new ServiceCreationError(token, error, implementation);
-    }
-    return error;
-  };
-
-  const runStep = (view: View, step: PlanStep, locals: readonly Outcome[], env: Env, boundary: Boundary): Outcome => {
-    if (step.kind === 'error') {
-      return failed(step.error);
-    }
-    if (step.kind === 'surface') {
-      return ok(surfaces.get(step.at === 'root' ? rootBoundary.id : boundary.id));
-    }
-    if (step.lifetime === Lifetime.Singleton && heldErrors.has(step.node)) {
-      return failed(heldErrors.get(step.node));
-    }
-    for (const { slot } of step.fields) {
-      const dependency = locals[slot];
-      if (!dependency.ok) {
-        return failed(wrapForToken(dependency.error, step.token, step.node.implementation));
-      }
-    }
-    for (const slot of step.args) {
-      const dependency = locals[slot];
-      if (!dependency.ok) {
-        return failed(wrapForToken(dependency.error, step.token, step.node.implementation));
-      }
-    }
-    const build = (): unknown => {
-      let instance: object;
-      const isSingletonConstruction = step.lifetime === Lifetime.Singleton;
-      const previousSingletonToken = currentSingletonToken;
-      if (isSingletonConstruction) {
-        singletonDepth++;
-        currentSingletonToken = step.token;
-      }
-      const factory = step.node.createFromDeps;
-      const tracksCycle = step.node.usesFactory === true && factory === undefined;
-      if (tracksCycle) {
-        constructing.add(step.node);
-      }
-      try {
-        instance = (factory !== undefined ? factory(step.args.map((slot) => (locals[slot] as { value: SourceType }).value)) : step.node.createInstance(inPassScope(view, env, boundary))) as object;
-      } catch (err) {
-        if (err instanceof CircularDependencyError || err instanceof CaptiveDependencyError) {
-          throw err;
-        }
-        throw new ServiceCreationError(step.token, err instanceof Error ? err : undefined, step.node.implementation);
-      } finally {
-        if (tracksCycle) {
-          constructing.delete(step.node);
-        }
-        if (isSingletonConstruction) {
-          singletonDepth--;
-          currentSingletonToken = previousSingletonToken;
-        }
-      }
-      for (const { field, slot } of step.fields) {
-        (instance as Record<string, unknown>)[field] = (locals[slot] as { value: unknown }).value;
-      }
-      disposal?.announce(instance, step.lifetime === Lifetime.Singleton ? rootBoundary : boundary);
-      return instance;
-    };
-    try {
-      const feature = featureFor(step.lifetime);
-      return ok(feature === undefined ? build() : feature.getInstance(step.node, env, build));
-    } catch (err) {
-      return failed(err);
-    }
-  };
-
-  const execute = (view: View, plan: Plan, env: Env, boundary: Boundary): Outcome => {
-    const locals: Outcome[] = [];
-    for (const step of plan) {
-      locals.push(runStep(view, step, locals, env, boundary));
-    }
-    return locals[locals.length - 1];
-  };
-
-  const resolveValue = (view: View, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown => {
-    const at = surfaceAt(token);
-    if (at !== undefined) {
-      return surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
-    }
+  const nodeForToken = (view: EngineView, token: ServiceIdentifier<SourceType>): GraphNode => {
     const bucket = view.index.get(token) ?? EMPTY_BUCKET;
     const guardError = guardToken(token, bucket);
     if (guardError !== undefined) {
@@ -214,27 +107,118 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     if (node === undefined) {
       throw new UnregisteredServiceError(token);
     }
+    return node;
+  };
+
+  // The last-declared face wins for error identity, matching the derived graph's owner.
+  const ownerOf = (view: EngineView, node: GraphNode): ServiceIdentifier<SourceType> => {
+    let owner: ServiceIdentifier<SourceType> | undefined;
+    for (const [token, descriptors] of view.services) {
+      if (descriptors.includes(node)) {
+        owner = token;
+      }
+    }
+    return owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+  };
+
+  const wrapForToken = (error: unknown, token: ServiceIdentifier<SourceType>, implementation: ServiceRegistration<SourceType>): unknown => {
+    if (error instanceof ServiceCreationError && error.identifier !== token) {
+      return new ServiceCreationError(token, error, implementation);
+    }
+    return error;
+  };
+
+  const cached = (lifetime: Lifetime, node: GraphNode, env: Env, build: () => unknown): unknown => {
+    const feature = featureFor(lifetime);
+    return feature === undefined ? build() : feature.getInstance(node, env, build);
+  };
+
+  const construct = (view: EngineView, node: GraphNode, token: ServiceIdentifier<SourceType>, lifetime: Lifetime, env: Env, boundary: Boundary, args: readonly SourceType[] | undefined, fields: readonly ResolvedField[]): object => {
+    let instance: object;
+    const isSingletonConstruction = lifetime === Lifetime.Singleton;
+    const previousSingletonToken = currentSingletonToken;
+    if (isSingletonConstruction) {
+      singletonDepth++;
+      currentSingletonToken = token;
+    }
+    const factory = node.createFromDeps;
+    const tracksCycle = node.usesFactory === true && factory === undefined;
+    if (tracksCycle) {
+      constructing.add(node);
+    }
+    try {
+      instance = (factory !== undefined && args !== undefined ? factory(args) : node.createInstance(inPassScope(view, env, boundary))) as object;
+    } catch (err) {
+      if (err instanceof CircularDependencyError || err instanceof CaptiveDependencyError) {
+        throw err;
+      }
+      throw new ServiceCreationError(token, err instanceof Error ? err : undefined, node.implementation);
+    } finally {
+      if (tracksCycle) {
+        constructing.delete(node);
+      }
+      if (isSingletonConstruction) {
+        singletonDepth--;
+        currentSingletonToken = previousSingletonToken;
+      }
+    }
+    for (const { field, value } of fields) {
+      (instance as Record<string, unknown>)[field] = value;
+    }
+    disposal?.announce(instance, lifetime === Lifetime.Singleton ? rootBoundary : boundary);
+    return instance;
+  };
+
+  const strategy: ResolutionStrategy = composition.strategy({
+    effectiveLifetime,
+    isCached,
+    surfaceAt,
+    surfaceValue,
+    guardToken,
+    nodeForToken,
+    ownerOf,
+    heldErrorFor: (node) => heldErrors.get(node),
+    wrapForToken,
+    cached,
+    construct,
+  });
+
+  const makeView = (viewServices: DescriptorMap): EngineView => ({ services: viewServices, index: viewServices, data: strategy.createView(viewServices) });
+
+  const rootView = makeView(services);
+
+  const inPassScope = (view: EngineView, env: Env, boundary: Boundary): IResolutionScope => ({
+    resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolveValue(view, token, env, boundary) as T,
+    resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(view, token, env, boundary) as T[],
+  });
+
+  const resolveValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown => {
+    const at = surfaceAt(token);
+    if (at !== undefined) {
+      return surfaceValue(at, boundary);
+    }
+    const node = nodeForToken(view, token);
     if (node.usesFactory === true && constructing.has(node)) {
       throw new CircularDependencyError(token);
     }
     if (singletonDepth > 0 && runtimeCaptivePolicy === RuntimeCaptivePolicy.Throw && effectiveLifetime(node) === Lifetime.Scoped) {
       throw new CaptiveDependencyError(currentSingletonToken ?? token, token);
     }
-    const outcome = execute(view, planFor(view, node), env, boundary);
+    const outcome = strategy.instanceFor(view, node, env, boundary);
     if (!outcome.ok) {
       throw outcome.error;
     }
     return outcome.value;
   };
 
-  const resolveManyValue = (view: View, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown[] => {
+  const resolveManyValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown[] => {
     const descriptors = view.services.get(token) ?? [];
     return descriptors.map((descriptor) => {
       const node = followForward(view.index, descriptor);
       if (node === undefined) {
         throw new UnregisteredServiceError(token);
       }
-      const outcome = execute(view, planFor(view, node), env, boundary);
+      const outcome = strategy.instanceFor(view, node, env, boundary);
       if (!outcome.ok) {
         throw outcome.error;
       }
@@ -244,14 +228,14 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const freshPass = (base: Env): Env => contributors.reduce((env, feature) => feature.contribute?.(env) ?? env, base);
 
-  const scopeSurface = (base: Env, boundary: Boundary, viewOf: () => View): Scope => ({
+  const scopeSurface = (base: Env, boundary: Boundary, viewOf: () => EngineView): Scope => ({
     resolve: <T extends SourceType>(token: ServiceIdentifier<T>): T => resolveValue(viewOf(), token, freshPass(base), boundary) as T,
     resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(viewOf(), token, freshPass(base), boundary) as T[],
     bindSurface: (surface: unknown): void => {
       surfaces.set(boundary.id, surface);
     },
     printGraph: (write: (line: string) => void): void => {
-      for (const line of formatGraph(viewOf().graph, effectiveLifetime)) {
+      for (const line of strategy.graphLines(viewOf())) {
         write(line);
       }
     },
@@ -263,7 +247,8 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const rootBase: Env = boundaryFeature?.beginScope?.() ?? {};
 
-  const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
+  const prebakedNodes = (): GraphNode[] =>
+    strategy.prebakeCandidates(rootView).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
 
   const hold = (node: GraphNode, outcome: Outcome): void => {
     if (!outcome.ok) {
@@ -273,31 +258,31 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const constructAsyncSingleton = async (node: AsyncNode): Promise<Outcome> => {
     const env = freshPass(rootBase);
-    const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+    const token = ownerOf(rootView, node);
     try {
       const value = await Promise.resolve(node.createInstanceAsync(inPassScope(rootView, env, rootBoundary)));
       const singleton = featureFor(Lifetime.Singleton);
       const seeded = singleton === undefined ? value : singleton.getInstance(node, env, () => value);
       disposal?.announce(seeded, rootBoundary);
-      return ok(seeded);
+      return { ok: true, value: seeded };
     } catch (err) {
-      return failed(new ServiceCreationError(token, err instanceof Error ? err : undefined, node.implementation));
+      return { ok: false, error: new ServiceCreationError(token, err instanceof Error ? err : undefined, node.implementation) };
     }
   };
 
   const prebakeSync = (): void => {
     for (const node of prebakedNodes()) {
       if (isAsyncNode(node)) {
-        const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
+        const token = ownerOf(rootView, node);
         throw new InvalidOperationError(syncBuildOfAsyncFactory(token.name));
       }
-      hold(node, execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
+      hold(node, strategy.instanceFor(rootView, node, freshPass(rootBase), rootBoundary));
     }
   };
 
   const prebakeAsync = async (): Promise<void> => {
     for (const node of prebakedNodes()) {
-      hold(node, isAsyncNode(node) ? await constructAsyncSingleton(node) : execute(rootView, planFor(rootView, node), freshPass(rootBase), rootBoundary));
+      hold(node, isAsyncNode(node) ? await constructAsyncSingleton(node) : strategy.instanceFor(rootView, node, freshPass(rootBase), rootBoundary));
     }
   };
 
@@ -315,16 +300,16 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         throw new InvalidOperationError(createScopeRequiresScoped);
       }
       const beginScope = boundaryFeature.beginScope;
-      let cached: { readonly view: View; readonly version: number } | undefined;
-      const viewOf = (): View => {
+      let cachedView: { readonly view: EngineView; readonly version: number } | undefined;
+      const viewOf = (): EngineView => {
         if (overlay === undefined) {
           return rootView;
         }
         const { services: scopeServices, version } = overlay();
-        if (cached === undefined || cached.version !== version) {
-          cached = { view: makeView(scopeServices), version };
+        if (cachedView === undefined || cachedView.version !== version) {
+          cachedView = { view: makeView(scopeServices), version };
         }
-        return cached.view;
+        return cachedView.view;
       };
       return scopeSurface(beginScope(), { id: Symbol('scope') }, viewOf);
     };

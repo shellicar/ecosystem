@@ -3,6 +3,7 @@ import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError 
 import type { DescriptorMap, ServiceIdentifier, SourceType } from '../types';
 import { DesignDependenciesKey } from './constants';
 import { buildPlanMissingFacts } from './messages';
+import { followForward } from './followForward';
 import { getMetadata } from './metadata';
 import { pushBucket } from './pushBucket';
 import type { Cycle, Graph, GraphFacts, GraphNode, UnregisteredEdge } from './types';
@@ -165,7 +166,9 @@ export const reachableFrom = (graph: Graph, start: GraphNode): GraphNode[] => {
   return found;
 };
 
-export type OwnerIndex = ReadonlyMap<ServiceIdentifier<SourceType>, readonly GraphNode[]>;
+export type { OwnerIndex } from './strategy';
+export { followForward } from './followForward';
+import type { OwnerIndex } from './strategy';
 
 export type PlanStep =
   | {
@@ -188,20 +191,6 @@ export type PlanStep =
     };
 
 export type Plan = readonly PlanStep[];
-
-export const followForward = (index: OwnerIndex, descriptor: GraphNode): GraphNode | undefined => {
-  let node: GraphNode | undefined = descriptor;
-  const seen = new Set<GraphNode>();
-  while (node?.forwardTarget != null) {
-    if (seen.has(node)) {
-      return undefined;
-    }
-    seen.add(node);
-    const bucket: readonly GraphNode[] = index.get(node.forwardTarget) ?? [];
-    node = bucket[bucket.length - 1];
-  }
-  return node;
-};
 
 export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceType>): GraphNode | undefined => {
   const bucket = index.get(token) ?? [];

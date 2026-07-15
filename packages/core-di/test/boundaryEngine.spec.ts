@@ -8,16 +8,20 @@ import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
 import { type AsyncInstanceFactory, createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '../src/types';
+import { holder } from './strategyHolder';
 
 // The engine is proven standalone, against hand-built descriptor maps and the
 // lifetime features: the same off-container discipline as graph.ts.
 
+// The strategy comes from the holder: plan by default, naive under the parity
+// run (boundaryEngine-naive.spec.ts), which must observe identical behaviour.
 const composition = (): EngineComposition => ({
   features: {
     [Lifetime.Singleton]: createSingletonLifetime(),
     [Lifetime.Scoped]: createScopedLifetime(),
     [Lifetime.Resolve]: createResolveLifetime(),
   },
+  strategy: holder.factory,
 });
 
 type DescriptorOptions<T extends SourceType> = {
@@ -506,7 +510,7 @@ describe('boundaryEngine: composition', () => {
     // could be composed): a composition that omits it has no scope to open, so the
     // call throws at runtime. An inline literal without a scoped key would have no
     // createScope on its type at all (see createScope-behaviour.spec).
-    const composition: EngineComposition = { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() } };
+    const composition: EngineComposition = { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() }, strategy: holder.factory };
     const engine = buildEngine(mapOf([IDep, descriptor(Dep)]), composition);
 
     const actual = () => engine.createScope();

@@ -62,7 +62,8 @@
   "sideEffects": [
     "./dist/esm/index.js",
     "./dist/cjs/index.cjs",
-    "**/polyfill.*"
+    "**/polyfill.*",
+    "**/chunks/*"
   ],
   "files": [
     "dist",

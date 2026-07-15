@@ -1,3 +1,4 @@
+import { createPlanStrategy } from '@shellicar/core-di-engine';
 import { Lifetime, ValidationProblemKind } from '../enums';
 import { InvalidOperationError, InvalidServiceIdentifierError, ValidationError } from '../errors';
 import type { IAbstractServiceBuilder, IForwardBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
@@ -141,6 +142,7 @@ export class ServiceCollection implements IServiceCollection {
         [Lifetime.Resolve]: createResolveLifetime(),
       },
       defaultLifetime: Lifetime.Resolve,
+      strategy: createPlanStrategy(),
       disposal: createDisposal(),
       runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
       surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([

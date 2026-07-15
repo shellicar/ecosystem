@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 import { Lifetime } from '../src/enums';
 import { BuilderError } from '../src/errors';
-import { buildEngine, type EngineComposition } from '../src/private/boundaryEngine';
+import { buildEngine, createPlanStrategy, type EngineComposition } from '../src/private/boundaryEngine';
 import { createCollection } from '../src/private/composableBuilder';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
@@ -45,12 +45,13 @@ describe('createScope on a custom collection composed without the scoped feature
       [Lifetime.Singleton]: createSingletonLifetime(),
       [Lifetime.Resolve]: createResolveLifetime(),
     },
+    strategy: createPlanStrategy(),
   });
 
   it('does not expose createScope when the scoped feature is not composed', () => {
     const services = createCollection([Lifetime.Singleton]);
     // Inline literal so its inferred type has no scoped key.
-    const engine = buildEngine(services.regs, { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() } });
+    const engine = buildEngine(services.regs, { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() }, strategy: createPlanStrategy() });
 
     // @ts-expect-error - a composition without the scoped feature must not carry createScope on the returned type
     engine.createScope;

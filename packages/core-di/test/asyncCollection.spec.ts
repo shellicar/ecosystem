@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Lifetime } from '../src/enums';
-import { buildEngine, buildEngineAsync, type EngineComposition } from '../src/private/boundaryEngine';
+import { buildEngine, buildEngineAsync, createPlanStrategy, type EngineComposition } from '../src/private/boundaryEngine';
 import { createCollection } from '../src/private/composableBuilder';
 import { createResolveLifetime } from '../src/private/lifetimeResolve';
 import { createScopedLifetime } from '../src/private/lifetimeScoped';
@@ -12,6 +12,7 @@ const composition = (): EngineComposition => ({
     [Lifetime.Scoped]: createScopedLifetime(),
     [Lifetime.Resolve]: createResolveLifetime(),
   },
+  strategy: createPlanStrategy(),
 });
 
 abstract class IResource {}

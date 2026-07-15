@@ -1,6 +1,7 @@
 import {
   buildEngine,
   createCollection,
+  createNaiveStrategy,
   createSingletonLifetime,
   cyclePolicy,
   deriveFacts,
@@ -24,6 +25,10 @@ const liteComposition = (): EngineComposition => ({
   features: { [Lifetime.Singleton]: createSingletonLifetime() },
   defaultLifetime: Lifetime.Singleton,
   prebakeSingletons: true,
+  // The naive strategy: recursion instead of compiled plans, so the graph and
+  // plan machinery never enter lite's bundle. Warm resolves never construct
+  // here anyway (everything prebakes), so the plan's replay speed buys nothing.
+  strategy: createNaiveStrategy(),
 });
 
 export const createServiceCollection = (): IServiceCollection => {

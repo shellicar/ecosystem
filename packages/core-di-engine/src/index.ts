@@ -34,8 +34,11 @@ export { createScopedLifetime } from './private/lifetimeScoped';
 export { createSingletonLifetime } from './private/lifetimeSingleton';
 export * from './private/messages';
 export { getMetadata, tagFieldMetadata } from './private/metadata';
+export { createNaiveStrategy } from './private/naiveStrategy';
+export { createPlanStrategy } from './private/planStrategy';
 export { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, disposalCaptive, missingTargetPolicy, runGraphPolicies, strictCaptive } from './private/policies';
 export { pushBucket } from './private/pushBucket';
+export type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory, StrategyKit } from './private/strategy';
 export type {
   AbstractLifetimeVerbs,
   AddService,
