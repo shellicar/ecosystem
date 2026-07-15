@@ -103,3 +103,64 @@ describe('RuntimeCaptivePolicy governs the runtime captive (a singleton reaching
     expect(actual).toThrow(CaptiveDependencyError);
   });
 });
+
+// The two captive detectors partition, deliberately: the static policy owns
+// every edge the graph can see (declared-deps factories and @dependsOn fields,
+// reported by validate()), and the runtime policy owns only what the graph
+// cannot see (a factory's inline scope.resolve/resolveAll mid-construction).
+// Declared edges resolve BEFORE the dependent's construction begins, so the
+// runtime check never fires for them: no double-reporting, no gap. These tests
+// pin the partition so a later change that widens the runtime check's reach
+// shows up as a failure here, not as silent double-reporting.
+describe('the captive detectors partition: declared edges are static-only, factory-inline resolves are runtime-only', () => {
+  abstract class IScopedThing {}
+  class ScopedThing implements IScopedThing {}
+
+  it('a declared-deps factory edge (singleton to scoped) does not trip the runtime Throw policy at resolve', () => {
+    abstract class IDeclaredHolder {}
+    class DeclaredHolder implements IDeclaredHolder {
+      constructor(readonly thing: IScopedThing) {}
+    }
+    const services = createServiceCollection({ runtimeCaptivePolicy: RuntimeCaptivePolicy.Throw });
+    services.register(ScopedThing).as(IScopedThing).scoped();
+    services
+      .register(DeclaredHolder)
+      .using([IScopedThing], (thing) => new DeclaredHolder(thing))
+      .as(IDeclaredHolder)
+      .singleton();
+    const provider = services.buildProvider();
+
+    const actual = provider.resolve(IDeclaredHolder) as DeclaredHolder;
+
+    expect(actual.thing).toBeInstanceOf(ScopedThing);
+  });
+
+  it('a @dependsOn field edge (singleton to scoped) does not trip the runtime Throw policy at resolve', () => {
+    abstract class IFieldHolder {}
+    class FieldHolder implements IFieldHolder {
+      @dependsOn(IScopedThing) public readonly thing!: IScopedThing;
+    }
+    const services = createServiceCollection({ runtimeCaptivePolicy: RuntimeCaptivePolicy.Throw });
+    services.register(ScopedThing).as(IScopedThing).scoped();
+    services.register(FieldHolder).as(IFieldHolder).singleton();
+    const provider = services.buildProvider();
+
+    const actual = provider.resolve(IFieldHolder) as FieldHolder;
+
+    expect(actual.thing).toBeInstanceOf(ScopedThing);
+  });
+
+  it('the same declared edge is the static policy\'s to report, through validate()', () => {
+    abstract class IFieldHolder {}
+    class FieldHolder implements IFieldHolder {
+      @dependsOn(IScopedThing) public readonly thing!: IScopedThing;
+    }
+    const services = createServiceCollection({ captivePolicy: CaptivePolicy.Disposal });
+    services.register(ScopedThing).as(IScopedThing).scoped();
+    services.register(FieldHolder).as(IFieldHolder).singleton();
+
+    const actual = services.validate().problems.map((p) => p.kind);
+
+    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+  });
+});

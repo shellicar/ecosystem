@@ -192,18 +192,27 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(view, token, env, boundary) as T[],
   });
 
-  const resolveValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown => {
-    const at = surfaceAt(token);
-    if (at !== undefined) {
-      return surfaceValue(at, boundary);
-    }
-    const node = nodeForToken(view, token);
+  // The per-node guard, shared by BOTH resolution doors (resolve and resolveAll).
+  // These checks are about a node being constructed, not about single-vs-many
+  // resolution: an opaque factory re-entering itself is a cycle the static graph
+  // cannot see, and a singleton mid-construction pulling a scoped token is a
+  // runtime captive, whichever door the factory reached them through.
+  const guardNode = (node: GraphNode, token: ServiceIdentifier<SourceType>): void => {
     if (node.usesFactory === true && constructing.has(node)) {
       throw new CircularDependencyError(token);
     }
     if (singletonDepth > 0 && runtimeCaptivePolicy === RuntimeCaptivePolicy.Throw && effectiveLifetime(node) === Lifetime.Scoped) {
       throw new CaptiveDependencyError(currentSingletonToken ?? token, token);
     }
+  };
+
+  const resolveValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown => {
+    const at = surfaceAt(token);
+    if (at !== undefined) {
+      return surfaceValue(at, boundary);
+    }
+    const node = nodeForToken(view, token);
+    guardNode(node, token);
     const outcome = strategy.instanceFor(view, node, env, boundary);
     if (!outcome.ok) {
       throw outcome.error;
@@ -218,6 +227,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       if (node === undefined) {
         throw new UnregisteredServiceError(token);
       }
+      guardNode(node, token);
       const outcome = strategy.instanceFor(view, node, env, boundary);
       if (!outcome.ok) {
         throw outcome.error;
