@@ -13,13 +13,17 @@ export const getMetadata = <T extends SourceType>(key: string, ctor: object): Me
 };
 
 // Own-check `key` first: `ctx.metadata` inherits the parent's record prototypally, so a blind write mutates the parent's.
+// The record is null-prototype: `name` is a decorated field's name, and a field named
+// `__proto__` would otherwise hit the inherited setter and reassign the record's
+// prototype instead of storing an entry (CodeQL: prototype-polluting assignment).
+// With no prototype, every name lands as a plain own property.
 export const tagFieldMetadata = <T extends SourceType>(key: string, meta: ClassMetadata | undefined, name: string | symbol, identifier: ServiceIdentifier<T>): void => {
   if (meta === undefined) {
     throw new Error('Symbol.metadata is not installed');
   }
   const existing = meta[key] as MetadataType<T> | undefined;
   if (existing === undefined || !Object.hasOwn(meta, key)) {
-    meta[key] = { ...existing };
+    meta[key] = Object.assign(Object.create(null), existing);
   }
-  (meta[key] as MetadataType<T>)[name] = identifier;
+  Object.defineProperty(meta[key], name, { value: identifier, enumerable: true, writable: true, configurable: true });
 };
