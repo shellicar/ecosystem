@@ -13,9 +13,11 @@ import { type AsyncInstanceFactory, createDescriptorMap, type DescriptorMap, typ
 // lifetime features: the same off-container discipline as graph.ts.
 
 const composition = (): EngineComposition => ({
-  singleton: createSingletonLifetime(),
-  scoped: createScopedLifetime(),
-  resolve: createResolveLifetime(),
+  features: {
+    [Lifetime.Singleton]: createSingletonLifetime(),
+    [Lifetime.Scoped]: createScopedLifetime(),
+    [Lifetime.Resolve]: createResolveLifetime(),
+  },
 });
 
 type DescriptorOptions<T extends SourceType> = {
@@ -459,7 +461,7 @@ describe('boundaryEngine: composition', () => {
     // could be composed): a composition that omits it has no scope to open, so the
     // call throws at runtime. An inline literal without a scoped key would have no
     // createScope on its type at all (see createScope-behaviour.spec).
-    const composition: EngineComposition = { singleton: createSingletonLifetime(), resolve: createResolveLifetime() };
+    const composition: EngineComposition = { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() } };
     const engine = buildEngine(mapOf([IDep, descriptor(Dep)]), composition);
 
     const actual = () => engine.createScope();

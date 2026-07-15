@@ -7,9 +7,11 @@ import { createScopedLifetime } from '../src/private/lifetimeScoped';
 import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
 
 const composition = (): EngineComposition => ({
-  singleton: createSingletonLifetime(),
-  scoped: createScopedLifetime(),
-  resolve: createResolveLifetime(),
+  features: {
+    [Lifetime.Singleton]: createSingletonLifetime(),
+    [Lifetime.Scoped]: createScopedLifetime(),
+    [Lifetime.Resolve]: createResolveLifetime(),
+  },
 });
 
 abstract class IResource {}

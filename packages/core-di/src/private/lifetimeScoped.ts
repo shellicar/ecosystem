@@ -1,12 +1,13 @@
 import { createEnvKeyedCache } from './lifetimeContracts';
-import type { Env, LifetimeFeature, ScopedLifetime } from './types';
+import type { Env, ScopedLifetime } from './types';
 
 export const createScopedLifetime = (): ScopedLifetime => {
   const scopeKey = Symbol('scope');
-  const feature: LifetimeFeature = {
+  return {
     facts: { owner: 'scope' },
     getInstance: createEnvKeyedCache(scopeKey, 'scoped lifetime: resolution outside a scope'),
+    // beginScope is what marks this feature as boundary-opening: the engine derives
+    // createScope from its presence rather than from the feature's name.
+    beginScope: (): Env => ({ [scopeKey]: {} }),
   };
-  const beginScope = (): Env => ({ [scopeKey]: {} });
-  return { feature, beginScope };
 };

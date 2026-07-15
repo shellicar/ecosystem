@@ -41,14 +41,16 @@ describe('createScope on the main surface (scoped feature composed)', () => {
 
 describe('createScope on a custom collection composed without the scoped feature', () => {
   const compositionWithoutScoped = (): EngineComposition => ({
-    singleton: createSingletonLifetime(),
-    resolve: createResolveLifetime(),
+    features: {
+      [Lifetime.Singleton]: createSingletonLifetime(),
+      [Lifetime.Resolve]: createResolveLifetime(),
+    },
   });
 
   it('does not expose createScope when the scoped feature is not composed', () => {
     const services = createCollection([Lifetime.Singleton]);
     // Inline literal so its inferred type has no scoped key.
-    const engine = buildEngine(services.regs, { singleton: createSingletonLifetime(), resolve: createResolveLifetime() });
+    const engine = buildEngine(services.regs, { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() } });
 
     // @ts-expect-error - a composition without the scoped feature must not carry createScope on the returned type
     engine.createScope;

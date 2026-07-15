@@ -4,16 +4,14 @@ import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { buildPlan, deriveFacts, followForward, formatGraph, type OwnerIndex, type Plan, type PlanStep, topologicalOrder } from './graph';
 import { Messages } from './messages';
-import type { AsyncNode, Env, Graph, GraphNode, LifetimeFeature, ScopedLifetime } from './types';
+import type { AsyncNode, Env, Graph, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
 
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
 
 const EMPTY_BUCKET: readonly GraphNode[] = [];
 
 export type EngineComposition = {
-  readonly singleton?: LifetimeFeature;
-  readonly scoped?: ScopedLifetime;
-  readonly resolve?: LifetimeFeature;
+  readonly features?: LifetimeFeatures;
   readonly defaultLifetime?: Lifetime;
   readonly disposal?: DisposalSink;
   readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
@@ -48,7 +46,7 @@ export type Engine = Scope & {
   createScope(overlay?: ScopeOverlay): Scope;
 };
 
-export type EngineFor<C extends EngineComposition> = Scope & ('scoped' extends keyof C ? { createScope(overlay?: ScopeOverlay): Scope } : Record<never, never>);
+export type EngineFor<C extends EngineComposition> = Scope & (Lifetime.Scoped extends keyof NonNullable<C['features']> ? { createScope(overlay?: ScopeOverlay): Scope } : Record<never, never>);
 
 type Outcome = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly error: unknown };
 
@@ -73,18 +71,10 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const rootBoundary: Boundary = { id: Symbol('root') };
   const surfaces = new Map<symbol, unknown>();
 
-  const featureFor = (lifetime: Lifetime): LifetimeFeature | undefined => {
-    switch (lifetime) {
-      case Lifetime.Singleton:
-        return composition.singleton;
-      case Lifetime.Scoped:
-        return composition.scoped?.feature;
-      case Lifetime.Resolve:
-        return composition.resolve;
-      default:
-        return undefined;
-    }
-  };
+  const features = composition.features ?? {};
+  const featureFor = (lifetime: Lifetime): LifetimeFeature | undefined => features[lifetime];
+  // The boundary-opening feature is whichever one declares beginScope, not one known by name.
+  const boundaryFeature = Object.values(features).find((feature) => feature.beginScope != null);
 
   const isCached = (lifetime: Lifetime): boolean => featureFor(lifetime) !== undefined;
 
@@ -99,7 +89,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     return undefined;
   };
 
-  const contributors = [composition.resolve].filter((feature): feature is LifetimeFeature => feature?.contribute != null);
+  const contributors = Object.values(features).filter((feature): feature is LifetimeFeature & { contribute: NonNullable<LifetimeFeature['contribute']> } => feature.contribute != null);
 
   const makeView = (viewServices: DescriptorMap): View => {
     const graph = deriveFacts(viewServices);
@@ -264,7 +254,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     },
   });
 
-  const rootBase: Env = composition.scoped?.beginScope() ?? {};
+  const rootBase: Env = boundaryFeature?.beginScope?.() ?? {};
 
   const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (node.eager === true || isAsyncNode(node)));
 
@@ -279,7 +269,8 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     const token = rootView.graph.get(node)?.owner ?? (node.implementation as ServiceIdentifier<SourceType>);
     try {
       const value = await Promise.resolve(node.createInstanceAsync(inPassScope(rootView, env, rootBoundary)));
-      const seeded = composition.singleton === undefined ? value : composition.singleton.getInstance(node, env, () => value);
+      const singleton = featureFor(Lifetime.Singleton);
+      const seeded = singleton === undefined ? value : singleton.getInstance(node, env, () => value);
       disposal?.announce(seeded, rootBoundary);
       return ok(seeded);
     } catch (err) {
@@ -313,9 +304,10 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     const root = scopeSurface(rootBase, rootBoundary, () => rootView);
 
     const createScope = (overlay?: ScopeOverlay): Scope => {
-      if (composition.scoped === undefined) {
+      if (boundaryFeature?.beginScope == null) {
         throw new InvalidOperationError(Messages.createScopeRequiresScoped);
       }
+      const beginScope = boundaryFeature.beginScope;
       let cached: { readonly view: View; readonly version: number } | undefined;
       const viewOf = (): View => {
         if (overlay === undefined) {
@@ -327,7 +319,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
         }
         return cached.view;
       };
-      return scopeSurface(composition.scoped.beginScope(), { id: Symbol('scope') }, viewOf);
+      return scopeSurface(beginScope(), { id: Symbol('scope') }, viewOf);
     };
 
     return {

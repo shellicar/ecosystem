@@ -133,9 +133,11 @@ export class ServiceCollection implements IServiceCollection {
 
   private composition() {
     return {
-      singleton: createSingletonLifetime(),
-      scoped: createScopedLifetime(),
-      resolve: createResolveLifetime(),
+      features: {
+        [Lifetime.Singleton]: createSingletonLifetime(),
+        [Lifetime.Scoped]: createScopedLifetime(),
+        [Lifetime.Resolve]: createResolveLifetime(),
+      },
       defaultLifetime: Lifetime.Resolve,
       disposal: createDisposal(),
       runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,

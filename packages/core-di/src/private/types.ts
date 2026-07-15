@@ -86,11 +86,14 @@ export type LifetimeFeature = {
   readonly facts: { readonly owner: string; };
   readonly getInstance: (key: CacheKey, env: Env, build: BuildFn) => unknown;
   readonly contribute?: (env: Env) => Env;
+  // A feature that opens a boundary (scoped): the engine derives createScope from its presence.
+  readonly beginScope?: () => Env;
 };
-export type ScopedLifetime = {
-  readonly feature: LifetimeFeature;
+export type ScopedLifetime = LifetimeFeature & {
   readonly beginScope: () => Env;
 };
+// The open lifetime set: the engine looks features up by verb, never by name.
+export type LifetimeFeatures = { readonly [K in Lifetime]?: LifetimeFeature };
 export type ClassMetadata = Record<string | symbol, unknown>;
 export type GraphPolicy = (graph: Graph) => ValidationProblem[];
 export type ScopeServicesSource = IServiceCollection & {

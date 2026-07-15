@@ -14,7 +14,7 @@ abstract class IThing {}
 
 describe('createScopedLifetime', () => {
   it('throws when resolved with no scope handle in env', () => {
-    const { feature } = createScopedLifetime();
+    const feature = createScopedLifetime();
     const token = IThing;
     const { build } = makeCounter();
 
@@ -24,10 +24,10 @@ describe('createScopedLifetime', () => {
   });
 
   it('shares one instance across resolves within the same scope', () => {
-    const { feature, beginScope } = createScopedLifetime();
+    const feature = createScopedLifetime();
     const token = IThing;
     const { build } = makeCounter();
-    const env = beginScope();
+    const env = feature.beginScope();
 
     const expected = feature.getInstance(token, env, build);
     const actual = feature.getInstance(token, env, build);
@@ -36,11 +36,11 @@ describe('createScopedLifetime', () => {
   });
 
   it('builds a fresh instance for a different scope', () => {
-    const { feature, beginScope } = createScopedLifetime();
+    const feature = createScopedLifetime();
     const token = IThing;
     const { build, getCount } = makeCounter();
-    const env1 = beginScope();
-    const env2 = beginScope();
+    const env1 = feature.beginScope();
+    const env2 = feature.beginScope();
     const expected = 2;
 
     feature.getInstance(token, env1, build);
@@ -51,7 +51,7 @@ describe('createScopedLifetime', () => {
   });
 
   it('carries its owner as "scope" in its facts', () => {
-    const { feature } = createScopedLifetime();
+    const feature = createScopedLifetime();
     const expected = 'scope';
 
     const actual = feature.facts.owner;
