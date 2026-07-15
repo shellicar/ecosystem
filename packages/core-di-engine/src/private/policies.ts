@@ -1,17 +1,35 @@
 import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
 import type { ValidationProblem } from '../types';
-import { detectCycles, findUnregisteredEdges, reachableFrom } from './graph';
-import { asyncThroughSyncPath, captiveDependency, dependencyCycle, missingTarget } from './messages';
+import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom } from './graph';
+import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleShadowed, missingTarget } from './messages';
 import type { Graph, GraphPolicy } from './types';
 
-export const cyclePolicy: GraphPolicy = (graph) =>
-  detectCycles(graph).map((cycle) => {
+export const cyclePolicy: GraphPolicy = (graph) => {
+  const cycles = detectCycles(graph);
+  if (cycles.length === 0) {
+    return [];
+  }
+  // Whether a cycle is an error depends on which door the app uses, and that is
+  // unknowable here: resolve() never walks a shadowed registration, resolveAll()
+  // walks every registration in both modes. So the report stays conservative
+  // and SAYS which door a shadowed cycle bites through, letting a deliberate
+  // last-wins override be recognised for what it is.
+  const index = indexByOwner(graph);
+  const isShadowed = (node: (typeof cycles)[number][number]): boolean => {
+    const facts = graph.get(node);
+    return (facts?.owners ?? []).some((owner) => {
+      const bucket = index.get(owner) ?? [];
+      return bucket.length > 1 && bucket[bucket.length - 1] !== node;
+    });
+  };
+  return cycles.map((cycle) => {
     const names = cycle.map((node) => graph.get(node)?.owner.name ?? '');
     return {
       kind: ValidationProblemKind.Cycle,
-      message: dependencyCycle(names),
+      message: cycle.some(isShadowed) ? dependencyCycleShadowed(names) : dependencyCycle(names),
     };
   });
+};
 
 export const missingTargetPolicy: GraphPolicy = (graph) =>
   findUnregisteredEdges(graph).map((edge) => ({
