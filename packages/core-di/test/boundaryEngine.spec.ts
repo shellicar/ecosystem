@@ -196,6 +196,51 @@ describe('boundaryEngine: singleton construction timing (lazy by default, eager 
   });
 });
 
+// prebakeSingletons is the composition-level form of `.eager()`: every singleton
+// constructs at build, so a warm resolve is a pure lookup. Only singletons can
+// prebake (the singleton table is the sole build-time boundary), so the flag
+// changes nothing for other lifetimes.
+describe('boundaryEngine: prebakeSingletons constructs every singleton at build', () => {
+  const prebaking = (): EngineComposition => ({ ...composition(), prebakeSingletons: true });
+
+  it('constructs a plain singleton at build, without .eager()', () => {
+    const expected = 1;
+    buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton })]), prebaking());
+
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('resolves a prebaked singleton as a pure lookup, constructing nothing more', () => {
+    const engine = buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Singleton })]), prebaking());
+    const expected = countOf('Dep');
+
+    engine.resolve(IDep);
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('does not construct a non-singleton at build', () => {
+    const expected = 0;
+    buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Transient })]), prebaking());
+
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('constructs an un-verbed registration at build when the composed default is singleton', () => {
+    const expected = 1;
+    buildEngine(mapOf([IDep, descriptor(Dep)]), { ...prebaking(), defaultLifetime: Lifetime.Singleton });
+
+    const actual = countOf('Dep');
+
+    expect(actual).toBe(expected);
+  });
+});
+
 // The builder forbids `.eager()` on a non-singleton at the type level (see
 // composableBuilder.spec): construct-at-build only makes sense for a singleton, the
 // sole build-time boundary that holds an instance. These engine tests are the

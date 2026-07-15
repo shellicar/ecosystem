@@ -13,6 +13,13 @@ const EMPTY_BUCKET: readonly GraphNode[] = [];
 export type EngineComposition = {
   readonly features?: LifetimeFeatures;
   readonly defaultLifetime?: Lifetime;
+  /**
+   * Construct every singleton at build, not just the `.eager()` and async ones.
+   * Only singletons can prebake: the singleton table is the sole boundary that
+   * exists at build. A composition whose default lifetime is singleton therefore
+   * prebakes everything, paying all resolution cost at build.
+   */
+  readonly prebakeSingletons?: boolean;
   readonly disposal?: DisposalSink;
   readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
   readonly runtimeCaptivePolicy?: RuntimeCaptivePolicy;
@@ -256,7 +263,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const rootBase: Env = boundaryFeature?.beginScope?.() ?? {};
 
-  const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (node.eager === true || isAsyncNode(node)));
+  const prebakedNodes = (): GraphNode[] => topologicalOrder(rootView.graph).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
 
   const hold = (node: GraphNode, outcome: Outcome): void => {
     if (!outcome.ok) {
