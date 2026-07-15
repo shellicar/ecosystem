@@ -1,8 +1,11 @@
-import '../polyfill';
 import type { MetadataType, ServiceIdentifier, SourceType } from '../types';
 import type { ClassMetadata } from './types';
 
-// A symbol const, not read inline: tsc does not declare `Symbol.metadata`, so an inline read fails type-check.
+// A symbol const, not read inline: tsc does not declare `Symbol.metadata`, so an
+// inline read fails type-check. No polyfill import here: the `??` fallback reaches
+// the same registry symbol the polyfill installs, and importing the polyfill from a
+// shared module hoists its side effect into a tree-shakeable chunk (the barrel and
+// the polyfill entry own the install).
 const MetadataKey: symbol = (Symbol as { metadata?: symbol }).metadata ?? Symbol.for('Symbol.metadata');
 
 export const getMetadata = <T extends SourceType>(key: string, ctor: object): MetadataType<T> | undefined => {

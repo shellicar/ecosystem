@@ -1,14 +1,17 @@
 import { defineConfig, type Options } from 'tsup';
 
+// Every module is an entry, deliberately (see core-di-engine's config): a
+// single-entry bundle collapses the package into one file a consumer's bundler
+// cannot tree-shake per module, and plain bundle:false emits extensionless
+// imports Node's ESM loader rejects.
 const commonOptions = (config: Options) =>
   ({
     bundle: true,
     clean: true,
     dts: true,
-    entry: ['src/index.ts', 'src/dependsOn.ts', 'src/polyfill.ts'],
+    entry: ['src/**/*.ts'],
     esbuildOptions: (options) => {
       options.chunkNames = 'chunks/[name]-[hash]';
-      options.entryNames = '[name]';
     },
     keepNames: true,
     minify: false,

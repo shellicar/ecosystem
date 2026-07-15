@@ -1,4 +1,9 @@
-import './polyfill';
+// The Symbol.metadata install, inline rather than `import './polyfill'`: an
+// import shared between this entry and the polyfill entry gets hoisted by the
+// bundler into a chunk that no sideEffects pattern can name, and dropped. Each
+// entry carries its own copy of the one-line install; both files are listed in
+// sideEffects, so both survive tree-shaking. Idempotent, so double-run is fine.
+(Symbol as { metadata?: symbol }).metadata ??= Symbol.for('Symbol.metadata');
 
 // The engine seam: the structural machinery (identity/faces, using, forward,
 // validate policies) and the lifetime/scope machinery (features, buildEngine),

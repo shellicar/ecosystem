@@ -1,14 +1,19 @@
 import { defineConfig, type Options } from 'tsup';
 
+// Every module is an entry, deliberately. A single-entry bundle collapses the
+// package into one file, so a consumer's bundler cannot tree-shake per module
+// (and the polyfill's side effect once vanished into an unlisted chunk).
+// Plain bundle:false is no better: tsup emits extensionless relative imports
+// that Node's ESM loader rejects. Per-module entries with splitting keep the
+// module boundaries AND valid, Node-loadable output.
 const commonOptions = (config: Options) =>
   ({
     bundle: true,
     clean: true,
     dts: true,
-    entry: ['src/index.ts', 'src/dependsOn.ts', 'src/polyfill.ts'],
+    entry: ['src/**/*.ts'],
     esbuildOptions: (options) => {
       options.chunkNames = 'chunks/[name]-[hash]';
-      options.entryNames = '[name]';
     },
     keepNames: true,
     minify: false,

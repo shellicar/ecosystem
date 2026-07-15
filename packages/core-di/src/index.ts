@@ -1,4 +1,8 @@
-import './polyfill';
+// The engine's polyfill, imported as the external subpath rather than the local
+// ./polyfill entry: a local module shared between two entries gets hoisted into
+// a pure chunk and tree-shaken away, while an external bare import survives in
+// this impure barrel and resolves to the engine's own (impure) polyfill file.
+import '@shellicar/core-di-engine/polyfill';
 
 // The public barrel: core-di's own surface plus the parts of the shared engine
 // it re-exposes (enums, errors, dependsOn, the core service types). These are
