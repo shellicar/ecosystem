@@ -9,9 +9,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
-import { Lifetime } from '../src/enums';
-import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, formatGraph, type GraphNode, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '../src/private/graph';
-import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type SourceType } from '../src/types';
+import { Lifetime } from '@shellicar/core-di-engine';
+import { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, formatGraph, type GraphNode, indexByOwner, type Plan, type PlanStep, topologicalOrder } from '@shellicar/core-di-engine';
+import { createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type SourceType } from '@shellicar/core-di-engine';
 
 // A minimal, direct-to-map registration helper, deliberately bypassing
 // ServiceBuilder/ServiceCollection so these tests exercise the graph module

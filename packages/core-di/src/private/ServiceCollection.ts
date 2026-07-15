@@ -1,23 +1,44 @@
-import { createPlanStrategy } from '@shellicar/core-di-engine';
-import { Lifetime, ValidationProblemKind } from '../enums';
-import { InvalidOperationError, InvalidServiceIdentifierError, ValidationError } from '../errors';
-import type { IAbstractServiceBuilder, IForwardBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
-import { IResolutionScope, IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
+import {
+  type AbstractNewable,
+  asyncThroughSyncPathPolicy,
+  buildEngine,
+  buildEngineAsync,
+  captivePolicyFor,
+  type ComposableCollection,
+  createCollection,
+  createDisposal,
+  createPlanStrategy,
+  createResolveLifetime,
+  createScopedLifetime,
+  createSingletonLifetime,
+  cyclePolicy,
+  deriveFacts,
+  type DescriptorMap,
+  ForwardBuilder,
+  type IForwardBuilder,
+  InvalidOperationError,
+  IResolutionScope,
+  InvalidServiceIdentifierError,
+  Lifetime,
+  missingTargetPolicy,
+  type Newable,
+  noDeclaredIdentity,
+  overrideLifetimePreBuildOnly,
+  pushBucket,
+  runGraphPolicies,
+  type ServiceDescriptor,
+  type ServiceIdentifier,
+  type SourceType,
+  ValidationError,
+  type ValidationProblem,
+  ValidationProblemKind,
+  type ValidationReport,
+} from '@shellicar/core-di-engine';
+import type { IAbstractServiceBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
+import { IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
 import type { ILogger } from '../logger';
-import type { AbstractNewable, BuildProviderOptions, DescriptorMap, InstrumentationHook, InstrumentationOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationProblem, ValidationReport } from '../types';
-import { buildEngine, buildEngineAsync } from './boundaryEngine';
-import { createCollection } from './composableBuilder';
-import { createDisposal } from './disposal';
-import { ForwardBuilder } from './ForwardBuilder';
-import { deriveFacts } from './graph';
-import { createResolveLifetime } from './lifetimeResolve';
-import { createScopedLifetime } from './lifetimeScoped';
-import { createSingletonLifetime } from './lifetimeSingleton';
-import { noDeclaredIdentity, overrideLifetimePreBuildOnly } from './messages';
-import { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
+import type { BuildProviderOptions, InstrumentationHook, InstrumentationOptions, ServiceCollectionOptions, ServiceModuleType } from '../types';
 import { ServiceProvider } from './provider';
-import { pushBucket } from './pushBucket';
-import type { ComposableCollection } from './types';
 
 // Transient is passed like any other verb: the builder no longer appends it. It is
 // still the floor at resolution (no feature in the composition caches it).

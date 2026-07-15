@@ -1,31 +1,10 @@
-// The core service types moved to @shellicar/core-di-engine and are re-exported
-// here; core-di keeps only the collection-level types that reference its own
-// surfaces (logger, modules, provider options).
-import type { CaptivePolicy, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy } from './enums';
-import type { IServiceModule } from './interfaces';
+// Only core-di's own types live here: the collection-level options and hooks
+// that reference its surfaces (logger, modules, provider options). The core
+// service types are the engine's; import them from @shellicar/core-di-engine.
+import type { CaptivePolicy, LogLevel, Newable, ResolveMultipleMode, RuntimeCaptivePolicy } from '@shellicar/core-di-engine';
+import type { IServiceCollection, IServiceModule } from './interfaces';
 import type { ILogger } from './logger';
 import type { ConsoleLogger } from './private/consoleLogger';
-import type { Newable } from '@shellicar/core-di-engine';
-
-export type {
-  AbstractNewable,
-  AsyncInstanceFactory,
-  CacheKey,
-  DescriptorMap,
-  InstanceFactory,
-  MetadataType,
-  Newable,
-  ResolvedDep,
-  ResolvedDeps,
-  ServiceDescriptor,
-  ServiceIdentifier,
-  ServiceImplementation,
-  ServiceRegistration,
-  SourceType,
-  ValidationProblem,
-  ValidationReport,
-} from '@shellicar/core-di-engine';
-export { createDescriptorMap } from '@shellicar/core-di-engine';
 
 export type ServiceModuleType = Newable<IServiceModule>;
 

@@ -1,13 +1,6 @@
-// IResolutionScope, IForwardBuilder, and IForwardResult moved to
-// @shellicar/core-di-engine (the engine and ForwardBuilder depend on them);
-// re-exported here so core-di's public surface and token identity are unchanged.
+import type { AbstractNewable, ComposableAbstractBuilder, ComposableNewableBuilder, IForwardBuilder, Lifetime, Newable, ResolveMultipleMode, ServiceDescriptor, ServiceIdentifier, SourceType, ValidationReport } from '@shellicar/core-di-engine';
 import { IResolutionScope } from '@shellicar/core-di-engine';
-import type { Lifetime, ResolveMultipleMode } from './enums';
-import type { ComposableAbstractBuilder, ComposableNewableBuilder } from './private/types';
-import type { AbstractNewable, BuildProviderOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationReport } from './types';
-
-export { IForwardBuilder, IForwardResult, IResolutionScope } from '@shellicar/core-di-engine';
-import type { IForwardBuilder } from '@shellicar/core-di-engine';
+import type { BuildProviderOptions, ServiceCollectionOptions, ServiceModuleType } from './types';
 
 export abstract class IDisposable {
   public abstract [Symbol.dispose](): void;

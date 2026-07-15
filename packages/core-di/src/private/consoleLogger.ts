@@ -1,4 +1,4 @@
-import { LogLevel } from '../enums';
+import { LogLevel } from '@shellicar/core-di-engine';
 import { ILogger } from '../logger';
 import type { ServiceCollectionOptions } from '../types';
 

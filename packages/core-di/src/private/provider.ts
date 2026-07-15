@@ -1,7 +1,8 @@
-import { IResolutionScope, IScopedProvider, IServiceProvider } from '../interfaces';
+import type { Engine, Scope, ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
+import { IResolutionScope } from '@shellicar/core-di-engine';
+import { IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
-import type { InstrumentationHook, ServiceIdentifier, SourceType } from '../types';
-import type { Engine, Scope } from './boundaryEngine';
+import type { InstrumentationHook } from '../types';
 import type { ScopeServicesSource } from './types';
 
 export class ServiceProvider implements IServiceProvider, IScopedProvider {

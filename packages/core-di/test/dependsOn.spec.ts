@@ -6,9 +6,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
-import { DesignDependenciesKey } from '../src/private/constants';
-import { getMetadata } from '../src/private/metadata';
-import type { ServiceIdentifier, SourceType } from '../src/types';
+import { DesignDependenciesKey } from '@shellicar/core-di-engine';
+import { getMetadata } from '@shellicar/core-di-engine';
+import type { ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
 
 const getDeclaredDeps = (ctor: object) => getMetadata<SourceType>(DesignDependenciesKey, ctor) ?? {};
 

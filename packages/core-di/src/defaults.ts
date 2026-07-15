@@ -1,4 +1,4 @@
-import { CaptivePolicy, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy } from './enums';
+import { CaptivePolicy, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy } from '@shellicar/core-di-engine';
 import type { ServiceCollectionOptions } from './types';
 
 export const DefaultServiceCollectionOptions: ServiceCollectionOptions = {

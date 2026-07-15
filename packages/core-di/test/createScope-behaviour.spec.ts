@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
-import { Lifetime } from '../src/enums';
-import { BuilderError } from '../src/errors';
-import { buildEngine, createPlanStrategy, type EngineComposition } from '../src/private/boundaryEngine';
-import { createCollection } from '../src/private/composableBuilder';
-import { createResolveLifetime } from '../src/private/lifetimeResolve';
-import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
+import { Lifetime } from '@shellicar/core-di-engine';
+import { BuilderError } from '@shellicar/core-di-engine';
+import { buildEngine, createPlanStrategy, type EngineComposition } from '@shellicar/core-di-engine';
+import { createCollection } from '@shellicar/core-di-engine';
+import { createResolveLifetime } from '@shellicar/core-di-engine';
+import { createSingletonLifetime } from '@shellicar/core-di-engine';
 
 // The main collection always composes the scoped feature, so an empty scope
 // (scoped composed, nothing scoped registered) is valid and resolves from root.

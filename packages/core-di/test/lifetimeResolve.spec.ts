@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createResolveLifetime } from '../src/private/lifetimeResolve';
+import { createResolveLifetime } from '@shellicar/core-di-engine';
 
 const makeCounter = () => {
   let count = 0;

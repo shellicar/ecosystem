@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
-import { ScopedSingletonRegistrationError } from '../src/errors';
+import { ScopedSingletonRegistrationError } from '@shellicar/core-di-engine';
 
 abstract class IAbstract {
   abstract readonly name: string;

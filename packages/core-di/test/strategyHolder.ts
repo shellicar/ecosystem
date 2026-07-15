@@ -1,4 +1,4 @@
-import { createPlanStrategy } from '../src/private/boundaryEngine';
+import { createPlanStrategy } from '@shellicar/core-di-engine';
 import type { StrategyFactory } from '@shellicar/core-di-engine';
 
 /**

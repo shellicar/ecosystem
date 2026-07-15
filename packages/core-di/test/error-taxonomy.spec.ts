@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection, Lifetime } from '../src';
-import { BuilderError, InvalidImplementationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../src/errors';
+import { BuilderError, InvalidImplementationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '@shellicar/core-di-engine';
 
 // The error families, each catchable by its family type: ServiceError for
 // resolution errors, BuilderError for build/registration misuse, and

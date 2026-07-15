@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Lifetime } from '../src/enums';
-import { BuilderError } from '../src/errors';
-import type { IResolutionScope } from '../src/interfaces';
-import { createCollection } from '../src/private/composableBuilder';
+import { Lifetime } from '@shellicar/core-di-engine';
+import { BuilderError } from '@shellicar/core-di-engine';
+import type { IResolutionScope } from '@shellicar/core-di-engine';
+import { createCollection } from '@shellicar/core-di-engine';
 
 abstract class IThing {}
 abstract class IOther {}

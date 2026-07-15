@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScopedLifetime } from '../src/private/lifetimeScoped';
+import { createScopedLifetime } from '@shellicar/core-di-engine';
 
 const makeCounter = () => {
   let count = 0;

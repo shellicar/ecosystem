@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
-import { Lifetime } from '../src/enums';
-import { CircularDependencyError, SelfDependencyError, ServiceCreationError, UnregisteredServiceError } from '../src/errors';
-import { type Boundary, buildEngine, buildEngineAsync, type DisposalSink, type EngineComposition } from '../src/private/boundaryEngine';
-import { createDisposal } from '../src/private/disposal';
-import { createResolveLifetime } from '../src/private/lifetimeResolve';
-import { createScopedLifetime } from '../src/private/lifetimeScoped';
-import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
-import { type AsyncInstanceFactory, createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '../src/types';
+import { Lifetime } from '@shellicar/core-di-engine';
+import { CircularDependencyError, SelfDependencyError, ServiceCreationError, UnregisteredServiceError } from '@shellicar/core-di-engine';
+import { type Boundary, buildEngine, buildEngineAsync, type DisposalSink, type EngineComposition } from '@shellicar/core-di-engine';
+import { createDisposal } from '@shellicar/core-di-engine';
+import { createResolveLifetime } from '@shellicar/core-di-engine';
+import { createScopedLifetime } from '@shellicar/core-di-engine';
+import { createSingletonLifetime } from '@shellicar/core-di-engine';
+import { type AsyncInstanceFactory, createDescriptorMap, type DescriptorMap, type InstanceFactory, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType } from '@shellicar/core-di-engine';
 import { holder } from './strategyHolder';
 
 // The engine is proven standalone, against hand-built descriptor maps and the

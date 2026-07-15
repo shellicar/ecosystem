@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Lifetime } from '../src/enums';
-import { buildEngine, buildEngineAsync, createPlanStrategy, type EngineComposition } from '../src/private/boundaryEngine';
-import { createCollection } from '../src/private/composableBuilder';
-import { createResolveLifetime } from '../src/private/lifetimeResolve';
-import { createScopedLifetime } from '../src/private/lifetimeScoped';
-import { createSingletonLifetime } from '../src/private/lifetimeSingleton';
+import { Lifetime } from '@shellicar/core-di-engine';
+import { buildEngine, buildEngineAsync, createPlanStrategy, type EngineComposition } from '@shellicar/core-di-engine';
+import { createCollection } from '@shellicar/core-di-engine';
+import { createResolveLifetime } from '@shellicar/core-di-engine';
+import { createScopedLifetime } from '@shellicar/core-di-engine';
+import { createSingletonLifetime } from '@shellicar/core-di-engine';
 
 const composition = (): EngineComposition => ({
   features: {
