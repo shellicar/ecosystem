@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   type AsyncInstanceFactory,
   type Boundary,
@@ -22,7 +23,6 @@ import {
   type SourceType,
   UnregisteredServiceError,
 } from '../src';
-import { beforeEach, describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 import { holder } from './strategyHolder';
 

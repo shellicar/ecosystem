@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest';
 import type { IResolutionScope } from '../src';
 import { createCollection, Lifetime } from '../src';
-import { describe, expect, it } from 'vitest';
 
 abstract class IThing {}
 abstract class IOther {}

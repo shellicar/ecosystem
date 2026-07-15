@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDescriptorMap, cyclePolicy, deriveFacts, type DescriptorMap, runGraphPolicies, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '../src';
+import { createDescriptorMap, cyclePolicy, type DescriptorMap, deriveFacts, runGraphPolicies, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '../src';
 
 // A cycle through a registration that a later registration shadows for
 // resolve(). Whether this is an error depends on which door the app uses:

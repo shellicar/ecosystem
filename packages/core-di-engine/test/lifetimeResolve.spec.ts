@@ -1,5 +1,5 @@
-import { createResolveLifetime } from '../src';
 import { describe, expect, it } from 'vitest';
+import { createResolveLifetime } from '../src';
 
 const makeCounter = () => {
   let count = 0;

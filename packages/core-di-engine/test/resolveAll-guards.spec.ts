@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import {
   buildEngine,
   CaptiveDependencyError,
@@ -19,7 +20,6 @@ import {
   type SourceType,
   type StrategyFactory,
 } from '../src';
-import { describe, expect, it } from 'vitest';
 
 // resolve() and resolveAll() are the engine's two resolution doors. The
 // re-entry guard for opaque factories (constructing) and the runtime captive

@@ -1,5 +1,5 @@
-import { buildEngine, buildEngineAsync, createCollection, createPlanStrategy, createResolveLifetime, createScopedLifetime, createSingletonLifetime, type EngineComposition, Lifetime } from '../src';
 import { describe, expect, it } from 'vitest';
+import { buildEngine, buildEngineAsync, createCollection, createPlanStrategy, createResolveLifetime, createScopedLifetime, createSingletonLifetime, type EngineComposition, Lifetime } from '../src';
 
 const composition = (): EngineComposition => ({
   features: {

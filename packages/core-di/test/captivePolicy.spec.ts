@@ -150,7 +150,7 @@ describe('the captive detectors partition: declared edges are static-only, facto
     expect(actual.thing).toBeInstanceOf(ScopedThing);
   });
 
-  it('the same declared edge is the static policy\'s to report, through validate()', () => {
+  it("the same declared edge is the static policy's to report, through validate()", () => {
     abstract class IFieldHolder {}
     class FieldHolder implements IFieldHolder {
       @dependsOn(IScopedThing) public readonly thing!: IScopedThing;

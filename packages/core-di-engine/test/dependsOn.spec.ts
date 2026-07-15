@@ -5,9 +5,9 @@
  * shipped `dependsOn` decorator and `getMetadata`.
  */
 
+import { describe, expect, it } from 'vitest';
 import type { ServiceIdentifier, SourceType } from '../src';
 import { DesignDependenciesKey, getMetadata } from '../src';
-import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 
 const getDeclaredDeps = (ctor: object) => getMetadata<SourceType>(DesignDependenciesKey, ctor) ?? {};

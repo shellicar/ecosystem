@@ -1,5 +1,5 @@
-import { createSingletonLifetime } from '../src';
 import { describe, expect, it } from 'vitest';
+import { createSingletonLifetime } from '../src';
 
 const makeCounter = () => {
   let count = 0;

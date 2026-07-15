@@ -1,5 +1,5 @@
-import { dependsOn, DesignDependenciesKey, getMetadata, tagFieldMetadata } from '@shellicar/core-di-engine';
 import type { ClassMetadata } from '@shellicar/core-di-engine';
+import { DesignDependenciesKey, dependsOn, getMetadata, tagFieldMetadata } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 

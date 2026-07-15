@@ -1,5 +1,5 @@
-import { asyncThroughSyncPathPolicy, createDescriptorMap, type DescriptorMap, deriveFacts, Lifetime, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '../src';
 import { describe, expect, it } from 'vitest';
+import { asyncThroughSyncPathPolicy, createDescriptorMap, type DescriptorMap, deriveFacts, Lifetime, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '../src';
 
 // The async-through-sync-path policy is proven standalone against a hand-built
 // graph: the same off-container discipline as the other graph policies.

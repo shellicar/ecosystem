@@ -1,5 +1,5 @@
-import { createScopedLifetime } from '../src';
 import { describe, expect, it } from 'vitest';
+import { createScopedLifetime } from '../src';
 
 const makeCounter = () => {
   let count = 0;

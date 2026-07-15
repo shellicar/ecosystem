@@ -8,6 +8,7 @@
  * respect multiplicity: a token maps to `descriptors[]`, not one graph node.
  */
 
+import { describe, expect, it } from 'vitest';
 import {
   buildPlan,
   concreteNode,
@@ -28,7 +29,6 @@ import {
   type SourceType,
   topologicalOrder,
 } from '../src';
-import { describe, expect, it } from 'vitest';
 import { dependsOn } from '../src/dependsOn';
 
 // A minimal, direct-to-map registration helper, deliberately bypassing
