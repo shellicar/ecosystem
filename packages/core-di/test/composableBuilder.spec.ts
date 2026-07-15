@@ -32,8 +32,20 @@ describe('createCollection: the composed set generates the verbs', () => {
     expect(actual).toBeUndefined();
   });
 
-  it('always exposes transient: the floor, not a composed member', () => {
+  // Transient is the floor at resolution (no feature caches it), but its verb is
+  // composed like any other: defaulting routes through the engine's defaultLifetime,
+  // not through an always-present verb.
+  it('has no transient verb when transient was not composed', () => {
     const services = createCollection([Lifetime.Singleton]);
+
+    const builder = services.register(Thing).as(IThing) as Record<string, unknown>;
+    const actual = builder.transient;
+
+    expect(actual).toBeUndefined();
+  });
+
+  it('exposes the transient verb when transient is composed', () => {
+    const services = createCollection([Lifetime.Singleton, Lifetime.Transient]);
     const expected = 'function';
 
     const builder = services.register(Thing).as(IThing) as Record<string, unknown>;

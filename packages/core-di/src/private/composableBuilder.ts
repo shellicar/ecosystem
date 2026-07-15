@@ -4,7 +4,7 @@ import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFact
 import { createDescriptorMap } from '../types';
 import { Messages } from './messages';
 import { pushBucket } from './pushBucket';
-import type { ComposableAbstractBuilder, ComposableCollection, ComposableLifetime, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
+import type { ComposableAbstractBuilder, ComposableCollection, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
 
 export const lifetimeVerbNames = {
   [Lifetime.Singleton]: 'singleton',
@@ -13,7 +13,7 @@ export const lifetimeVerbNames = {
   [Lifetime.Transient]: 'transient',
 } as const satisfies Record<Lifetime, string>;
 
-export const createCollection = <const L extends ComposableLifetime, const Async extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async> = {}): ComposableCollection<L, Async> => {
+export const createCollection = <const L extends Lifetime, const Async extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async> = {}): ComposableCollection<L, Async> => {
   const async = options.async === true;
   const regs = createDescriptorMap<SourceType>() as DescriptorMap<SourceType, Async>;
   const withoutFace = new Set<ComposableNode>();
@@ -75,7 +75,10 @@ export const createCollection = <const L extends ComposableLifetime, const Async
       node.eager = true;
       return builder;
     };
-    for (const lifetime of [...lifetimes, Lifetime.Transient]) {
+    // The verb list is exactly the composed lifetime set: transient is not appended
+    // here. Defaulting no longer routes through a verb (the engine's defaultLifetime
+    // owns it), so a composition that omits transient simply lacks the verb.
+    for (const lifetime of lifetimes) {
       builder[lifetimeVerbNames[lifetime]] = () => {
         if (node.lifetime !== undefined) {
           throw new InvalidOperationError(Messages.lifetimeAlreadySet(node.lifetime));

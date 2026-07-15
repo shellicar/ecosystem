@@ -18,14 +18,13 @@ export type AsyncVerb<T extends SourceType, L extends Lifetime, Async extends bo
   usingAsync(factory: AsyncInstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager>;
   usingAsync<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => Promise<T>): ComposableNewableBuilder<T, L, Async, Eager>;
 } : unknown;
-export type ComposableLifetime = Exclude<Lifetime, Lifetime.Transient>;
 
 export type ComposableNewableBuilder<T extends SourceType, L extends Lifetime, Async extends boolean, Eager extends boolean = false, LifeSet extends boolean = false> = {
   as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   asSelf(): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-} & (LifeSet extends true ? unknown : NewableLifetimeVerbs<T, L | Lifetime.Transient, Async>) &
+} & (LifeSet extends true ? unknown : NewableLifetimeVerbs<T, L, Async>) &
   AsyncVerb<T, L, Async, Eager> &
   (Eager extends true ? EagerVerb<ComposableNewableBuilder<T, L, Async, false, LifeSet>> : unknown);
 
@@ -33,7 +32,7 @@ export type ComposableAbstractBuilder<T extends SourceType, L extends Lifetime, 
   as<F extends SourceType>(identifier: ServiceIdentifier<F> & (T extends F ? unknown : never)): ComposableAbstractBuilder<T, L, Async, Eager, LifeSet>;
   using(factory: InstanceFactory<T>): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
   using<const D extends readonly ServiceIdentifier<SourceType>[]>(deps: D, factory: (...args: ResolvedDeps<D>) => T): ComposableNewableBuilder<T, L, Async, Eager, LifeSet>;
-} & (LifeSet extends true ? unknown : AbstractLifetimeVerbs<T, L | Lifetime.Transient, Async>) &
+} & (LifeSet extends true ? unknown : AbstractLifetimeVerbs<T, L, Async>) &
   AsyncVerb<T, L, Async, Eager> &
   (Eager extends true ? EagerVerb<ComposableAbstractBuilder<T, L, Async, false, LifeSet>> : unknown);
 

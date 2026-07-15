@@ -1,5 +1,5 @@
 import type { Lifetime, ResolveMultipleMode } from './enums';
-import type { ComposableAbstractBuilder, ComposableLifetime, ComposableNewableBuilder } from './private/types';
+import type { ComposableAbstractBuilder, ComposableNewableBuilder } from './private/types';
 import type { AbstractNewable, BuildProviderOptions, Newable, ServiceCollectionOptions, ServiceDescriptor, ServiceIdentifier, ServiceModuleType, SourceType, ValidationReport } from './types';
 
 export abstract class IDisposable {
@@ -70,7 +70,7 @@ export abstract class IServiceProvider extends IResolutionScope implements IDisp
  * declare faces, `.using()` an optional factory, then a lifetime verb; `.eager()`
  * while singleton. `usingAsync` exists only on an async collection.
  */
-export type INewableServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableNewableBuilder<T, ComposableLifetime, Async, Eager>;
+export type INewableServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableNewableBuilder<T, Lifetime, Async, Eager>;
 
 /**
  * The builder for an abstract registration. It has no `.asSelf()`: an abstract
@@ -78,7 +78,7 @@ export type INewableServiceBuilder<T extends SourceType, Async extends boolean =
  * instance is supplied by `.using()` (which returns the newable-flavoured
  * builder, since a factory can build the implementation as itself).
  */
-export type IAbstractServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableAbstractBuilder<T, ComposableLifetime, Async, Eager>;
+export type IAbstractServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableAbstractBuilder<T, Lifetime, Async, Eager>;
 
 export abstract class IServiceCollection {
   public abstract readonly options: ServiceCollectionOptions;

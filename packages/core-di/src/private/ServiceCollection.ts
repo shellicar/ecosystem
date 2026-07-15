@@ -16,14 +16,16 @@ import { Messages } from './messages';
 import { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, missingTargetPolicy, runGraphPolicies } from './policies';
 import { ServiceProvider } from './provider';
 import { pushBucket } from './pushBucket';
-import type { ComposableCollection, ComposableLifetime } from './types';
+import type { ComposableCollection } from './types';
 
-const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve] as const satisfies readonly ComposableLifetime[];
+// Transient is passed like any other verb: the builder no longer appends it. It is
+// still the floor at resolution (no feature in the composition caches it).
+const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve, Lifetime.Transient] as const satisfies readonly Lifetime[];
 
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
 export class ServiceCollection implements IServiceCollection {
-  private readonly composed: ComposableCollection<ComposableLifetime, boolean>;
+  private readonly composed: ComposableCollection<Lifetime, boolean>;
   private version = 0;
   private built = false;
 
