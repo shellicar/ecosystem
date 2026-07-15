@@ -2,7 +2,7 @@ import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ServiceIdentifier, SourceType } from '../types';
 import { createDescriptorMap } from '../types';
-import { lifetimeAlreadySet, usingAsyncRequiresAsyncCollection } from './messages';
+import { lifetimeAlreadySet } from './messages';
 import { pushBucket } from './pushBucket';
 import type { ComposableAbstractBuilder, ComposableCollection, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
 
@@ -80,11 +80,12 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       },
       using,
     };
-    builder.usingAsync = async
-      ? usingAsync
-      : () => {
-          throw new InvalidOperationError(usingAsyncRequiresAsyncCollection);
-        };
+    // Symmetry with the lifetime verbs: a capability the composition lacks is
+    // absent from the runtime object, not present-and-throwing, so the runtime
+    // shape matches the type surface and feature-detection tells the truth.
+    if (async) {
+      builder.usingAsync = usingAsync;
+    }
     builder.eager = () => {
       node.eager = true;
       return builder;

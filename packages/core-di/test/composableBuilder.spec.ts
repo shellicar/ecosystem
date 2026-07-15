@@ -1,5 +1,5 @@
 import type { IResolutionScope } from '@shellicar/core-di-engine';
-import { BuilderError, createCollection, Lifetime } from '@shellicar/core-di-engine';
+import { createCollection, Lifetime } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 
 abstract class IThing {}
@@ -232,13 +232,13 @@ class Widget {
 }
 
 describe('createCollection: usingAsync exists only on an async collection', () => {
-  it('rejects usingAsync at runtime on a sync collection (the runtime enforces what the type hides)', () => {
+  it('has no runtime usingAsync on a sync collection: absent like an uncomposed lifetime verb, so the runtime shape matches the type surface', () => {
     const services = createCollection([Lifetime.Singleton]);
 
     const builder = services.register(Resource).asSelf() as Record<string, unknown>;
-    const actual = () => (builder.usingAsync as () => unknown)();
+    const actual = builder.usingAsync;
 
-    expect(actual).toThrow(BuilderError);
+    expect(actual).toBeUndefined();
   });
 
   it('rejects usingAsync on a sync collection at compile time', () => {

@@ -24,13 +24,13 @@ describe('Invalid operations: forcing past the type corrupts, so the runtime thr
       void probe;
     });
 
-    it('throws a BuilderError when forced past the type (it would otherwise cache a Promise as the instance)', () => {
+    it('is absent at runtime, matching the type surface: a capability the composition lacks is not present-and-throwing', () => {
       const services = createServiceCollection();
 
       // biome-ignore lint/suspicious/noExplicitAny: forcing past the type surface is the test's subject
-      const actual = () => (services.register(Thing) as any).usingAsync(async () => new Thing());
+      const actual = (services.register(Thing) as any).usingAsync;
 
-      expect(actual).toThrow(BuilderError);
+      expect(actual).toBeUndefined();
     });
   });
 

@@ -7,7 +7,6 @@ import type { Lifetime } from '../enums';
  * composition pays only for the guards it can actually hit.
  */
 export const overrideLifetimePreBuildOnly = 'overrideLifetime is pre-build only: the provider derives its plans at buildProvider(), so a lifetime cannot be overridden afterwards. Override before building.';
-export const usingAsyncRequiresAsyncCollection = 'usingAsync is available only on a collection created with { async: true }: a sync collection cannot await a factory at build.';
 export const createScopeRequiresScoped = 'createScope requires a scoped lifetime to be composed. This composition omits it, so it has no scope to open.';
 export const buildPlanMissingFacts = 'buildPlan reached a node with no graph facts; every emitted node is derived from the graph, so this cannot happen.';
 export const syncDisposeOfAsyncOnly = 'Cannot synchronously dispose a boundary holding an async-only disposable; dispose it asynchronously (Symbol.asyncDispose / await using).';
