@@ -18,11 +18,29 @@ import type { Env, GraphNode } from './types';
  * both. Construction itself (cycle tracking for opaque factories, error
  * wrapping, disposal) is the kit's — shared, not reimplemented.
  */
+// The per-view reverse index: node to its (last-declared) owning token. Built once
+// per view because nodeValue needs the owner on every visit; asking the kit's
+// ownerOf would scan every registration bucket per visit, an O(n²)-ish build.
+type NaiveView = ReadonlyMap<GraphNode, ServiceIdentifier<SourceType>>;
+
+const indexOwners = (services: DescriptorMap): NaiveView => {
+  const owners = new Map<GraphNode, ServiceIdentifier<SourceType>>();
+  for (const [token, descriptors] of services) {
+    for (const descriptor of descriptors) {
+      // Last-declared face wins, matching the engine's ownerOf and the derived graph.
+      owners.set(descriptor, token);
+    }
+  }
+  return owners;
+};
+
 export const createNaiveStrategy =
   () =>
   (kit: StrategyKit): ResolutionStrategy => {
+    const ownerFor = (view: EngineView, node: GraphNode): ServiceIdentifier<SourceType> => (view.data as NaiveView).get(node) ?? kit.ownerOf(view, node);
+
     const nodeValue = (view: EngineView, node: GraphNode, env: Env, boundary: Boundary, path: ReadonlySet<GraphNode>): unknown => {
-      const token = kit.ownerOf(view, node);
+      const token = ownerFor(view, node);
       const lifetime = kit.effectiveLifetime(node);
       const held = kit.heldErrorFor(node);
       if (held !== undefined) {
@@ -98,7 +116,7 @@ export const createNaiveStrategy =
     };
 
     return {
-      createView: (_services: DescriptorMap): undefined => undefined,
+      createView: (services: DescriptorMap): NaiveView => indexOwners(services),
       instanceFor: (view, node, env, boundary) => {
         try {
           return ok(nodeValue(view, node, env, boundary, new Set()));
