@@ -6,7 +6,7 @@ import type { BuildFn, Env, GraphNode } from './types';
 /**
  * The resolution-strategy seam. The engine owns everything semantic: token to
  * node lookup, guards, surfaces, lifetime caching, and construction itself
- * (cycle tracking, error wrapping, disposal announcement) — all reached through
+ * (cycle tracking, error wrapping, disposal announcement), all reached through
  * the kit. A strategy owns only how construction is driven: the plan strategy
  * compiles a static plan and executes it; the naive strategy walks the
  * dependency tree recursively. Behaviour must be identical either way; the
@@ -47,7 +47,7 @@ export type StrategyKit = {
   /**
    * Construct the instance: createFromDeps when args are supplied and the node
    * declares one, otherwise createInstance against the pass scope. Carries the
-   * shared semantics both strategies must agree on — factory cycle tracking,
+   * shared semantics both strategies must agree on: factory cycle tracking,
    * singleton depth for the runtime captive check, ServiceCreationError
    * wrapping, field assignment, disposal announcement.
    */

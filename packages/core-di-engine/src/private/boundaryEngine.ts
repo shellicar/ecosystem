@@ -18,7 +18,7 @@ export type EngineComposition = {
    * How construction is driven: the plan strategy (compile once, replay) or the
    * naive strategy (recursive walk, no graph machinery). Semantics are
    * identical; the choice trades compile cost and bundle bytes. Required so the
-   * engine itself imports neither — the composition decides what gets bundled.
+   * engine itself imports neither; the composition decides what gets bundled.
    */
   readonly strategy: StrategyFactory;
   /**
@@ -200,11 +200,10 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     resolveAll: <T extends SourceType>(token: ServiceIdentifier<T>): T[] => resolveManyValue(view, token, env, boundary) as T[],
   });
 
-  // The per-node guard, shared by BOTH resolution doors (resolve and resolveAll).
-  // These checks are about a node being constructed, not about single-vs-many
-  // resolution: an opaque factory re-entering itself is a cycle the static graph
-  // cannot see, and a singleton mid-construction pulling a scoped token is a
-  // runtime captive, whichever door the factory reached them through.
+  // The per-node guard, shared by both resolution doors (resolve and resolveAll):
+  // an opaque factory re-entering itself is a cycle the static graph cannot see,
+  // and a singleton mid-construction pulling a scoped token is a runtime captive,
+  // whichever door the factory reached them through.
   const guardNode = (node: GraphNode, token: ServiceIdentifier<SourceType>): void => {
     if (node.usesFactory === true && constructing.has(node)) {
       throw new CircularDependencyError(token);
@@ -288,13 +287,9 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   };
 
   // An async non-singleton is statically dead wiring: prebake settles async
-  // SINGLETONS at the async build boundary, and no synchronous resolve can ever
-  // honour the factory, so every resolve of such a node is a certain failure.
-  // The descriptor says so before anything constructs, but one errant
-  // registration does not explode the build: the error is HELD, per the
-  // engine's lenient constitution, thrown at resolve (the construct backstop)
-  // and at build under validate. Scope overlays never pass a build, which is
-  // what the construct() backstop remains for.
+  // singletons at the async build boundary, and no synchronous resolve can ever
+  // honour the factory. One errant registration does not explode the build: the
+  // error is held and thrown at resolve, or at build under validate.
   const holdAsyncNonSingletons = (): void => {
     for (const [token, descriptors] of rootView.services) {
       for (const node of descriptors) {

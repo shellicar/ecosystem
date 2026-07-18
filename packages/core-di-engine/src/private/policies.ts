@@ -12,7 +12,7 @@ export const cyclePolicy: GraphPolicy = (graph) => {
   // Whether a cycle is an error depends on which door the app uses, and that is
   // unknowable here: resolve() never walks a shadowed registration, resolveAll()
   // walks every registration in both modes. So the report stays conservative
-  // and SAYS which door a shadowed cycle bites through, letting a deliberate
+  // and says which door a shadowed cycle bites through, letting a deliberate
   // last-wins override be recognised for what it is.
   const index = indexByOwner(graph);
   const isShadowed = (node: (typeof cycles)[number][number]): boolean => {

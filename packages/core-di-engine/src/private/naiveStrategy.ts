@@ -9,14 +9,14 @@ import type { Env, GraphNode } from './types';
 /**
  * The naive strategy: a recursive walk of the dependency tree, resolving each
  * dependency the moment it is met. No plan, no graph derivation, no topological
- * order — recursion builds dependencies before dependents by construction, so
+ * order; recursion builds dependencies before dependents by construction, so
  * prebake candidates need no ordering. Composed where the plan machinery's
  * bytes matter more than its warm-path speed (core-di-lite prebakes everything,
  * so its warm resolve never constructs anyway).
  *
  * Semantics must match the plan strategy exactly; the engine spec runs against
  * both. Construction itself (cycle tracking for opaque factories, error
- * wrapping, disposal) is the kit's — shared, not reimplemented.
+ * wrapping, disposal) is the kit's, shared, not reimplemented.
  */
 // The per-view reverse index: node to its (last-declared) owning token. Built once
 // per view because nodeValue needs the owner on every visit; asking the kit's

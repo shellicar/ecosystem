@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [5.0.0] - 2026-07-16
+
+Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di-lite also composes from. The version jumps to match core-di-lite and core-di-engine: the three packages now release in lockstep so a single engine copy resolves across them. The registration grammar is now the same shape as lite's: `register(Implementation).as(Identifier)` / `.asSelf()` / `.using(factory)`, not `register(Interface).to(Implementation)`.
 
 ### Added
 
@@ -238,6 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[5.0.0]: https://github.com/shellicar/ecosystem/releases/tag/core-di@5.0.0
 [4.0.2]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.2
 [4.0.1]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.1
 [4.0.0]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.0
