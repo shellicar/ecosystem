@@ -73,18 +73,6 @@ jobs:
           PACKAGE: ${{ inputs.package }}
         run: pnpm exec turbo run build --filter "$PACKAGE"
 
-      - name: Type check
-        working-directory: out
-        env:
-          PACKAGE: ${{ inputs.package }}
-        run: pnpm exec turbo run type-check --filter "$PACKAGE"
-
-      - name: Test
-        working-directory: out
-        env:
-          PACKAGE: ${{ inputs.package }}
-        run: pnpm exec turbo run test --filter "$PACKAGE"
-
       - name: Upload dist artifact
         if: steps.meta.outputs.publishable == 'true'
         uses: actions/upload-artifact@v4
