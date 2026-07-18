@@ -6,7 +6,7 @@
   "scripts": {
     "schema": "tsx src/generate-schema.ts",
     "validate": "tsx src/validate-changes.ts",
-    "changelog": "tsx src/generate-changelog.ts"
+    "changelog": "tsx src/generate-all-changelogs.ts"
   },
   "devDependencies": {
     "@shellicar/typescript-config": "workspace:^",
