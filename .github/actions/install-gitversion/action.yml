@@ -1,0 +1,22 @@
+name: Install GitVersion
+description: >
+  Install the GitVersion CLI onto the runner PATH. The build-version esbuild
+  plugin shells out to `gitversion` at build time, so every job that builds the
+  bundle needs it.
+inputs:
+  platform:
+    description: GitVersion release asset platform suffix (e.g. linux-x64, osx-arm64, win-x64)
+    required: false
+    default: linux-x64
+  version:
+    description: GitVersion release version
+    required: false
+    default: '6.6.0'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        curl --fail --silent --show-error --location --retry 3 --retry-delay 5 --retry-all-errors --write-out 'gitversion download: HTTP %{http_code}\n' --output /tmp/gitversion.tar.gz "https://github.com/GitTools/GitVersion/releases/download/${{ inputs.version }}/gitversion-${{ inputs.platform }}-${{ inputs.version }}.tar.gz"
+        sudo tar xzf /tmp/gitversion.tar.gz -C /usr/local/bin gitversion
+        sudo chmod +x /usr/local/bin/gitversion

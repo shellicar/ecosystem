@@ -1,0 +1,22 @@
+name: Checks
+
+# Whole-workspace correctness: build, type-check, test, lint, and the changes
+# validation. Reusable so ci.yml calls it on PR and on main.
+on:
+  workflow_call:
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/install-gitversion
+      - run: pnpm i --frozen-lockfile
+      - run: pnpm run --if-present build --only
+      - run: pnpm run --if-present type-check --only
+      - run: pnpm run --if-present test --only
+      - run: pnpm exec biome ci --diagnostic-level=error .
+      - run: pnpm --filter scripts run validate

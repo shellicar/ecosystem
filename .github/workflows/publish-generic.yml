@@ -1,0 +1,46 @@
+name: Publish
+
+# Publish one already-built package to npm: restore its dist from the build
+# artifact, verify its changelog and version, and publish. There is no build
+# here — build-package already produced the dist.
+on:
+  workflow_call:
+    inputs:
+      package-dir:
+        description: Path to the package to publish, relative to the repo root
+        required: true
+        type: string
+      version:
+        description: Version from the release tag
+        required: true
+        type: string
+      artifact:
+        description: Name of the dist artifact produced by build-package
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write # npm provenance (OIDC)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        with:
+          registry-url: https://registry.npmjs.org/
+      - run: pnpm i --frozen-lockfile
+
+      - name: Restore dist
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: ${{ inputs.package-dir }}/dist
+
+      - uses: ./.github/actions/publish-package
+        with:
+          package-dir: ${{ inputs.package-dir }}
+          version: ${{ inputs.version }}

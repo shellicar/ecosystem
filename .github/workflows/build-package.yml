@@ -1,0 +1,95 @@
+name: Build package
+
+# Build one package once, from its pruned subtree, and upload its dist as an
+# artifact for a downstream publish to consume. This exercises the same
+# targeted-subtree build that release actually publishes, on PR and main, so a
+# prune-specific break (a file the full-workspace build never notices missing)
+# surfaces before merge instead of at release time.
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: Workspace package name to build (e.g. @shellicar/build-clean)
+        required: true
+        type: string
+    outputs:
+      artifact:
+        description: Name of the dist artifact. Always set; the artifact itself is only uploaded for publishable packages.
+        value: ${{ jobs.build.outputs.artifact }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact: ${{ steps.meta.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/install-gitversion
+
+      - name: Resolve package metadata
+        id: meta
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const name = process.env.PACKAGE;
+            let dirs = ["packages"].flatMap((r) => {
+              try { return fs.readdirSync(r).map((p) => r + "/" + p); } catch { return []; }
+            });
+            dirs.push("scripts");
+            dirs = dirs.filter((d) => { try { fs.statSync(d + "/package.json"); return true; } catch { return false; } });
+            const dir = dirs.find((d) => JSON.parse(fs.readFileSync(d + "/package.json", "utf8")).name === name);
+            if (!dir) { process.stderr.write("No workspace package named " + name + "\n"); process.exit(1); }
+            const pkg = JSON.parse(fs.readFileSync(dir + "/package.json", "utf8"));
+            const out = process.env.GITHUB_OUTPUT;
+            fs.appendFileSync(out, "dir=" + dir + "\n");
+            fs.appendFileSync(out, "publishable=" + (pkg.private === false) + "\n");
+            fs.appendFileSync(out, "artifact=dist-" + name.split("/").pop() + "\n");
+          '
+
+      - name: Prune to the package subtree
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: pnpm exec turbo prune "$PACKAGE" --out-dir out
+
+      - name: Restore git history into the pruned tree
+        run: |
+          # turbo prune omits .git, but the build-version esbuild plugin shells
+          # out to gitversion, which reads commit history. GitVersion.yml is
+          # history-based, so the pruned working tree does not change the result.
+          cp -r .git out/.git
+
+      - name: Install the pruned subtree
+        working-directory: out
+        run: pnpm i --frozen-lockfile
+
+      - name: Build
+        working-directory: out
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: pnpm exec turbo run build --filter "$PACKAGE"
+
+      - name: Type check
+        working-directory: out
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: pnpm exec turbo run type-check --filter "$PACKAGE"
+
+      - name: Test
+        working-directory: out
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: pnpm exec turbo run test --filter "$PACKAGE"
+
+      - name: Upload dist artifact
+        if: steps.meta.outputs.publishable == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact }}
+          path: out/${{ steps.meta.outputs.dir }}/dist
+          if-no-files-found: error
+          retention-days: 1

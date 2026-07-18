@@ -1,0 +1,151 @@
+name: CI
+
+# One entrypoint for every trigger. Jobs gate on the event:
+#   - pull_request / push to main → checks + build the affected packages
+#     (same pruned-subtree build release will use, exercised pre-merge).
+#   - release / workflow_dispatch → build the tagged package once, then publish
+#     it. Publishing happens ONLY here — never on PR or main.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to test (e.g. build-clean@1.4.0)'
+        required: true
+
+jobs:
+  # --- PR and main: correctness + affected build ----------------------------
+  checks:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    uses: ./.github/workflows/checks.yml
+    secrets: inherit
+
+  detect:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    outputs:
+      packages: ${{ steps.affected.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - run: pnpm i --frozen-lockfile
+      - name: Compute affected packages
+        id: affected
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            # Diff the PR against its base branch tip.
+            git fetch --no-tags origin "$BASE_REF"
+            BASE="origin/$BASE_REF"
+          else
+            # On a main push, origin/main IS the pushed commit, so an origin/main
+            # base returns nothing. Use the push's previous commit instead.
+            BASE="$BEFORE"
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="HEAD^"
+            fi
+          fi
+          LIST=$(pnpm exec turbo run build --filter="...[$BASE]" --filter='./packages/*' --dry-run=json | jq -c '[.packages[] | select(. != "//")]')
+          echo "packages=$LIST" >> "$GITHUB_OUTPUT"
+          echo "Affected: $LIST"
+
+  build:
+    needs: detect
+    if: ${{ (github.event_name == 'pull_request' || github.event_name == 'push') && needs.detect.outputs.packages != '' && needs.detect.outputs.packages != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.detect.outputs.packages) }}
+    uses: ./.github/workflows/build-package.yml
+    with:
+      package: ${{ matrix.package }}
+    secrets: inherit
+
+  # --- Release: build the tagged package once, then publish it --------------
+  prepare:
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    outputs:
+      package: ${{ steps.tag.outputs.package }}
+      package-dir: ${{ steps.tag.outputs.package-dir }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Parse release tag
+        id: tag
+        env:
+          EVENT: ${{ github.event_name }}
+          DISPATCH_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then TAG="$DISPATCH_TAG"; else TAG="$RELEASE_TAG"; fi
+          case "$TAG" in
+            *@*) ;;
+            *) echo "❌ Tag '$TAG' is not in package@version format"; exit 1 ;;
+          esac
+          BASENAME="${TAG%%@*}"
+          VERSION="${TAG#*@}"
+          # Resolve the tag's unscoped name to the full workspace name + dir the
+          # same way build-package does, so both steps agree on one resolution.
+          BASENAME="$BASENAME" node -e '
+            const fs = require("fs");
+            const base = process.env.BASENAME;
+            let dirs = ["packages"].flatMap((r) => {
+              try { return fs.readdirSync(r).map((p) => r + "/" + p); } catch { return []; }
+            });
+            dirs.push("scripts");
+            dirs = dirs.filter((d) => { try { fs.statSync(d + "/package.json"); return true; } catch { return false; } });
+            const dir = dirs.find((d) => JSON.parse(fs.readFileSync(d + "/package.json", "utf8")).name.split("/").pop() === base);
+            if (!dir) { process.stderr.write("No workspace package for tag name " + base + "\n"); process.exit(1); }
+            const name = JSON.parse(fs.readFileSync(dir + "/package.json", "utf8")).name;
+            const out = process.env.GITHUB_OUTPUT;
+            fs.appendFileSync(out, "package=" + name + "\n");
+            fs.appendFileSync(out, "package-dir=" + dir + "\n");
+          '
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  release-build:
+    needs: prepare
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/build-package.yml
+    with:
+      package: ${{ needs.prepare.outputs.package }}
+    secrets: inherit
+
+  publish:
+    needs: [ prepare, release-build ]
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-generic.yml
+    with:
+      package-dir: ${{ needs.prepare.outputs.package-dir }}
+      version: ${{ needs.prepare.outputs.version }}
+      artifact: ${{ needs.release-build.outputs.artifact }}
+    secrets: inherit
+
+  # --- Aggregate gate: one stable check name a branch ruleset can require.
+  gate:
+    needs: [ checks, detect, build, prepare, release-build, publish ]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every needed job to have succeeded or skipped
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "A needed job failed or was cancelled"
+          exit 1
