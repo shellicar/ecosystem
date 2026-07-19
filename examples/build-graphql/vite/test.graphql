@@ -1,0 +1,10 @@
+type Query
+type Mutation
+
+extend type Query {
+  myType: MyType
+}
+
+type MyType {
+  hello: String
+}
