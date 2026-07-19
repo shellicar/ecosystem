@@ -5,7 +5,7 @@ import esbuild from 'esbuild';
 const watch = process.argv.some((x) => x === '--watch');
 
 const options: Options = {
-  globPattern: '../**/*.graphql',
+  globPattern: './**/*.graphql',
   debug: true,
 };
 

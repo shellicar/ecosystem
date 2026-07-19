@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 import Inspect from 'vite-plugin-inspect';
 
 const options: Options = {
-  globPattern: '../**/*.graphql',
+  globPattern: './**/*.graphql',
   debug: true,
 };
 

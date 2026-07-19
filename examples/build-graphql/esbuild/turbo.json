@@ -3,7 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "inputs": ["tsconfig.json", "**/*.ts", "../*.graphql"]
+      "inputs": ["tsconfig.json", "**/*.ts", "*.graphql"]
     }
   }
 }

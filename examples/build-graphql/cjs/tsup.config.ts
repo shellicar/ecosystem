@@ -4,7 +4,7 @@ import type { Options } from '@shellicar/build-graphql/types';
 import { defineConfig } from 'tsup';
 
 const options: Options = {
-  globPattern: '../**/*.graphql',
+  globPattern: './**/*.graphql',
   debug: true,
 };
 

@@ -41,6 +41,13 @@ jobs:
               try { return fs.readdirSync(r).map((p) => r + "/" + p); } catch { return []; }
             });
             dirs.push("scripts");
+            try {
+              for (const pkg of fs.readdirSync("examples")) {
+                for (const variant of fs.readdirSync("examples/" + pkg)) {
+                  dirs.push("examples/" + pkg + "/" + variant);
+                }
+              }
+            } catch {}
             dirs = dirs.filter((d) => { try { fs.statSync(d + "/package.json"); return true; } catch { return false; } });
             const dir = dirs.find((d) => JSON.parse(fs.readFileSync(d + "/package.json", "utf8")).name === name);
             if (!dir) { process.stderr.write("No workspace package named " + name + "\n"); process.exit(1); }
