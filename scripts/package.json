@@ -12,8 +12,8 @@
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
     "ajv": "^8",
-    "semver": "^7.8.0",
-    "tsx": "^4.21.0",
+    "semver": "^7.8.5",
+    "tsx": "^4.22.5",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   }
