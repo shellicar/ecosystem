@@ -1,5 +1,4 @@
-import { equal, notEqual } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, dependsOn } from '../src';
 
 abstract class IBottom {}
@@ -15,26 +14,31 @@ class Top implements ITop {
   constructor(public readonly bottom2: IBottom) {}
 }
 
-describe('Works when constructor is invoked', () => {
+describe('Factory that invokes the constructor', () => {
   const services = createServiceCollection();
-  services.register(IBottom).to(Bottom);
-  services.register(ITop).to(Top, (x) => new Top(x.resolve(IBottom)));
+  services.register(Bottom).as(IBottom);
+  services
+    .register(Top)
+    .using((x) => new Top(x.resolve(IBottom)))
+    .as(ITop);
 
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('can resolve', () => {
-    const svc = scoped.resolve(ITop);
-    notEqual(svc.bottom2, undefined);
+  it('injects the constructor dependency', () => {
+    const actual = scoped.resolve(ITop).bottom2;
+    expect(actual).not.toBeUndefined();
   });
 
-  it('sets property', () => {
-    const svc = scoped.resolve(ITop);
-    notEqual(svc.bottom1, undefined);
+  it('injects the declared field dependency', () => {
+    const actual = scoped.resolve(ITop).bottom1;
+    expect(actual).not.toBeUndefined();
   });
 
-  it('resolves bottom once', () => {
+  it('shares one Bottom across constructor and field within a resolve', () => {
     const svc = scoped.resolve(ITop);
-    equal(svc.bottom1, svc.bottom2);
+    const expected = svc.bottom2;
+    const actual = svc.bottom1;
+    expect(actual).toBe(expected);
   });
 });

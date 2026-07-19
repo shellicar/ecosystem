@@ -5,7 +5,7 @@ import { MyService } from './MyService.js';
 
 export class MyModule implements IServiceModule {
   registerServices(services: IServiceCollection): void {
-    services.register(IMyService).to(MyService);
-    services.register(IMyOtherService).to(MyOtherService);
+    services.register(MyService).as(IMyService);
+    services.register(MyOtherService).as(IMyOtherService);
   }
 }

@@ -28,6 +28,9 @@ const ReleaseMarker = z
     version: z.string(),
     date: z.string(),
     tag: z.string().optional(),
+    // Release-level prose: rendered as a paragraph under the version heading,
+    // for the release-wide story that individual change lines cannot carry.
+    description: z.string().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();

@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/core-di-lite",
   "private": false,
-  "version": "1.0.2",
+  "version": "5.0.0-alpha.1",
   "type": "module",
   "license": "MIT",
   "author": "Stephen Hellicar",
@@ -40,10 +40,17 @@
       }
     }
   },
+  "sideEffects": [
+    "./dist/esm/index.js",
+    "./dist/cjs/index.cjs"
+  ],
   "files": [
     "dist",
     "*.md"
   ],
+  "dependencies": {
+    "@shellicar/core-di-engine": "workspace:^"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

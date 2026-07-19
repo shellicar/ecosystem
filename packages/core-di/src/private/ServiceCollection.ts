@@ -1,18 +1,75 @@
-import type { Lifetime } from '../enums';
-import { InvalidServiceIdentifierError } from '../errors';
-import type { IServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
+import {
+  type AbstractNewable,
+  asyncThroughSyncPathPolicy,
+  buildEngine,
+  buildEngineAsync,
+  type ComposableCollection,
+  captivePolicyFor,
+  createCollection,
+  createDisposal,
+  createPlanStrategy,
+  createResolveLifetime,
+  createScopedLifetime,
+  createSingletonLifetime,
+  cyclePolicy,
+  type DescriptorMap,
+  deriveFacts,
+  ForwardBuilder,
+  type IForwardBuilder,
+  InvalidOperationError,
+  InvalidServiceIdentifierError,
+  IResolutionScope,
+  Lifetime,
+  missingTargetPolicy,
+  type Newable,
+  noDeclaredIdentity,
+  overrideLifetimePreBuildOnly,
+  pushBucket,
+  runGraphPolicies,
+  type ServiceDescriptor,
+  type ServiceIdentifier,
+  type SourceType,
+  ValidationError,
+  type ValidationProblem,
+  ValidationProblemKind,
+  type ValidationReport,
+} from '@shellicar/core-di-engine';
+import type { IAbstractServiceBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
+import { IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
 import type { ILogger } from '../logger';
-import { createDescriptorMap, type DescriptorMap, type EnsureObject, type ServiceCollectionOptions, type ServiceDescriptor, type ServiceIdentifier, type ServiceModuleType, type SourceType, type UnionToIntersection } from '../types';
-import { ServiceBuilder } from './ServiceBuilder';
-import { ServiceProvider } from './ServiceProvider';
+import type { BuildProviderOptions, InstrumentationHook, InstrumentationOptions, ServiceCollectionOptions, ServiceModuleType } from '../types';
+import { ServiceProvider } from './provider';
+
+// Transient is passed like any other verb: the builder no longer appends it. It is
+// still the floor at resolution (no feature in the composition caches it).
+const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve, Lifetime.Transient] as const satisfies readonly Lifetime[];
+
+const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
 export class ServiceCollection implements IServiceCollection {
+  private readonly composed: ComposableCollection<Lifetime, boolean>;
+  private version = 0;
+  private built = false;
+
   constructor(
     private readonly logger: ILogger,
     public readonly options: ServiceCollectionOptions,
     private readonly isScoped: boolean,
-    private readonly services = createDescriptorMap(),
-  ) {}
+    private readonly isAsync: boolean,
+  ) {
+    this.composed = createCollection(composedLifetimes, {
+      async: this.isAsync,
+      scoped: this.isScoped,
+      onFace: (identifier, descriptor) => {
+        this.logger.info('Adding service', { identifier: identifier.name, descriptor });
+        this.version++;
+      },
+    });
+  }
+
+  private get services(): DescriptorMap {
+    return this.composed.regs as DescriptorMap;
+  }
 
   public registerModules(...modules: ServiceModuleType[]): void {
     for (const x of modules) {
@@ -22,44 +79,139 @@ export class ServiceCollection implements IServiceCollection {
   }
 
   get<T extends SourceType>(key: ServiceIdentifier<T>): ServiceDescriptor<T>[] {
-    return this.services.get(key) ?? [];
+    return (this.services.get(key) ?? []) as ServiceDescriptor<T>[];
   }
 
   public overrideLifetime<T extends SourceType>(identifier: ServiceIdentifier<T>, lifetime: Lifetime): void {
+    if (this.built) {
+      throw new InvalidOperationError(overrideLifetimePreBuildOnly);
+    }
     for (const descriptor of this.get(identifier)) {
-      descriptor.lifetime = lifetime;
+      if (descriptor.forwardTarget == null) {
+        descriptor.lifetime = lifetime;
+      }
     }
   }
 
-  register<Types extends [SourceType, ...SourceType[]]>(...identifiers: { [K in keyof Types]: ServiceIdentifier<Types[K]> }): IServiceBuilder<EnsureObject<UnionToIntersection<Types[number]>>> {
-    if (identifiers.length === 0 || identifiers.some((id) => id == null)) {
+  public register<T extends SourceType>(implementation: Newable<T>): INewableServiceBuilder<T>;
+  public register<T extends SourceType>(implementation: AbstractNewable<T>): IAbstractServiceBuilder<T>;
+  public register<T extends SourceType>(implementation: AbstractNewable<T>): INewableServiceBuilder<T> | IAbstractServiceBuilder<T> {
+    return this.composed.register(implementation as Newable<T>) as INewableServiceBuilder<T>;
+  }
+
+  public forward<S extends SourceType>(source: ServiceIdentifier<S>): IForwardBuilder<S> {
+    if (source == null) {
       throw new InvalidServiceIdentifierError();
     }
-
-    return new ServiceBuilder(identifiers, this.isScoped, (identifier, descriptor) => this.addService(identifier, descriptor));
+    return new ForwardBuilder<S>(source, (identifier, descriptor) => {
+      pushBucket(this.services, identifier, descriptor);
+      this.logger.info('Adding service', { identifier: identifier.name, descriptor });
+      this.version++;
+    });
   }
 
-  private addService<T extends SourceType>(identifier: ServiceIdentifier<T>, descriptor: ServiceDescriptor<T>) {
-    this.logger.info('Adding service', { identifier: identifier.name, descriptor });
-    let existing = this.services.get(identifier);
-    if (existing == null) {
-      existing = [];
-      this.services.set(identifier, existing);
+  public validate(): ValidationReport {
+    const problems: ValidationProblem[] = [];
+    for (const node of this.composed.unfaced()) {
+      problems.push({
+        kind: ValidationProblemKind.NoIdentity,
+        message: noDeclaredIdentity(node.implementation.name),
+      });
     }
-    existing.push(descriptor);
+    const graph = deriveFacts(this.services);
+    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy, Lifetime.Resolve)]));
+    return { valid: problems.length === 0, problems };
+  }
+
+  // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
+  // copy (a multi-face descriptor stays one object in the clone), cloneShared shares the
+  // descriptor itself so scope overlays see the same nodes.
+  private cloneWith(isScoped: boolean, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>): ServiceCollection {
+    const cloned = new ServiceCollection(this.logger, this.options, isScoped, this.isAsync);
+    for (const [key, descriptors] of this.services) {
+      cloned.services.set(key, descriptors.map(copyOf));
+    }
+    return cloned;
   }
 
   public clone(scoped?: unknown): IServiceCollection {
-    const clonedMap: DescriptorMap = createDescriptorMap();
-    for (const [key, descriptors] of this.services) {
-      const clonedDescriptors = descriptors.map((descriptor) => ({ ...descriptor }));
-      clonedMap.set(key, clonedDescriptors);
-    }
-
-    return new ServiceCollection(this.logger, this.options, scoped === true, clonedMap);
+    const copies = new Map<ServiceDescriptor<SourceType>, ServiceDescriptor<SourceType>>();
+    const copyOf = (descriptor: ServiceDescriptor<SourceType>): ServiceDescriptor<SourceType> => {
+      let copy = copies.get(descriptor);
+      if (copy === undefined) {
+        copy = { ...descriptor };
+        copies.set(descriptor, copy);
+      }
+      return copy;
+    };
+    return this.cloneWith(scoped === true, copyOf);
   }
 
-  public buildProvider(): IServiceProvider {
-    return ServiceProvider.createRoot(this.logger, this.clone());
+  public cloneShared(): ServiceCollection {
+    return this.cloneWith(true, (descriptor) => descriptor);
+  }
+
+  public snapshot(): { readonly services: DescriptorMap; readonly version: number } {
+    return { services: this.services, version: this.version };
+  }
+
+  private composition() {
+    return {
+      features: {
+        [Lifetime.Singleton]: createSingletonLifetime(),
+        [Lifetime.Scoped]: createScopedLifetime(),
+        [Lifetime.Resolve]: createResolveLifetime(),
+      },
+      defaultLifetime: Lifetime.Resolve,
+      strategy: createPlanStrategy(),
+      disposal: createDisposal(),
+      runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
+      surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
+        [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
+        [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],
+        [IResolutionScope as ServiceIdentifier<SourceType>, 'boundary'],
+      ]),
+    };
+  }
+
+  private freeze(options?: BuildProviderOptions): ServiceCollection {
+    if (options?.validate) {
+      const report = this.validate();
+      if (!report.valid) {
+        throw new ValidationError(report.problems);
+      }
+    }
+    this.built = true;
+    const frozen = this.clone() as ServiceCollection;
+    frozen.built = true;
+    return frozen;
+  }
+
+  private engineOptions(options?: BuildProviderOptions) {
+    return { validate: options?.validate, registrationMode: this.options.registrationMode };
+  }
+
+  private finish(frozen: ServiceCollection, engine: Parameters<typeof ServiceProvider.createRoot>[2], onTiming: InstrumentationHook | undefined, start: number | undefined): IServiceProvider {
+    const provider = ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
+    return provider;
+  }
+
+  public buildProvider(options?: BuildProviderOptions): IServiceProvider {
+    const onTiming = activeHook(options?.instrument);
+    const start = onTiming === undefined ? undefined : performance.now();
+    const frozen = this.freeze(options);
+    const engine = buildEngine(frozen.services, this.composition(), this.engineOptions(options));
+    return this.finish(frozen, engine, onTiming, start);
+  }
+
+  public async buildProviderAsync(options?: BuildProviderOptions): Promise<IServiceProvider> {
+    const onTiming = activeHook(options?.instrument);
+    const start = onTiming === undefined ? undefined : performance.now();
+    const frozen = this.freeze(options);
+    const engine = await buildEngineAsync(frozen.services, this.composition(), this.engineOptions(options));
+    return this.finish(frozen, engine, onTiming, start);
   }
 }

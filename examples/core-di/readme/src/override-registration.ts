@@ -16,7 +16,7 @@ class MockOptions implements IOptions {
 }
 
 const registerDependencies = (svc: IServiceCollection) => {
-  svc.register(IOptions).to(Options);
+  svc.register(Options).as(IOptions);
 };
 
 const services = createServiceCollection({ registrationMode: ResolveMultipleMode.LastRegistered });
@@ -24,7 +24,7 @@ registerDependencies(services);
 
 // Later
 const registerMockDependencies = (svc: IServiceCollection) => {
-  svc.register(IOptions).to(MockOptions);
+  svc.register(MockOptions).as(IOptions);
 };
 
 registerMockDependencies(services);

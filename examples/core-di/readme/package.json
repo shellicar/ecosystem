@@ -1,4 +1,6 @@
 {
+  "name": "@shellicar/core-di-examples-readme",
+  "private": true,
   "type": "module",
   "main": "src/index.ts",
   "scripts": {

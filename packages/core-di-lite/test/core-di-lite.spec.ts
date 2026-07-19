@@ -1,389 +1,300 @@
-import { describe, expect, it } from 'vitest';
-import { CircularDependencyError, createServiceCollection, DuplicateRegistrationError, dependsOn, ServiceCreationError, UnregisteredServiceError } from '../src';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { CircularDependencyError, createServiceCollection, dependsOn, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../src';
 
-// Registration and resolution
-abstract class IFoo {
-  abstract value(): string;
-}
-class Foo implements IFoo {
-  value() {
-    return 'foo';
-  }
-}
-abstract class IBar {
-  abstract value(): string;
-}
-class Bar implements IBar {
-  constructor(private readonly foo: IFoo) {}
-  value() {
-    return `bar:${this.foo.value()}`;
-  }
-}
-abstract class IBarExposing {
-  abstract getFoo(): IFoo;
-}
-class BarExposing implements IBarExposing {
-  constructor(private readonly foo: IFoo) {}
-  getFoo() {
-    return this.foo;
-  }
-}
+// Lite is the focused composition of the shared engine: everything is a
+// singleton, everything constructs at buildProvider (fail fast), and a resolve
+// afterwards is a pure lookup. These specs pin that, plus the two gaps that
+// motivated the redesign: shared identity across faces once a factory is
+// involved, and forwarding one declaration to another.
 
-// @dependsOn decorator
-abstract class IDep {
-  abstract check(): string;
+let constructed: string[] = [];
+const track = (name: string): void => {
+  constructed.push(name);
+};
+const countOf = (name: string): number => constructed.filter((entry) => entry === name).length;
+
+beforeEach(() => {
+  constructed = [];
+});
+
+abstract class ILogger {
+  abstract log(message: string): void;
 }
-class Dep implements IDep {
-  check() {
-    return 'dep';
+abstract class IAuditSink {
+  abstract log(message: string): void;
+}
+class ConsoleLogger implements ILogger, IAuditSink {
+  constructor() {
+    track('ConsoleLogger');
   }
+  log(_message: string): void {}
 }
 
-// Symbol-keyed @dependsOn
-const symField = Symbol('dep');
-abstract class IWithSymbolDep {
-  abstract run(): string;
+abstract class IGreeter {
+  abstract greet(): string;
 }
-class WithSymbolDep implements IWithSymbolDep {
-  @dependsOn(IDep) readonly [symField]!: IDep;
-  run() {
-    return this[symField]?.check() ?? 'not injected';
+class Greeter implements IGreeter {
+  constructor(private readonly logger: ILogger) {
+    track('Greeter');
   }
-}
-abstract class IWithOneDep {
-  abstract run(): string;
-}
-class WithOneDep implements IWithOneDep {
-  @dependsOn(IDep) private readonly dep!: IDep;
-  run() {
-    return this.dep.check();
+  greet(): string {
+    this.logger.log('greeting');
+    return 'hello';
   }
 }
 
-abstract class IDepA {
-  abstract a(): string;
-}
-class DepA implements IDepA {
-  a() {
-    return 'a';
-  }
-}
-abstract class IDepB {
-  abstract b(): string;
-}
-class DepB implements IDepB {
-  b() {
-    return 'b';
-  }
-}
-abstract class IWithTwoDeps {
-  abstract run(): string;
-}
-class WithTwoDeps implements IWithTwoDeps {
-  @dependsOn(IDepA) private readonly depA!: IDepA;
-  @dependsOn(IDepB) private readonly depB!: IDepB;
-  run() {
-    return `${this.depA.a()}${this.depB.b()}`;
-  }
-}
-
-// Chained dependencies: A -> B -> C
-abstract class IC {
-  abstract value(): string;
-}
-class C implements IC {
-  value() {
-    return 'c';
-  }
-}
-abstract class IB {
-  abstract value(): string;
-}
-class B implements IB {
-  @dependsOn(IC) private readonly c!: IC;
-  value() {
-    return `b:${this.c.value()}`;
-  }
-}
-abstract class IA {
-  abstract value(): string;
-}
-class A implements IA {
-  @dependsOn(IB) private readonly b!: IB;
-  value() {
-    return `a:${this.b.value()}`;
-  }
-}
-
-// Eager build and singleton
-abstract class ICountedService {
-  abstract value(): string;
-}
-class CountedService implements ICountedService {
-  value() {
-    return 'x';
-  }
-}
-
-// Circular dependency
-abstract class ICycleA {
-  abstract value(): string;
-}
-abstract class ICycleB {
-  abstract value(): string;
-}
-class CycleA implements ICycleA {
-  @dependsOn(ICycleB) private readonly b!: ICycleB;
-  value() {
-    return 'a';
-  }
-}
-class CycleB implements ICycleB {
-  @dependsOn(ICycleA) private readonly a!: ICycleA;
-  value() {
-    return 'b';
-  }
-}
-
-abstract class ISelfRef {
-  abstract value(): string;
-}
-class SelfRef implements ISelfRef {
-  @dependsOn(ISelfRef) private readonly self!: ISelfRef;
-  value() {
-    return 'self';
-  }
-}
-
-// Factory and decorator combination
-abstract class IFactoryFoo {
-  abstract foo(): string;
-}
-class FactoryFoo implements IFactoryFoo {
-  foo() {
-    return 'foo';
-  }
-}
-abstract class IDecorated {
-  abstract result(): string;
-}
+abstract class IDecorated {}
 class Decorated implements IDecorated {
-  @dependsOn(IFactoryFoo) private readonly factoryFoo!: IFactoryFoo;
-  private readonly extra: string;
-  constructor(extra: string) {
-    this.extra = extra;
-  }
-  result() {
-    return `${this.extra}:${this.factoryFoo.foo()}`;
+  @dependsOn(ILogger) public readonly logger!: ILogger;
+  constructor() {
+    track('Decorated');
   }
 }
 
-describe('Registration and resolution', () => {
-  it('resolves a registered service', () => {
+abstract class IBoom {}
+class Boom implements IBoom {
+  constructor() {
+    throw new Error('boom');
+  }
+}
+
+describe('shared identity across faces (the 4.x gap)', () => {
+  it('resolves one instance for two faces declared from one register call', () => {
     const services = createServiceCollection();
-    services.register(IFoo).to(Foo);
+    services.register(ConsoleLogger).as(ILogger).as(IAuditSink).singleton();
     const provider = services.buildProvider();
-    const actual = provider.resolve(IFoo).value();
-    const expected = 'foo';
+    const expected = provider.resolve(ILogger);
+
+    const actual = provider.resolve(IAuditSink);
+
     expect(actual).toBe(expected);
   });
 
-  it('resolves a service registered with a factory', () => {
+  it('keeps shared identity when the instance comes from a factory', () => {
     const services = createServiceCollection();
-    services.register(IFoo).to(Foo);
-    services.register(IBar).to(IBar, (x) => new Bar(x.resolve(IFoo)));
+    services
+      .register(ConsoleLogger)
+      .using(() => new ConsoleLogger())
+      .as(ILogger)
+      .as(IAuditSink);
     const provider = services.buildProvider();
-    const actual = provider.resolve(IBar).value();
-    const expected = 'bar:foo';
+    const expected = provider.resolve(ILogger);
+
+    const actual = provider.resolve(IAuditSink);
+
     expect(actual).toBe(expected);
   });
 
-  it('factory receives a resolution scope that can resolve other services', () => {
-    const services = createServiceCollection();
-    services.register(IFoo).to(Foo);
-    let captured: IFoo | undefined;
-    services.register(IBar).to(IBar, (x) => {
-      captured = x.resolve(IFoo);
-      return new Bar(captured);
-    });
-    services.buildProvider();
-    const actual = captured instanceof Foo;
-    const expected = true;
-    expect(actual).toBe(expected);
-  });
-
-  it('throws UnregisteredServiceError for unresolved identifier', () => {
-    const services = createServiceCollection();
-    const provider = services.buildProvider();
-    const actual = () => provider.resolve(IFoo);
-    expect(actual).toThrow(UnregisteredServiceError);
-  });
-});
-
-describe('@dependsOn decorator', () => {
-  it('injects dependency via @dependsOn', () => {
-    const services = createServiceCollection();
-    services.register(IDep).to(Dep);
-    services.register(IWithOneDep).to(WithOneDep);
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IWithOneDep).run();
-    const expected = 'dep';
-    expect(actual).toBe(expected);
-  });
-
-  it('injects multiple dependencies via multiple @dependsOn fields', () => {
-    const services = createServiceCollection();
-    services.register(IDepA).to(DepA);
-    services.register(IDepB).to(DepB);
-    services.register(IWithTwoDeps).to(WithTwoDeps);
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IWithTwoDeps).run();
-    const expected = 'ab';
-    expect(actual).toBe(expected);
-  });
-
-  it('chains through nested @dependsOn (A depends on B, B depends on C)', () => {
-    const services = createServiceCollection();
-    services.register(IC).to(C);
-    services.register(IB).to(B);
-    services.register(IA).to(A);
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IA).value();
-    const expected = 'a:b:c';
-    expect(actual).toBe(expected);
-  });
-});
-
-describe('Eager build', () => {
-  it('all services are instantiated at buildProvider() (factory called during build, not on resolve)', () => {
-    let callCount = 0;
-    const services = createServiceCollection();
-    services.register(ICountedService).to(ICountedService, () => {
-      callCount++;
-      return new CountedService();
-    });
-    services.buildProvider();
-    const actual = callCount;
+  it('constructs the shared instance once, not once per face', () => {
     const expected = 1;
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger).as(IAuditSink);
+    services.buildProvider();
+
+    const actual = countOf('ConsoleLogger');
+
     expect(actual).toBe(expected);
   });
 
-  it('factory call count is exactly one per registration (singleton)', () => {
-    let callCount = 0;
+  it('gives separate register calls separate instances even for one implementation', () => {
     const services = createServiceCollection();
-    services.register(ICountedService).to(ICountedService, () => {
-      callCount++;
-      return new CountedService();
-    });
+    services.register(ConsoleLogger).as(ILogger);
+    services.register(ConsoleLogger).as(IAuditSink);
     const provider = services.buildProvider();
-    provider.resolve(ICountedService);
-    provider.resolve(ICountedService);
-    const actual = callCount;
+    const first = provider.resolve(ILogger);
+
+    const actual = provider.resolve(IAuditSink);
+
+    expect(actual).not.toBe(first);
+  });
+});
+
+describe('forwarding (the other 4.x gap)', () => {
+  it('resolves a forwarded token to the target registration instance', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services.forward(IAuditSink).to(ILogger);
+    const provider = services.buildProvider();
+    const expected = provider.resolve(ILogger);
+
+    const actual = provider.resolve(IAuditSink);
+
+    expect(actual).toBe(expected);
+  });
+});
+
+describe('eager singleton build: pay resolution once, at buildProvider', () => {
+  it('constructs every registration at build, before any resolve', () => {
     const expected = 1;
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services.buildProvider();
+
+    const actual = countOf('ConsoleLogger');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('resolves as a pure lookup, constructing nothing more', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    const provider = services.buildProvider();
+    const expected = countOf('ConsoleLogger');
+
+    provider.resolve(ILogger);
+    const actual = countOf('ConsoleLogger');
+
+    expect(actual).toBe(expected);
+  });
+
+  it('shares the un-verbed registration as a singleton: the composed default', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    const provider = services.buildProvider();
+    const expected = provider.resolve(ILogger);
+
+    const actual = provider.resolve(ILogger);
+
     expect(actual).toBe(expected);
   });
 });
 
-describe('Singleton behavior', () => {
-  it('same instance returned on multiple resolve() calls', () => {
+describe('fail fast at buildProvider', () => {
+  it('throws at build when a constructor fails', () => {
     const services = createServiceCollection();
-    services.register(IFoo).to(Foo);
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IFoo);
-    const expected = provider.resolve(IFoo);
-    expect(actual).toBe(expected);
-  });
+    services.register(Boom).as(IBoom);
 
-  it('same instance returned when resolved via different code paths', () => {
-    const services = createServiceCollection();
-    services.register(IFoo).to(Foo);
-    services.register(IBarExposing).to(IBarExposing, (x) => new BarExposing(x.resolve(IFoo)));
-    const provider = services.buildProvider();
-    const fooDirectly = provider.resolve(IFoo);
-    const fooViaBar = provider.resolve(IBarExposing).getFoo();
-    expect(fooDirectly).toBe(fooViaBar);
-  });
-});
-
-describe('Circular dependency detection', () => {
-  it('throws CircularDependencyError for A -> B -> A', () => {
-    const services = createServiceCollection();
-    services.register(ICycleA).to(CycleA);
-    services.register(ICycleB).to(CycleB);
     const actual = () => services.buildProvider();
-    expect(actual).toThrow(CircularDependencyError);
-  });
 
-  it('throws CircularDependencyError for self-dependency', () => {
-    const services = createServiceCollection();
-    services.register(ISelfRef).to(SelfRef);
-    const actual = () => services.buildProvider();
-    expect(actual).toThrow(CircularDependencyError);
-  });
-});
-
-describe('Factory and decorator combination', () => {
-  it('factory creates instance, @dependsOn injects additional dependencies on the same instance', () => {
-    const services = createServiceCollection();
-    services.register(IFactoryFoo).to(FactoryFoo);
-    services.register(IDecorated).to(IDecorated, () => new Decorated('extra'));
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IDecorated).result();
-    const expected = 'extra:foo';
-    expect(actual).toBe(expected);
-  });
-});
-
-describe('Duplicate registration', () => {
-  it('throws DuplicateRegistrationError when the same identifier is registered twice', () => {
-    const services = createServiceCollection();
-    services.register(IFoo).to(Foo);
-    const actual = () => services.register(IFoo).to(Foo);
-    expect(actual).toThrow(DuplicateRegistrationError);
-  });
-});
-
-describe('Service creation errors', () => {
-  it('wraps factory errors in ServiceCreationError', () => {
-    const services = createServiceCollection();
-    services.register(IFoo).to(IFoo, () => {
-      throw new TypeError('boom');
-    });
-    const actual = () => services.buildProvider();
     expect(actual).toThrow(ServiceCreationError);
   });
-});
 
-describe('@dependsOn with symbol-keyed field', () => {
-  it('injects symbol-keyed dependencies', () => {
+  it('throws at build when a declared dependency is unregistered', () => {
     const services = createServiceCollection();
-    services.register(IDep).to(Dep);
-    services.register(IWithSymbolDep).to(WithSymbolDep);
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IWithSymbolDep).run();
-    const expected = 'dep';
-    expect(actual).toBe(expected);
-  });
-});
+    services.register(Decorated).as(IDecorated);
 
-describe('Registration-order independence', () => {
-  it('resolves correctly when services are registered in reverse dependency order', () => {
-    const services = createServiceCollection();
-    services.register(IA).to(A);
-    services.register(IB).to(B);
-    services.register(IC).to(C);
-    const provider = services.buildProvider();
-    const actual = provider.resolve(IA).value();
-    const expected = 'a:b:c';
-    expect(actual).toBe(expected);
-  });
-});
-
-describe('@dependsOn with unregistered dependency', () => {
-  it('throws UnregisteredServiceError at build time when @dependsOn references an unregistered service', () => {
-    const services = createServiceCollection();
-    services.register(IWithOneDep).to(WithOneDep);
     const actual = () => services.buildProvider();
+
     expect(actual).toThrow(UnregisteredServiceError);
+  });
+
+  it('throws at build on a dependency cycle', () => {
+    abstract class ICycleA {}
+    abstract class ICycleB {}
+    class CycleA implements ICycleA {
+      @dependsOn(ICycleB) public readonly b!: ICycleB;
+    }
+    class CycleB implements ICycleB {
+      @dependsOn(ICycleA) public readonly a!: ICycleA;
+    }
+    const services = createServiceCollection();
+    services.register(CycleA).as(ICycleA);
+    services.register(CycleB).as(ICycleB);
+
+    const actual = () => services.buildProvider();
+
+    expect(actual).toThrow(CircularDependencyError);
+  });
+});
+
+describe('wiring', () => {
+  it('injects a constructor dependency through a declared-deps factory', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services
+      .register(Greeter)
+      .using([ILogger], (logger) => new Greeter(logger))
+      .as(IGreeter);
+    const provider = services.buildProvider();
+    const expected = 'hello';
+
+    const actual = provider.resolve(IGreeter).greet();
+
+    expect(actual).toBe(expected);
+  });
+
+  it('injects a @dependsOn field', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services.register(Decorated).as(IDecorated);
+    const provider = services.buildProvider();
+    const expected = provider.resolve(ILogger);
+
+    const actual = (provider.resolve(IDecorated) as Decorated).logger;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('throws UnregisteredServiceError for an unregistered token at resolve', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    const provider = services.buildProvider();
+
+    const actual = () => provider.resolve(IGreeter);
+
+    expect(actual).toThrow(UnregisteredServiceError);
+  });
+});
+
+describe('multiplicity', () => {
+  it('throws MultipleRegistrationError when resolve meets two registrations of one token', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services.register(ConsoleLogger).as(ILogger);
+    const provider = services.buildProvider();
+
+    const actual = () => provider.resolve(ILogger);
+
+    expect(actual).toThrow(MultipleRegistrationError);
+  });
+
+  it('resolveAll returns one instance per registration', () => {
+    const expected = 2;
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services.register(ConsoleLogger).as(ILogger);
+    const provider = services.buildProvider();
+
+    const actual = provider.resolveAll(ILogger).length;
+
+    expect(actual).toBe(expected);
+  });
+});
+
+describe('the focused surface', () => {
+  it('exposes no lifetime verb beyond singleton', () => {
+    const services = createServiceCollection();
+
+    const builder = services.register(ConsoleLogger).as(ILogger) as unknown as Record<string, unknown>;
+    const actual = { scoped: builder.scoped, resolve: builder.resolve, transient: builder.transient };
+
+    expect(actual).toEqual({ scoped: undefined, resolve: undefined, transient: undefined });
+  });
+
+  it('rejects an uncomposed verb at compile time', () => {
+    const services = createServiceCollection();
+
+    // @ts-expect-error - lite composes only the singleton lifetime; there is no scoped verb
+    services.register(ConsoleLogger).as(ILogger).scoped;
+  });
+
+  it('reports unregistered dependencies through validate() without constructing', () => {
+    const services = createServiceCollection();
+    services.register(Decorated).as(IDecorated);
+
+    const report = services.validate();
+
+    expect(report.valid).toBe(false);
+    expect(countOf('Decorated')).toBe(0);
+  });
+
+  it('passes validate() for a well-wired collection', () => {
+    const services = createServiceCollection();
+    services.register(ConsoleLogger).as(ILogger);
+    services.register(Decorated).as(IDecorated);
+
+    const actual = services.validate().valid;
+
+    expect(actual).toBe(true);
   });
 });

@@ -11,6 +11,11 @@
 * 🏭 Factory method support
 * 🎨 Decorator-based property injection
 * 🔄 Flexible lifetime management
+* ⏳ Async factories awaited at the build boundary
+* 🔥 Eager or lazy singleton construction
+* 🧹 Deterministic per-lifetime disposal
+* 🗺️ Inspect the built dependency graph with `printGraph`
+* ⏱️ Time `buildProvider` and each `resolve` with an opt-in instrumentation hook
 * 📦 Service modules for organization
 * 🔍 Circular dependency detection at resolution time
 * 🚨 Clear error messages with dependency chain tracking
@@ -30,7 +35,7 @@ import { createServiceCollection } from '@shellicar/core-di';
 abstract class IAbstract {}
 class Concrete implements IAbstract {}
 const services = createServiceCollection();
-services.register(IAbstract).to(Concrete);
+services.register(Concrete).as(IAbstract);
 const provider = services.buildProvider();
 const svc = provider.resolve(IAbstract);
 ```
@@ -86,9 +91,9 @@ See [readme examples](../../examples/core-di/readme/src) for example source code
 ```ts
 const services = createServiceCollection();
 abstract class IAbstract { abstract method(): void; }
-abstract class Concrete {}
-services.register(IAbstract).to(Concrete);
-//                              ^ Error
+class Concrete {}
+services.register(Concrete).as(IAbstract);
+//                              ^ Error: Concrete does not implement IAbstract
 ```
 
 * Type-safe resolution.
@@ -102,16 +107,19 @@ const svc = provider.resolve(IMyService);
 * Provide factory methods for instantiating classes.
 
 ```ts
-services.register(Redis).to(Redis, x => {
-  const options = x.resolve(IRedisOptions);
-  return new Redis({
-    port: options.port,
-    host: options.host,
-  });
-});
+services
+  .register(Redis)
+  .using(x => {
+    const options = x.resolve(IRedisOptions);
+    return new Redis({
+      port: options.port,
+      host: options.host,
+    });
+  })
+  .asSelf();
 ```
 
-* Use property injection with decorators for simple dependency definition.
+* Declare dependencies with the `@dependsOn` decorator on a class field. Edges are recorded at class-definition time, so `validate()` reads the dependency graph with no construction.
 
 ```ts
 abstract class IDependency {}
@@ -124,7 +132,7 @@ class Service implements IService {
 * Define instance lifetime with simple builder pattern.
 
 ```ts
-services.register(IAbstract).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract).singleton();
 ```
 
 * Create scopes to allow "per-request" lifetimes.
@@ -139,13 +147,13 @@ using scope = provider.createScope();
 
 ```ts
 using scope = provider.createScope();
-scope.Services.register(IContext).to(Context);
+scope.Services.register(Context).as(IContext);
 ```
 
 * Multiple registrations
 
 ```ts
-services.register(IAbstract1, IAbstract2).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract1).as(IAbstract2).singleton();
 const provider = services.buildProvider();
 provider.resolve(IAbstract1) === provider.resolve(IAbstract2);
 ```
@@ -155,9 +163,9 @@ provider.resolve(IAbstract1) === provider.resolve(IAbstract2);
 ```ts
 import { ok } from 'node:assert/strict';
 const services = createServiceCollection({ registrationMode: ResolveMultipleMode.LastRegistered });
-services.register(IOptions).to(Options);
+services.register(Options).as(IOptions);
 // Later
-services.register(IOptions).to(MockOptions);
+services.register(MockOptions).as(IOptions);
 const provider = services.buildProvider();
 const options = provider.resolve(IOptions);
 ok(options instanceof MockOptions);
@@ -167,9 +175,11 @@ ok(options instanceof MockOptions);
 
 ```ts
 const services = createServiceCollection({ logLevel: LogLevel.Debug });
-services.register(IAbstract).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract).singleton();
+// Pre-build only: the provider derives its plans at buildProvider(),
+// so overriding after building throws.
+services.overrideLifetime(IAbstract, Lifetime.Transient);
 const provider = services.buildProvider();
-provider.Services.overrideLifetime(IAbstract, Lifetime.Transient);
 provider.resolve(IAbstract) !== provider.resolve(IAbstract);
 ```
 
@@ -195,7 +205,7 @@ class Concrete extends IAbstract {}
 
 class MyModule implements IServiceModule {
   public registerServices(services: IServiceCollection): void {
-    services.register(IAbstract).to(Concrete);
+    services.register(Concrete).as(IAbstract);
   }
 }
 
@@ -203,6 +213,91 @@ const services = createServiceCollection();
 services.registerModules(MyModule);
 const provider = services.buildProvider();
 const svc = provider.resolve(IAbstract);
+```
+
+* Build asynchronously. Declare `{ async: true }` at creation and the builders carry `usingAsync` and the collection carries `buildProviderAsync`; on a synchronous collection neither exists. Async singleton factories are awaited at the build boundary, so `resolve` stays synchronous.
+
+```ts
+abstract class IConnection {}
+class Connection implements IConnection {
+  constructor(private readonly dsn: string) {}
+}
+
+const services = createServiceCollection({ async: true });
+services
+  .register(Connection)
+  .usingAsync(async () => new Connection('postgres://localhost'))
+  .as(IConnection)
+  .singleton();
+const provider = await services.buildProviderAsync();
+const connection = provider.resolve(IConnection);
+```
+
+* Construct a singleton eagerly at build with `.eager()`, instead of lazily at first resolve. It composes with the lifetime verbs in any chain order and is offered only on a singleton.
+
+```ts
+services.register(Warmup).asSelf().singleton().eager();
+const provider = services.buildProvider();
+// Warmup was constructed during buildProvider(), before any resolve.
+```
+
+* Dispose deterministically. A disposable is tracked against the boundary that resolved it and torn down at that owner's end: a scoped instance at scope dispose, a singleton at provider dispose, a transient or resolve instance at the boundary that resolved it. An async-only disposable is torn down through `Symbol.asyncDispose` (`await using`); a synchronous dispose of a boundary holding one throws.
+
+```ts
+class Connection implements IDisposable {
+  public [Symbol.dispose]() {
+    // close the handle
+  }
+}
+
+services.register(Connection).asSelf().scoped();
+const provider = services.buildProvider();
+using scope = provider.createScope();
+scope.resolve(Connection);
+// the scoped Connection is disposed when the scope is disposed
+```
+
+* Validate the wiring statically. `validate()` reads the dependency graph (unregistered targets, cycles, captive dependencies) with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`.
+
+```ts
+const report = services.validate();
+if (!report.valid) {
+  for (const problem of report.problems) {
+    console.warn(problem.kind, problem.message);
+  }
+}
+
+// Or fail fast at build:
+const provider = services.buildProvider({ validate: true });
+```
+
+* Inspect the built graph. `printGraph(write = console.log)` writes a human-readable visualisation of the wiring (each token, its implementation and lifetime, and its `@dependsOn` and forward edges) to any line sink. It reads the static graph derived at build, so nothing is constructed.
+
+```ts
+const services = createServiceCollection();
+services.register(SystemClock).as(IClock).singleton();
+services.register(Greeter).as(IGreeter).scoped();
+const provider = services.buildProvider();
+
+provider.printGraph();
+// Dependency graph (2 registrations)
+// IClock -> SystemClock [SINGLETON]
+// IGreeter -> Greeter [SCOPED]
+//     -> IClock
+```
+
+* Time the build and resolves. Pass an instrumentation hook to `buildProvider` and it times `buildProvider` and every `resolve`, handing each timing to `onTiming`. It is off by default: omit it, or set `enabled: false`, and the hook is present but never called, so a production build pays nothing. A `resolve` timing carries the resolved token name.
+
+```ts
+const timings: InstrumentationEvent[] = [];
+const provider = services.buildProvider({
+  instrument: {
+    enabled: process.env.NODE_ENV !== 'production',
+    onTiming: (event) => timings.push(event),
+  },
+});
+provider.resolve(IClock);
+// timings: [{ kind: 'build', durationMs }, { kind: 'resolve', identifier: 'IClock', durationMs }]
 ```
 
 ## Usage
@@ -238,14 +333,14 @@ class DatePrinter implements IDatePrinter {
 
 class TimeModule extends IServiceModule {
   public registerServices(services: IServiceCollection): void {
-    services.register(IClock).to(DefaultClock).singleton();
-    services.register(IDatePrinter).to(DatePrinter).scoped();
+    services.register(DefaultClock).as(IClock).singleton();
+    services.register(DatePrinter).as(IDatePrinter).scoped();
   }
 }
 
 // Register and build provider
 const services = createServiceCollection();
-services.registerModules([TimeModule]);
+services.registerModules(TimeModule);
 const sp = services.buildProvider();
 
 // Optionally create a scope

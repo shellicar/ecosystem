@@ -13,8 +13,8 @@
     },
     "type-check": {
       "dependsOn": ["^build"],
-      "inputs": ["tsconfig.check.json"],
-      "outputs": ["**/node_modules/.cache/tsbuildinfo.json"]
+      "inputs": ["tsconfig.check.json", "**/*.ts"],
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     }
   }
 }

@@ -1,30 +1,42 @@
-import './quickstart';
+import './quickstart.js';
 
 // * Type-safe registration.
-import './typesafe-registration';
+import './typesafe-registration.js';
 // * Type-safe resolution.
-import './typesafe-resolution';
+import './typesafe-resolution.js';
 // * Provide factory methods for instantiating classes.
-import './factory-methods';
+import './factory-methods.js';
 // * Use property injection with decorators for simple dependency definition.
-import './property-injection';
+import './property-injection.js';
 // * Provide multiple implementations for identifiers and provide a `resolveAll` method.
-import './resolve-all';
+import './resolve-all.js';
 // * Define instance lifetime with simple builder pattern.
-import './instance-lifetime';
+import './instance-lifetime.js';
 // * Create scopes to allow "per-request" lifetimes.
-import './scoped-lifetime';
+import './scoped-lifetime.js';
 // * Register classes during a scope
-import './register-during-scope';
+import './register-during-scope.js';
 // * Multiple registrations
-import './multiple-registration';
+import './multiple-registration.js';
 // * Override registrations (e.g.: for testing)
-import './override-registration';
+import './override-registration.js';
 // * Override lifetimes (e.g.: for testing)
-import './override-lifetime';
+import './override-lifetime.js';
 // * Logging options
-import './logging-options';
+import './logging-options.js';
 // * Service modules
-import './service-modules';
+import './service-modules.js';
+// * Async build with usingAsync and buildProviderAsync
+import './async-build.js';
+// * Eager singleton construction at build
+import './eager-construction.js';
+// * Per-lifetime disposal (Symbol.dispose / Symbol.asyncDispose)
+import './disposal.js';
+// * Static validation with validate() and buildProvider({ validate: true })
+import './validation.js';
+// * Inspect the built dependency graph with printGraph
+import './print-graph.js';
+// * Time buildProvider and each resolve with the instrumentation hook
+import './instrumentation.js';
 // * Circular dependency detection
-import './circular-dependency';
+import './circular-dependency.js';

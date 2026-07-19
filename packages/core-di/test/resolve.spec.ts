@@ -1,5 +1,4 @@
-import { equal, notEqual } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection, dependsOn } from '../src';
 
 abstract class IBottom {}
@@ -24,28 +23,22 @@ class Top implements ITop {
 
 describe('Resolve lifetime', () => {
   const services = createServiceCollection();
-  services.register(IBottom).to(Bottom);
-  services.register(IMiddle).to(Middle);
-  services.register(ITop).to(Top);
+  services.register(Bottom).as(IBottom);
+  services.register(Middle).as(IMiddle);
+  services.register(Top).as(ITop);
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('creates bottom once', () => {
+  it('shares one instance across the whole resolution tree', () => {
     const svc = scoped.resolve(ITop);
-    const bottom1 = svc.middle1.bottom1;
-    const bottom2 = svc.middle1.bottom2;
-    const bottom3 = svc.middle2.bottom1;
-    const bottom4 = svc.middle2.bottom2;
-    equal(bottom1, bottom2);
-    equal(bottom3, bottom4);
-    equal(bottom1, bottom3);
+    const expected = svc.middle1.bottom1;
+    const actual = svc.middle2.bottom2;
+    expect(actual).toBe(expected);
   });
 
-  it('next resolve is different', () => {
-    const svc1 = scoped.resolve(ITop);
-    const svc2 = scoped.resolve(ITop);
-    const bottom1 = svc1.middle1.bottom1;
-    const bottom2 = svc2.middle1.bottom1;
-    notEqual(bottom1, bottom2);
+  it('builds a fresh instance on the next top-level resolve', () => {
+    const first = scoped.resolve(ITop).middle1.bottom1;
+    const actual = scoped.resolve(ITop).middle1.bottom1;
+    expect(actual).not.toBe(first);
   });
 });

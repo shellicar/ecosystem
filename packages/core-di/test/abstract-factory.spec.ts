@@ -1,5 +1,4 @@
-import { equal, ok } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 
 abstract class IClock {
@@ -23,27 +22,30 @@ class FakeTimeProvider implements ITimeProvider {
   }
 }
 
-describe('Can register abstract with factory', () => {
+describe('Register with a factory in its own slot', () => {
   let created = false;
 
   const services = createServiceCollection();
-  services.register(ITimeProvider).to(FakeTimeProvider);
-  services.register(IClock).to(Clock, (x) => {
-    created = true;
-    const provider = x.resolve(ITimeProvider);
-    return new Clock(provider);
-  });
+  services.register(FakeTimeProvider).as(ITimeProvider);
+  services
+    .register(Clock)
+    .using((x) => {
+      created = true;
+      return new Clock(x.resolve(ITimeProvider));
+    })
+    .as(IClock);
 
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('will use factory', () => {
+  it('runs the factory to build the instance', () => {
     scoped.resolve(IClock);
-    ok(created);
+    expect(created).toBe(true);
   });
 
-  it('will use dependency', () => {
-    const clock = scoped.resolve(IClock);
-    equal('2024-12-30T01:02:03.456Z', clock.isoString());
+  it('resolves the factory dependency', () => {
+    const expected = '2024-12-30T01:02:03.456Z';
+    const actual = scoped.resolve(IClock).isoString();
+    expect(actual).toBe(expected);
   });
 });

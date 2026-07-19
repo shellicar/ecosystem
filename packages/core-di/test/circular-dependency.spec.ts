@@ -7,7 +7,7 @@ abstract class ISelfDependent {
 }
 
 class SelfDependent implements ISelfDependent {
-  @dependsOn(ISelfDependent) private readonly self!: ISelfDependent;
+  @dependsOn(ISelfDependent) public readonly self!: ISelfDependent;
 
   value(): string {
     return 'self';
@@ -24,7 +24,7 @@ abstract class ICycleB {
 }
 
 class CycleA implements ICycleA {
-  @dependsOn(ICycleB) private readonly b!: ICycleB;
+  @dependsOn(ICycleB) public readonly b!: ICycleB;
 
   value(): string {
     return 'a';
@@ -32,7 +32,7 @@ class CycleA implements ICycleA {
 }
 
 class CycleB implements ICycleB {
-  @dependsOn(ICycleA) private readonly a!: ICycleA;
+  @dependsOn(ICycleA) public readonly a!: ICycleA;
 
   value(): string {
     return 'b';
@@ -53,7 +53,7 @@ abstract class ICycle3C {
 }
 
 class Cycle3A implements ICycle3A {
-  @dependsOn(ICycle3B) private readonly b!: ICycle3B;
+  @dependsOn(ICycle3B) public readonly b!: ICycle3B;
 
   value(): string {
     return 'a';
@@ -61,7 +61,7 @@ class Cycle3A implements ICycle3A {
 }
 
 class Cycle3B implements ICycle3B {
-  @dependsOn(ICycle3C) private readonly c!: ICycle3C;
+  @dependsOn(ICycle3C) public readonly c!: ICycle3C;
 
   value(): string {
     return 'b';
@@ -69,7 +69,7 @@ class Cycle3B implements ICycle3B {
 }
 
 class Cycle3C implements ICycle3C {
-  @dependsOn(ICycle3A) private readonly a!: ICycle3A;
+  @dependsOn(ICycle3A) public readonly a!: ICycle3A;
 
   value(): string {
     return 'c';
@@ -80,7 +80,7 @@ describe('Circular dependency', () => {
   describe('Self-dependency (A → A via interface)', () => {
     it('throws SelfDependencyError', () => {
       const services = createServiceCollection();
-      services.register(ISelfDependent).to(SelfDependent);
+      services.register(SelfDependent).as(ISelfDependent);
       const provider = services.buildProvider();
 
       const actual = () => provider.resolve(ISelfDependent);
@@ -92,8 +92,8 @@ describe('Circular dependency', () => {
   describe('Indirect cycle (A → B → A)', () => {
     it('throws CircularDependencyError with Resolve lifetime', () => {
       const services = createServiceCollection();
-      services.register(ICycleA).to(CycleA);
-      services.register(ICycleB).to(CycleB);
+      services.register(CycleA).as(ICycleA);
+      services.register(CycleB).as(ICycleB);
       const provider = services.buildProvider();
 
       const actual = () => provider.resolve(ICycleA);
@@ -103,8 +103,8 @@ describe('Circular dependency', () => {
 
     it('throws CircularDependencyError with Singleton lifetime', () => {
       const services = createServiceCollection();
-      services.register(ICycleA).to(CycleA).singleton();
-      services.register(ICycleB).to(CycleB).singleton();
+      services.register(CycleA).as(ICycleA).singleton();
+      services.register(CycleB).as(ICycleB).singleton();
       const provider = services.buildProvider();
 
       const actual = () => provider.resolve(ICycleA);
@@ -114,8 +114,8 @@ describe('Circular dependency', () => {
 
     it('throws CircularDependencyError with Scoped lifetime', () => {
       const services = createServiceCollection();
-      services.register(ICycleA).to(CycleA).scoped();
-      services.register(ICycleB).to(CycleB).scoped();
+      services.register(CycleA).as(ICycleA).scoped();
+      services.register(CycleB).as(ICycleB).scoped();
       const provider = services.buildProvider();
       const scoped = provider.createScope();
 
@@ -126,8 +126,8 @@ describe('Circular dependency', () => {
 
     it('throws CircularDependencyError with Transient lifetime', () => {
       const services = createServiceCollection();
-      services.register(ICycleA).to(CycleA).transient();
-      services.register(ICycleB).to(CycleB).transient();
+      services.register(CycleA).as(ICycleA).transient();
+      services.register(CycleB).as(ICycleB).transient();
       const provider = services.buildProvider();
 
       const actual = () => provider.resolve(ICycleA);
@@ -139,9 +139,9 @@ describe('Circular dependency', () => {
   describe('Three-node cycle (A → B → C → A)', () => {
     it('throws CircularDependencyError with Resolve lifetime', () => {
       const services = createServiceCollection();
-      services.register(ICycle3A).to(Cycle3A);
-      services.register(ICycle3B).to(Cycle3B);
-      services.register(ICycle3C).to(Cycle3C);
+      services.register(Cycle3A).as(ICycle3A);
+      services.register(Cycle3B).as(ICycle3B);
+      services.register(Cycle3C).as(ICycle3C);
       const provider = services.buildProvider();
 
       const actual = () => provider.resolve(ICycle3A);
@@ -151,9 +151,9 @@ describe('Circular dependency', () => {
 
     it('throws CircularDependencyError with Transient lifetime', () => {
       const services = createServiceCollection();
-      services.register(ICycle3A).to(Cycle3A).transient();
-      services.register(ICycle3B).to(Cycle3B).transient();
-      services.register(ICycle3C).to(Cycle3C).transient();
+      services.register(Cycle3A).as(ICycle3A).transient();
+      services.register(Cycle3B).as(ICycle3B).transient();
+      services.register(Cycle3C).as(ICycle3C).transient();
       const provider = services.buildProvider();
 
       const actual = () => provider.resolve(ICycle3A);

@@ -1,11 +1,11 @@
 import { createServiceCollection, type IServiceCollection, type IServiceModule } from '@shellicar/core-di';
-import { Concrete, IAbstract } from './helpers/examples';
+import { Concrete, IAbstract } from './helpers/examples.js';
 
 const services = createServiceCollection();
 
 class MyModule implements IServiceModule {
   public registerServices(services: IServiceCollection): void {
-    services.register(IAbstract).to(Concrete);
+    services.register(Concrete).as(IAbstract);
   }
 }
 

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-07-16
+
+Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di-lite also composes from. The version jumps to match core-di-lite and core-di-engine: the three packages now release in lockstep so a single engine copy resolves across them. The registration grammar is now the same shape as lite's: `register(Implementation).as(Identifier)` / `.asSelf()` / `.using(factory)`, not `register(Interface).to(Implementation)`.
+
+### Added
+
+- Record dependency edges at class-definition time with the `dependsOn` decorator, so the container derives a static dependency graph before constructing anything
+- Build asynchronously: `createServiceCollection({ async: true })` exposes `usingAsync` factories and `buildProviderAsync`, which awaits async singletons in dependency order while `resolve` stays synchronous
+- Construct eagerly with the `.eager()` registration verb; singletons are lazy by default
+- Dispose per lifetime: each disposable is tracked to the boundary that resolved it, and `IAsyncDisposable` / `Symbol.asyncDispose` are supported on providers and scopes
+- Configure the captive-dependency check with `CaptivePolicy` (build-time) and `RuntimeCaptivePolicy` (resolve-time)
+- `validate()` reports problems as a `ValidationReport` of `ValidationProblem` entries classified by `ValidationProblemKind`
+- New error types: `BuilderError`, `ValidationError`, `CaptiveDependencyError`, and `InvalidOperationError`
+- Inspect the built graph with `provider.printGraph(write = console.log)` — a human-readable visualisation of the registered tokens, their `@dependsOn` and forward edges, and their lifetimes
+- Time `buildProvider` and each `resolve` with `buildProvider({ instrument: { enabled, onTiming } })` — off by default, so a provider without it pays nothing
+
+### Changed
+
+- Rebuild the container as a static-DAG composable engine
+- `INewableServiceBuilder` and `IAbstractServiceBuilder` replace `IServiceBuilder` and `ILifetimeBuilder`, and the builder interfaces are now type-only exports
+
 ## [4.0.2] - 2026-05-17
 
 ### Changed
@@ -219,6 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[5.0.0]: https://github.com/shellicar/ecosystem/releases/tag/core-di@5.0.0
 [4.0.2]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.2
 [4.0.1]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.1
 [4.0.0]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.0

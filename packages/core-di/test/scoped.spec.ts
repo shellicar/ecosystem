@@ -1,81 +1,80 @@
-import { equal, notEqual, throws } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { ScopedSingletonRegistrationError } from '@shellicar/core-di-engine';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
-import { ScopedSingletonRegistrationError } from '../src/errors';
 
 abstract class IAbstract {
   abstract readonly name: string;
 }
 class Concrete implements IAbstract {
-  name: string;
-  constructor(name: string) {
-    this.name = name;
-  }
+  constructor(public readonly name: string) {}
 }
 
 describe('Scoped lifetime', () => {
   const services = createServiceCollection();
   services
-    .register(IAbstract)
-    .to(Concrete, () => new Concrete(''))
+    .register(Concrete)
+    .using(() => new Concrete(''))
+    .as(IAbstract)
     .scoped();
   const provider = services.buildProvider();
   const scoped = provider.createScope();
 
-  it('created service once', () => {
-    const svc1 = scoped.resolve(IAbstract);
-    const svc2 = scoped.resolve(IAbstract);
-    equal(svc1, svc2);
+  it('resolves the same instance within one scope', () => {
+    const expected = scoped.resolve(IAbstract);
+    const actual = scoped.resolve(IAbstract);
+    expect(actual).toBe(expected);
   });
 
-  it('scoped version is different', () => {
-    const svc1 = provider.resolve(IAbstract);
-    const svc2 = scoped.resolve(IAbstract);
-    notEqual(svc1, svc2);
+  it('resolves a different instance across scopes', () => {
+    const first = provider.resolve(IAbstract);
+    const actual = scoped.resolve(IAbstract);
+    expect(actual).not.toBe(first);
   });
 });
 
-describe('Multiple scopes', () => {
+describe('Registering a singleton in a scope', () => {
   const services = createServiceCollection();
   const provider = services.buildProvider();
 
-  it('unrelated', () => {
-    const expected1 = 'text1';
-    const scope1 = provider.createScope();
+  it('throws ScopedSingletonRegistrationError', () => {
+    const scope = provider.createScope();
+    const builder = scope.Services.register(Concrete)
+      .using(() => new Concrete('text1'))
+      .as(IAbstract);
 
-    const builder = scope1.Services.register(IAbstract).to(Concrete, () => {
-      return new Concrete(expected1);
-    });
+    const actual = () => builder.singleton();
 
-    throws(() => builder.singleton(), ScopedSingletonRegistrationError);
+    expect(actual).toThrow(ScopedSingletonRegistrationError);
+  });
+});
+
+describe('Multiple scopes with their own scoped registration', () => {
+  const services = createServiceCollection();
+  const provider = services.buildProvider();
+
+  it("resolves the first scope's own value", () => {
+    const expected = 'text1';
+    const scope = provider.createScope();
+    scope.Services.register(Concrete)
+      .using(() => new Concrete(expected))
+      .as(IAbstract)
+      .scoped();
+
+    const actual = scope.resolve(IAbstract).name;
+
+    expect(actual).toBe(expected);
   });
 
-  it('unrelated2', () => {
-    {
-      const expected1 = 'text1';
-      const scope1 = provider.createScope();
-      scope1.Services.register(IAbstract)
-        .to(Concrete, () => {
-          return new Concrete(expected1);
-        })
-        .scoped();
+  it("resolves the second scope's own value", () => {
+    const expected = 'text2';
+    const scope = provider.createScope();
+    scope.Services.register(Concrete)
+      .using(() => new Concrete(expected))
+      .as(IAbstract)
+      .scoped();
 
-      const resolved1 = scope1.resolve(IAbstract);
-      equal(resolved1.name, expected1);
-    }
+    const actual = scope.resolve(IAbstract).name;
 
-    {
-      const expected2 = 'text2';
-      const scope2 = provider.createScope();
-
-      scope2.Services.register(IAbstract)
-        .to(Concrete, () => {
-          return new Concrete(expected2);
-        })
-        .scoped();
-
-      const resolved2 = scope2.resolve(IAbstract);
-      equal(resolved2.name, expected2);
-    }
+    expect(actual).toBe(expected);
   });
 });

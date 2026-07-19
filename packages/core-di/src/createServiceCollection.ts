@@ -1,8 +1,16 @@
 import { DefaultServiceCollectionOptions } from './defaults';
-import type { IServiceCollection } from './interfaces';
+import type { IAsyncServiceCollection, IServiceCollection } from './interfaces';
 import { ConsoleLogger } from './private/consoleLogger';
 import { ServiceCollection } from './private/ServiceCollection';
 import type { ServiceCollectionOptions } from './types';
+
+/**
+ * Options for {@link createServiceCollection}. `async: true` makes the builders
+ * carry `usingAsync` and the collection `buildProviderAsync`.
+ */
+export type CreateServiceCollectionOptions<Async extends boolean = false> = Partial<ServiceCollectionOptions> & {
+  readonly async?: Async;
+};
 
 const mergeOptions = (options: Partial<ServiceCollectionOptions> | undefined): ServiceCollectionOptions => ({
   ...DefaultServiceCollectionOptions,
@@ -14,8 +22,10 @@ const mergeOptions = (options: Partial<ServiceCollectionOptions> | undefined): S
  * @param options - Optional configuration for the service collection.
  * @defaultValue Default options are taken from {@link DefaultServiceCollectionOptions}.
  */
-export const createServiceCollection = (options?: Partial<ServiceCollectionOptions>): IServiceCollection => {
+export function createServiceCollection(options?: CreateServiceCollectionOptions<false>): IServiceCollection;
+export function createServiceCollection(options: CreateServiceCollectionOptions<true>): IAsyncServiceCollection;
+export function createServiceCollection(options?: CreateServiceCollectionOptions<boolean>): IServiceCollection | IAsyncServiceCollection {
   const mergedOptions = mergeOptions(options);
   const logger = mergedOptions.logger ?? new ConsoleLogger(mergedOptions);
-  return new ServiceCollection(logger, mergedOptions, false);
-};
+  return new ServiceCollection(logger, mergedOptions, false, options?.async === true);
+}

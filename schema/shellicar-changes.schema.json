@@ -17,6 +17,9 @@
         "tag": {
           "type": "string"
         },
+        "description": {
+          "type": "string"
+        },
         "metadata": {
           "type": "object",
           "propertyNames": {

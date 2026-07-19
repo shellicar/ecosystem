@@ -18,7 +18,7 @@ class Concrete implements IAbstract1, IAbstract2 {
   }
 }
 
-services.register(IAbstract1, IAbstract2).to(Concrete).singleton();
+services.register(Concrete).as(IAbstract1).as(IAbstract2).singleton();
 const provider = services.buildProvider();
 const resolved1 = provider.resolve(IAbstract1);
 const resolved2 = provider.resolve(IAbstract2);

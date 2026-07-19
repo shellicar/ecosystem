@@ -1,5 +1,4 @@
-import { equal, notEqual } from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 
 abstract class IServiceA {
@@ -8,90 +7,62 @@ abstract class IServiceA {
 abstract class IServiceB {
   abstract value(): string;
 }
-abstract class IServiceC {
-  abstract value(): string;
-}
 
-class SharedImpl implements IServiceA, IServiceB, IServiceC {
+class SharedImpl implements IServiceA, IServiceB {
   constructor(private readonly label: string = 'default') {}
   value(): string {
     return this.label;
   }
 }
 
-describe('Factory singleton identity', () => {
-  describe('without factory', () => {
+// Problem 1: sharing one instance across several tokens, factory or not.
+// Sharing is stated by declaring several faces on one register call. The
+// factory lives in its own slot and no longer decides identity, so the same
+// register call shares whether or not a factory builds the instance.
+describe('Shared identity across faces', () => {
+  describe('faces on one register call, no factory', () => {
     const services = createServiceCollection();
-    services.register(IServiceA).to(SharedImpl).singleton();
-    services.register(IServiceB).to(SharedImpl).singleton();
+    services.register(SharedImpl).as(IServiceA).as(IServiceB).singleton();
     const provider = services.buildProvider();
 
-    it('same implementation class resolves to the same instance', () => {
+    it('resolves both faces to the same instance', () => {
       const expected = provider.resolve(IServiceA);
       const actual = provider.resolve(IServiceB);
-      equal(actual, expected);
+      expect(actual).toBe(expected);
     });
   });
 
-  describe('with the same factory', () => {
-    const factory = () => new SharedImpl('shared');
-
+  describe('faces on one register call, factory-built', () => {
     const services = createServiceCollection();
-    services.register(IServiceA).to(SharedImpl, factory).singleton();
-    services.register(IServiceB).to(SharedImpl, factory).singleton();
+    services
+      .register(SharedImpl)
+      .using(() => new SharedImpl('shared'))
+      .as(IServiceA)
+      .as(IServiceB)
+      .singleton();
     const provider = services.buildProvider();
 
-    it('same factory reference resolves to the same instance', () => {
+    it('resolves both faces to the same instance', () => {
       const expected = provider.resolve(IServiceA);
       const actual = provider.resolve(IServiceB);
-      equal(actual, expected);
+      expect(actual).toBe(expected);
     });
   });
 
-  describe('with different factories', () => {
+  // Sharing is local to one register call: separate calls are separate
+  // instances, even for the same implementation class. This deliberately
+  // replaces the old cache-key behaviour, where two separate register().to()
+  // calls for the same class shared one instance.
+  describe('separate register calls', () => {
     const services = createServiceCollection();
-    services
-      .register(IServiceA)
-      .to(SharedImpl, () => new SharedImpl('a'))
-      .singleton();
-    services
-      .register(IServiceB)
-      .to(SharedImpl, () => new SharedImpl('b'))
-      .singleton();
+    services.register(SharedImpl).as(IServiceA).singleton();
+    services.register(SharedImpl).as(IServiceB).singleton();
     const provider = services.buildProvider();
 
-    it('different factories resolve to different instances', () => {
-      const expected = provider.resolve(IServiceA);
+    it('resolve to separate instances', () => {
+      const first = provider.resolve(IServiceA);
       const actual = provider.resolve(IServiceB);
-      notEqual(actual, expected);
-    });
-
-    it('each interface consistently returns its own instance', () => {
-      const expectedA = provider.resolve(IServiceA);
-      const actualA = provider.resolve(IServiceA);
-      equal(actualA, expectedA);
-
-      const expectedB = provider.resolve(IServiceB);
-      const actualB = provider.resolve(IServiceB);
-      equal(actualB, expectedB);
-
-      notEqual(expectedA, expectedB);
-    });
-  });
-
-  describe('mixed factory and no factory', () => {
-    const services = createServiceCollection();
-    services.register(IServiceA).to(SharedImpl).singleton();
-    services
-      .register(IServiceB)
-      .to(SharedImpl, () => new SharedImpl('factory'))
-      .singleton();
-    const provider = services.buildProvider();
-
-    it('factory and non-factory resolve to different instances', () => {
-      const expected = provider.resolve(IServiceA);
-      const actual = provider.resolve(IServiceB);
-      notEqual(actual, expected);
+      expect(actual).not.toBe(first);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { provider } from './helpers/provider';
+import { provider } from './helpers/provider.js';
 
 abstract class IContext {
   abstract userId(): string;
@@ -10,5 +10,5 @@ class Context implements IContext {
 }
 
 using scope = provider.createScope();
-scope.Services.register(IContext).to(Context);
+scope.Services.register(Context).as(IContext);
 const ctx = scope.resolve(IContext);
