@@ -18,6 +18,24 @@ singleton-only collection from the same engine.
 You can use it the way core-di and core-di-lite do: build your own registration surface
 and your own `validate()` out of the primitives below. This README is for that reader.
 
+## Features
+
+* 🧩 Composable — lifetimes, resolution strategy, and disposal are each supplied, not built in
+* 🎯 Type-safe registration and resolution
+* 🎨 Decorator-based property injection (`@dependsOn`), recorded at class-definition time
+* 🔄 Singleton, scoped, and resolve lifetimes ship as features — a token with none of them is transient, constructed fresh every time
+* ⏳ Async factories, awaited during build
+* 🔥 Eager construction opt-in per registration
+* 🧹 Composable disposal, tracked to the boundary that constructed it
+* 🗺️ Reads the dependency graph with no construction — the pieces you need to build your own `validate()`
+* 🔀 Redirect one identifier to another's registration with `forward(source).to(target)`
+* 📐 Choose how `resolve` runs: compile a plan once and replay it, or walk dependencies directly for a smaller bundle
+
+## Motivation
+
+When redesigning `core-di`, I wanted to make it composable, so both `core-di` and
+`core-di-lite` could be built from the same building blocks. This is the result.
+
 ## Why a separate package
 
 Before this package existed, core-di and core-di-lite each carried their own copy of the
@@ -255,3 +273,8 @@ doesn't already have it (needed for `@dependsOn`'s field metadata). Both core-di
 core-di-lite import it once, at their own entry point; if you're composing a preset of
 your own directly against this package, import it the same way, once, before any class
 using `@dependsOn` is defined.
+
+
+## Credits & Inspiration
+
+* [Autofac](https://autofac.org/)

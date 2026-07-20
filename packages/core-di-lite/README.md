@@ -71,6 +71,12 @@ Everything else — `register().as()/.asSelf()/.using()`, `forward().to()`, mult
 registrations resolved with `resolveAll`, the `@dependsOn` decorator, and the error
 types — is the same grammar and the same objects as core-di.
 
+## Motivation
+
+I had a CLI tool and wanted a stripped-down, simpler DI library that validates everything
+at startup. `core-di` is intentionally not fail-fast at build — for a CLI, that's the
+opposite of what I wanted.
+
 ## Feature Examples
 
 * Type-safe registration and resolution, same as core-di.
