@@ -15,6 +15,7 @@ trustPolicyExclude:
 
 overrides:
   '@grpc/grpc-js@<1.14.4': '>=1.14.4'
+  '@opentelemetry/core@<2.8.0': ^2.8.0
   '@opentelemetry/exporter-prometheus@<0.217.0': '>=0.217.0'
   '@opentelemetry/sdk-node@<0.217.0': '>=0.217.0'
   'cookie@<0.7.0': '>=0.7.0'
@@ -34,3 +35,19 @@ packageExtensions:
   'applicationinsights@3.3.0':
     dependencies:
       undici: '^6'
+
+minimumReleaseAgeExclude:
+  - vite@7.3.5
+  - '@opentelemetry/core@2.8.0'
+  - http-proxy-middleware@3.0.7
+  - undici@6.27.0
+  - http-proxy-middleware@3.0.6
+  - js-yaml@3.15.0
+  - js-yaml@4.1.2
+  - ws@8.21.0
+  - protobufjs@8.4.3
+  - protobufjs@8.4.1
+  - protobufjs@7.6.1
+  - protobufjs@8.5.1
+  - protobufjs@7.6.3
+  - '@babel/core@7.29.1'

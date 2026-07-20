@@ -16,9 +16,9 @@
     "@shellicar/build-clean": "workspace:^",
     "@tsconfig/node20": "^20.1.9",
     "@types/node": "^25.8.0",
-    "terser": "^5.46.2",
+    "terser": "^5.47.1",
     "tsup": "^8.5.1",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.0",
     "typescript": "^5.9.3"
   }
 }

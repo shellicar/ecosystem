@@ -63,7 +63,7 @@
     "@shellicar/typescript-config": "workspace:^",
     "@tsconfig/node20": "^20.1.9",
     "@types/node": "^25.8.0",
-    "terser": "^5.46.2",
+    "terser": "^5.47.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.6"
