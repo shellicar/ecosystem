@@ -13,12 +13,12 @@ const execCommand = (command: string): string => {
 // distinct from "no git repo", which git then catches without any external binary.
 const defaultDescriptors = (options: Options): VersionStrategyDescriptor[] => [Strategies.envOverride(), Strategies.gitversion(), Strategies.git({ packageName: options.packageName }), Strategies.fallback('0.1.0')];
 
-const getStrategies = (options: Options, logger: ILogger): VersionStrategy[] => {
+export const getStrategies = (options: Options, logger: ILogger): VersionStrategy[] => {
   const descriptors = options.strategies ?? defaultDescriptors(options);
   return descriptors.map((descriptor) => resolveStrategy(descriptor, logger));
 };
 
-const runStrategies = (strategies: VersionStrategy[]): { version: string; branch: string } => {
+export const runStrategies = (strategies: VersionStrategy[]): { version: string; branch: string } => {
   for (const strategy of strategies) {
     const result = strategy();
     if (result) {
