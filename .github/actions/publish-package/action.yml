@@ -26,7 +26,7 @@ runs:
         fi
         # Strip pre-release suffix to get the base version (1.0.0-alpha.5 → 1.0.0)
         BASE_VERSION=$(echo "$VERSION" | sed 's/^\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
-        FIRST_VERSION=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' "$CHANGELOG" | head -n1 | sed 's/## \(.*\)/\1/')
+        FIRST_VERSION=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' "$CHANGELOG" | head -n1 | sed 's/## \[\(.*\)\]/\1/')
         if [ -z "$FIRST_VERSION" ]; then
           echo "✅ No version entries yet — OK for pre-release"
           exit 0
