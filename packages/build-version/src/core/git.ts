@@ -137,4 +137,3 @@ export const createGitStrategy = (logger: ILogger, options: GitStrategyOptions =
     };
   };
 };
-

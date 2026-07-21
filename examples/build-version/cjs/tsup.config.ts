@@ -1,7 +1,7 @@
 import cleanPlugin from '@shellicar/build-clean/esbuild';
 import versionPlugin from '@shellicar/build-version/esbuild';
-import { Strategies } from '@shellicar/build-version/types';
 import type { Options } from '@shellicar/build-version/types';
+import { Strategies } from '@shellicar/build-version/types';
 import { defineConfig } from 'tsup';
 
 const pluginOptions = {

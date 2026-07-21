@@ -1,5 +1,5 @@
-import { VersionStrategyKind } from './types';
 import type { CustomStrategyDescriptor, EnvOverrideStrategyDescriptor, FallbackStrategyDescriptor, GitStrategyDescriptor, GitVersionStrategyDescriptor, VersionStrategy } from './types';
+import { VersionStrategyKind } from './types';
 
 // Descriptors only - no logger/exec here. Those are only available once
 // build-version is actually running, so resolveStrategy wires them in later.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ExecCommand, buildTagMatchPattern, createGitStrategy, getPullRequestNumber, parseTag } from '../../src/core/git';
+import { buildTagMatchPattern, createGitStrategy, type ExecCommand, getPullRequestNumber, parseTag } from '../../src/core/git';
 import type { ILogger } from '../../src/core/types';
 
 const createFakeLogger = (): ILogger => ({
@@ -190,4 +190,3 @@ describe('git', () => {
     });
   });
 });
-

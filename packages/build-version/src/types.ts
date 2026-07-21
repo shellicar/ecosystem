@@ -1,4 +1,4 @@
-import { Options, VersionInfo, VersionStrategy, VersionStrategyDescriptor, VersionStrategyKind } from './core/types';
 import { Strategies } from './core/strategies';
+import { Options, VersionInfo, VersionStrategy, VersionStrategyDescriptor, VersionStrategyKind } from './core/types';
 
-export { Options, VersionInfo, VersionStrategy, VersionStrategyDescriptor, VersionStrategyKind, Strategies };
+export { Options, Strategies, VersionInfo, VersionStrategy, VersionStrategyDescriptor, VersionStrategyKind };
