@@ -5,16 +5,19 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["tsconfig.json", "src/**/*.ts", "tsup.config.ts"],
-      "outputs": ["dist"]
+      "outputs": ["dist"],
+      "outputLogs": "new-only"
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": []
+      "outputs": [],
+      "outputLogs": "errors-only"
     },
     "type-check": {
       "dependsOn": ["^build"],
-      "inputs": ["tsconfig.check.json", "**/*.ts"],
-      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+      "inputs": ["**/*.ts", "tsconfig.json", "tsconfig.check.json"],
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"],
+      "outputLogs": "errors-only"
     }
   }
 }
