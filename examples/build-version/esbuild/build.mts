@@ -5,7 +5,7 @@ import { Strategies } from '@shellicar/build-version/types';
 import { build } from 'esbuild';
 
 const options: Options = {
-  strategies: [Strategies.git()],
+  strategies: [Strategies.git(), Strategies.fallback('0.1.0')],
   debug: true,
   strict: Boolean(env.CI),
 };

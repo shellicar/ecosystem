@@ -94,11 +94,16 @@ describe('git', () => {
       expect(actual).toEqual(expected);
     });
 
-    it('falls back to zeros for a tag that is not semver', () => {
+    it('declines to parse a tag that is not semver', () => {
       const actual = parseTag('not-a-version');
-      const expected = { major: 0, minor: 0, patch: 0, prerelease: null };
 
-      expect(actual).toEqual(expected);
+      expect(actual).toBeNull();
+    });
+
+    it("declines to parse another package's tag when no packageName is given to strip it", () => {
+      const actual = parseTag('core-di-engine@5.0.0-alpha.1');
+
+      expect(actual).toBeNull();
     });
   });
 
@@ -168,16 +173,27 @@ describe('git', () => {
       expect(actual).toBe(expected);
     });
 
-    it('falls back to a static version when there is no matching tag at all', () => {
+    it('declines when there is no matching tag at all', () => {
       const exec = createFakeExec({
         'git branch --show-current': 'main',
       });
       const calculator = createGitStrategy(createFakeLogger(), { packageName: 'pkg-a' }, exec);
 
-      const actual = calculator()?.version;
-      const expected = '0.1.0';
+      const actual = calculator();
 
-      expect(actual).toBe(expected);
+      expect(actual).toBeNull();
+    });
+
+    it("declines rather than fabricate a version when git describe matches an unrelated package's tag", () => {
+      const exec = createFakeExec({
+        'git branch --show-current': 'main',
+        "git describe --tags --long --match '*'": 'core-di-engine@5.0.0-alpha.1-9-gabc1234',
+      });
+      const calculator = createGitStrategy(createFakeLogger(), {}, exec);
+
+      const actual = calculator();
+
+      expect(actual).toBeNull();
     });
 
     it('declines when there is no git working tree at all', () => {

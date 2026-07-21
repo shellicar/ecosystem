@@ -1,8 +1,6 @@
 import { execSync } from 'node:child_process';
 import type { ILogger, VersionStrategy } from './types';
 
-const FALLBACK_VERSION = '0.1.0';
-
 export type ExecCommand = (command: string) => string | null;
 
 const createRealExecCommand = (logger: ILogger): ExecCommand => {
@@ -38,11 +36,14 @@ export interface ParsedTag {
   prerelease: string | null;
 }
 
-export const parseTag = (tag: string, packageName?: string): ParsedTag => {
+// null means the matched tag isn't this package's own semver at all - e.g. no
+// packageName was given and `git describe` picked a different package's tag in
+// a monorepo. Callers must decline (not fabricate a 0.0.0 version) in that case.
+export const parseTag = (tag: string, packageName?: string): ParsedTag | null => {
   const bare = packageName && tag.startsWith(`${packageName}@`) ? tag.slice(packageName.length + 1) : tag;
   const match = bare.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
   if (!match) {
-    return { major: 0, minor: 0, patch: 0, prerelease: null };
+    return null;
   }
   const [, major, minor, patch, prerelease] = match;
   return {
@@ -60,28 +61,24 @@ export interface GitStrategyOptions {
 export const createGitStrategy = (logger: ILogger, options: GitStrategyOptions = {}, exec: ExecCommand = createRealExecCommand(logger)): VersionStrategy => {
   const { packageName } = options;
 
-  const getVersionInfo = (): { tag: string; distance: number } => {
+  const getVersionInfo = (): (ParsedTag & { distance: number }) | null => {
     const pattern = buildTagMatchPattern(packageName);
     const describe = exec(`git describe --tags --long --match '${pattern}'`);
     if (!describe) {
-      return {
-        tag: FALLBACK_VERSION,
-        distance: 0,
-      };
+      return null;
     }
 
     const match = describe.match(/^(.*)-(\d+)-g[0-9a-f]+$/);
     if (!match) {
-      return {
-        tag: FALLBACK_VERSION,
-        distance: 0,
-      };
+      return null;
     }
 
-    return {
-      tag: match[1],
-      distance: Number.parseInt(match[2], 10),
-    };
+    const parsed = parseTag(match[1], packageName);
+    if (!parsed) {
+      return null;
+    }
+
+    return { ...parsed, distance: Number.parseInt(match[2], 10) };
   };
 
   const sanitizeBranchName = (branch: string): string => {
@@ -110,8 +107,11 @@ export const createGitStrategy = (logger: ILogger, options: GitStrategyOptions =
     if (branch === null) {
       return null;
     }
-    const { tag, distance } = getVersionInfo();
-    const { major, minor, patch, prerelease } = parseTag(tag, packageName);
+    const info = getVersionInfo();
+    if (info === null) {
+      return null;
+    }
+    const { major, minor, patch, prerelease, distance } = info;
 
     let version: string;
     if (branch === 'main') {
