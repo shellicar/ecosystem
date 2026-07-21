@@ -8,7 +8,7 @@ const strategy = process.env.CI ? Strategies.git() : Strategies.gitversion();
 
 const options: Options = {
   debug: true,
-  strategies: [strategy],
+  strategies: [strategy, Strategies.fallback('0.1.0')],
   strict: Boolean(process.env.CI),
 };
 
