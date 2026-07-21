@@ -1080,8 +1080,8 @@ importers:
         specifier: ^8.0.4
         version: 8.0.4
       rollup:
-        specifier: ^4.60.4
-        version: 4.60.4
+        specifier: ^4.62.2
+        version: 4.62.2
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.20)(supports-color@5.5.0)(tsx@4.22.0)(typescript@5.9.3)(yaml@2.9.0)
@@ -1135,8 +1135,8 @@ importers:
         specifier: ^8.0.4
         version: 8.0.4
       rollup:
-        specifier: ^4.60.4
-        version: 4.60.4
+        specifier: ^4.62.2
+        version: 4.62.2
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.20)(supports-color@5.5.0)(tsx@4.22.0)(typescript@5.9.3)(yaml@2.9.0)
@@ -10908,7 +10908,7 @@ snapshots:
     dependencies:
       magic-string: 0.30.21
       mlly: 1.8.2
-      rollup: 4.60.4
+      rollup: 4.62.2
 
   fn.name@1.1.0: {}
 
