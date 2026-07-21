@@ -1,7 +1,7 @@
 # @shellicar/build-azure-local-settings
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/build-azure-local-settings.svg)](https://npmjs.com/package/@shellicar/build-azure-local-settings)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
 Build plugin that loads Azure `local.settings.json` with [Key Vault reference](https://learn.microsoft.com/en-us/azure/app-service/app-service-key-vault-references) resolution for non-Azure-Functions apps.
 

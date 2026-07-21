@@ -60,3 +60,8 @@
 {"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
 {"description":"Updated esbuild peer dependency from ^0.27 to ^0.28","category":"changed"}
 {"type":"release","version":"1.3.10","date":"2026-06-14","tag":"build-version@1.3.10"}
+{"description":"Add `packageName` option so the git strategy matches `<packageName>@<version>` tags, picking the right one out of several packages sharing a commit in a monorepo","category":"added"}
+{"description":"Add `Strategies` factories (`envOverride`, `git`, `gitversion`, `fallback`, `custom`) and an ordered `strategies` option that replaces `versionCalculator`","category":"added"}
+{"description":"The git strategy now preserves a tag's pre-release label (e.g. `1.0.0-beta.22`) on `main` instead of discarding it for a numeric patch bump","category":"changed"}
+{"description":"Remove the `versionCalculator` option ('git' | 'gitversion' | function); use `strategies` with the `Strategies` factories instead","category":"removed"}
+{"type":"release","version":"2.0.0","date":"2026-07-21","tag":"build-version@2.0.0","description":"Replaces the single `versionCalculator` override with an ordered `strategies` list built from `Strategies` factories, and adds `packageName` so the git strategy resolves the right tag in a monorepo where several packages' tags can share a commit. See MIGRATION.md."}

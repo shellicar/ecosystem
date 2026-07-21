@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-21
+
+Replaces the single `versionCalculator` override with an ordered `strategies` list built from `Strategies` factories, and adds `packageName` so the git strategy resolves the right tag in a monorepo where several packages' tags can share a commit. See MIGRATION.md.
+
+### Added
+
+- Add `packageName` option so the git strategy matches `<packageName>@<version>` tags, picking the right one out of several packages sharing a commit in a monorepo
+- Add `Strategies` factories (`envOverride`, `git`, `gitversion`, `fallback`, `custom`) and an ordered `strategies` option that replaces `versionCalculator`
+
+### Changed
+
+- The git strategy now preserves a tag's pre-release label (e.g. `1.0.0-beta.22`) on `main` instead of discarding it for a numeric patch bump
+
+### Removed
+
+- Remove the `versionCalculator` option ('git' | 'gitversion' | function); use `strategies` with the `Strategies` factories instead
+
 ## [1.3.10] - 2026-06-14
 
 ### Changed
@@ -161,6 +178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[2.0.0]: https://github.com/shellicar/ecosystem/releases/tag/build-version@2.0.0
 [1.3.10]: https://github.com/shellicar/ecosystem/releases/tag/build-version@1.3.10
 [1.3.9]: https://github.com/shellicar/ecosystem/releases/tag/build-version@1.3.9
 [1.3.8]: https://github.com/shellicar/ecosystem/releases/tag/build-version@1.3.8

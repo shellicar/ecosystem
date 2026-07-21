@@ -1,7 +1,7 @@
 # @shellicar/build-version
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/build-version.svg)](https://npmjs.com/package/@shellicar/build-version)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
 Build plugin that calculates and exposes version information through a virtual module import.
 
@@ -86,36 +86,57 @@ import version from '@shellicar/build-version/version'
 console.log(version)
 ```
 
-### Version Calculators
+### Strategies
 
-#### Git Calculator
+Version resolution is an ordered list of strategies: the first one to produce a
+result wins. The default list covers the common cases without any configuration:
 
-Uses pure git commands to calculate version numbers following mainline versioning:
+```ts
+VersionPlugin({})
+// same as:
+VersionPlugin({
+  strategies: [Strategies.envOverride(), Strategies.gitversion(), Strategies.git(), Strategies.fallback('0.1.0')],
+})
+```
 
-- On main branch: increment patch version for each commit after a tag
-- On feature branches: use base version with branch name and commit count suffix
-- On PR branches: use PR number in version suffix
+- **`Strategies.envOverride()`**: uses `BUILD_VERSION_OVERRIDE` (and optionally
+  `BUILD_BRANCH_OVERRIDE`) when a CI job already knows the exact version it's building.
+- **`Strategies.gitversion({ strict })`**: shells out to the GitVersion CLI. Requires
+  GitVersion to be installed. `strict: true` throws instead of falling through to the
+  next strategy when GitVersion fails.
+- **`Strategies.git({ packageName })`**: pure git commands, no GitVersion install
+  required. Its main fallthrough case is GitVersion's CLI not being installed or
+  erroring; if there's no git working tree at all, it declines the same as GitVersion
+  does, for the same reason. Following mainline versioning:
+  - Tagged commit on `main`: reports the tag exactly, e.g. `1.2.3` or `1.2.3-beta.1`.
+  - `main` past the last tag: keeps counting from it, e.g. `1.2.3-beta.1.2`.
+  - Feature branch: base version with branch name and commit count, e.g. `1.2.3-feature-name.2`.
+  - PR branch: base version with PR number, e.g. `1.2.3-PullRequest-0123.2`.
+  - `packageName` scopes tag matching to `<packageName>@*`, so the right tag is picked
+    out of several packages' tags that can share a commit in a monorepo.
+- **`Strategies.fallback(version)`**: never declines; the last-resort default when
+  nothing else resolves (e.g. outside a git working tree).
 
-Example versions:
-
-- Tagged commit on main: `1.2.3`
-- Commits after tag on main: `1.2.4`, `1.2.5`
-- Feature branch: `1.2.3-feature-name.2`
-- PR branch: `1.2.3-PullRequest0123.2`
-
-#### GitVersion Calculator
-
-Uses the GitVersion CLI to calculate versions. Requires GitVersion to be installed.
-
-#### Custom Calculator
-
-Provide your own version calculation function:
+Override the whole list, or just one strategy, by passing your own array:
 
 ```ts
 VersionPlugin({
-  versionCalculator: () => '1.0.0-custom'
+  strategies: [Strategies.fallback('1.0.0-custom')],
 })
 ```
+
+**`Strategies.custom(strategy)`** wraps your own `VersionStrategy` function
+(`() => { version: string; branch: string } | null`, returning `null` to decline
+and fall through to the next one), for anything the built-in strategies don't cover:
+
+```ts
+VersionPlugin({
+  strategies: [Strategies.custom(() => ({ version: '1.0.0-custom', branch: 'main' }))],
+})
+```
+
+> Upgrading from 1.x? See [MIGRATION.md](./MIGRATION.md): the `versionCalculator`
+> option has been replaced by `strategies`.
 
 ## Options
 

@@ -1,7 +1,7 @@
 # @shellicar/build-clean
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/build-clean.svg)](https://npmjs.com/package/@shellicar/build-clean)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
 Build plugin that automatically cleans unused files from output directories.
 

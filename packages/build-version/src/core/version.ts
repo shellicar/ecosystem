@@ -1,31 +1,39 @@
 import { execSync } from 'node:child_process';
-import { createGitCalculator } from './git';
-import { createGitversionCalculator } from './gitversion';
-import type { ILogger, Options, VersionCalculator } from './types';
+import { resolveStrategy } from './resolveStrategy';
+import { Strategies } from './strategies';
+import type { ILogger, Options, VersionStrategy, VersionStrategyDescriptor } from './types';
 
 const execCommand = (command: string): string => {
   return execSync(command, { encoding: 'utf8' }).trim();
 };
 
-const getCalculator = (options: Options, logger: ILogger): VersionCalculator => {
-  if (typeof options?.versionCalculator === 'function') {
-    return options.versionCalculator;
-  }
+// gitversion before git: both need a working tree, so once git has declined
+// (no working tree at all) gitversion can't succeed either. Trying gitversion
+// first gives it a real fallthrough case - its own CLI not being installed -
+// distinct from "no git repo", which git then catches without any external binary.
+const defaultDescriptors = (options: Options): VersionStrategyDescriptor[] => [Strategies.envOverride(), Strategies.gitversion(), Strategies.git({ packageName: options.packageName }), Strategies.fallback('0.1.0')];
 
-  switch (options.versionCalculator) {
-    case 'git':
-      return createGitCalculator(logger);
-    default:
-      return createGitversionCalculator(options);
-  }
+export const getStrategies = (options: Options, logger: ILogger): VersionStrategy[] => {
+  const descriptors = options.strategies ?? defaultDescriptors(options);
+  return descriptors.map((descriptor) => resolveStrategy(descriptor, logger));
 };
 
-const generateVersionInfo = (calculator: VersionCalculator) => {
+export const runStrategies = (strategies: VersionStrategy[]): { version: string; branch: string } => {
+  for (const strategy of strategies) {
+    const result = strategy();
+    if (result) {
+      return result;
+    }
+  }
+  throw new Error('No version strategy produced a result');
+};
+
+const generateVersionInfo = (strategies: VersionStrategy[]) => {
   const sha = execCommand('git rev-parse HEAD');
   const shortSha = sha.substring(0, 7);
   const commitDate = execCommand('git log -1 --format=%cI');
 
-  const { version, branch } = calculator();
+  const { version, branch } = runStrategies(strategies);
 
   return {
     buildDate: new Date().toISOString(),
@@ -38,8 +46,8 @@ const generateVersionInfo = (calculator: VersionCalculator) => {
 };
 
 export const loadVirtualModule = (options: Options, logger: ILogger) => {
-  const calculator = getCalculator(options, logger);
-  const versionInfo = generateVersionInfo(calculator);
+  const strategies = getStrategies(options, logger);
+  const versionInfo = generateVersionInfo(strategies);
   logger.debug('Version info:', versionInfo);
   const json = JSON.stringify(versionInfo, null, 2);
   const code = `export default ${json}`;
