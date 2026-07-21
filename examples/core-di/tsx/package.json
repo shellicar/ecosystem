@@ -10,7 +10,7 @@
     "@shellicar/core-di": "workspace:^",
     "@tsconfig/node20": "^20.1.9",
     "@types/node": "^25.8.0",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.0",
     "typescript": "^5.9.3"
   }
 }
