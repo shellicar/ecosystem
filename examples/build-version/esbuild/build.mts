@@ -1,10 +1,11 @@
 import { env } from 'node:process';
 import graphqlPlugin from '@shellicar/build-version/esbuild';
+import { Strategies } from '@shellicar/build-version/types';
 import type { Options } from '@shellicar/build-version/types';
 import { build } from 'esbuild';
 
 const options: Options = {
-  versionCalculator: 'git',
+  strategies: [Strategies.git()],
   debug: true,
   strict: Boolean(env.CI),
 };
