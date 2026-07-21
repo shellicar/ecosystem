@@ -3,7 +3,7 @@
 > A graphql-codegen preset that tree-shakes unused types from TypeScript output
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/graphql-codegen-treeshake.svg)](https://npmjs.com/package/@shellicar/graphql-codegen-treeshake)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
 ## Features
 

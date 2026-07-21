@@ -1,7 +1,7 @@
 # @shellicar/build-graphql
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/build-graphql.svg)](https://npmjs.com/package/@shellicar/build-graphql)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
 Build plugin that loads GraphQL files and makes them available through a virtual module import.
 

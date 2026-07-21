@@ -1,7 +1,7 @@
 # @shellicar/svelte-adapter-azure-functions
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/svelte-adapter-azure-functions.svg)](https://npmjs.com/package/@shellicar/svelte-adapter-azure-functions)
-[![build status](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/node.js.yml)
+[![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 [![Azure Functions](https://img.shields.io/badge/Azure%20Functions-v4-0078D4?logo=azure-functions)][azure-functions]
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-2-FF3E00?logo=svelte)][sveltekit]
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)][typescript]
