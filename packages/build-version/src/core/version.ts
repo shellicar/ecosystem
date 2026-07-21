@@ -7,7 +7,11 @@ const execCommand = (command: string): string => {
   return execSync(command, { encoding: 'utf8' }).trim();
 };
 
-const defaultDescriptors = (options: Options): VersionStrategyDescriptor[] => [Strategies.envOverride(), Strategies.git({ packageName: options.packageName }), Strategies.gitversion(), Strategies.fallback('0.1.0')];
+// gitversion before git: both need a working tree, so once git has declined
+// (no working tree at all) gitversion can't succeed either. Trying gitversion
+// first gives it a real fallthrough case - its own CLI not being installed -
+// distinct from "no git repo", which git then catches without any external binary.
+const defaultDescriptors = (options: Options): VersionStrategyDescriptor[] => [Strategies.envOverride(), Strategies.gitversion(), Strategies.git({ packageName: options.packageName }), Strategies.fallback('0.1.0')];
 
 const getStrategies = (options: Options, logger: ILogger): VersionStrategy[] => {
   const descriptors = options.strategies ?? defaultDescriptors(options);

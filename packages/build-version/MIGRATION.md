@@ -9,7 +9,7 @@ list built from `Strategies` factories. This is the core breaking change:
 
 - **`versionCalculator: 'git' | 'gitversion' | (() => VersionInfo)`** is gone.
   Replaced by **`strategies: VersionStrategyDescriptor[]`**, an ordered list where
-  the first strategy to produce a result wins — no configuration needed for the
+  the first strategy to produce a result wins, no configuration needed for the
   common cases, since a default list is used when `strategies` is omitted.
 - **New `packageName` option** on the git strategy: scopes tag matching to
   `<packageName>@*`, so the right tag is picked out of several packages' tags
@@ -27,7 +27,7 @@ There is no partial-migration path: `versionCalculator` no longer exists as an o
 
 | v1 | v2 |
 | --- | --- |
-| *(omitted, default)* | *(omitted, default)* — same behaviour, now expressed as `[Strategies.envOverride(), Strategies.git(), Strategies.gitversion(), Strategies.fallback('0.1.0')]` |
+| *(omitted, default)* | *(omitted, default)*, same behaviour, now expressed as `[Strategies.envOverride(), Strategies.gitversion(), Strategies.git(), Strategies.fallback('0.1.0')]` |
 | `versionCalculator: 'git'` | `strategies: [Strategies.git()]` |
 | `versionCalculator: 'gitversion'` | `strategies: [Strategies.gitversion()]` |
 | `versionCalculator: () => ({ version: '1.0.0-custom', branch: 'main' })` | `strategies: [Strategies.custom(() => ({ version: '1.0.0-custom', branch: 'main' }))]` |
@@ -52,7 +52,7 @@ commits past that tag, the version used to drop the label entirely:
 - v1: `1.0.0-beta.22` (tagged) → `1.0.1` (1 commit later)
 - v2: `1.0.0-beta.22` (tagged) → `1.0.0-beta.22.1` (1 commit later)
 
-If your tags are plain (`1.0.0`, no pre-release), nothing changes — `main` still
+If your tags are plain (`1.0.0`, no pre-release), nothing changes: `main` still
 counts commits the same way, just via the label-aware format instead of a numeric
 patch bump: v1's `1.0.1` becomes v2's `1.0.0.1` for the case with no pre-release
 label at all. Check any code that parses the version string's shape rather than
@@ -163,7 +163,7 @@ export default {
 ### Runtime / Behavioural
 
 **Symptom**: A version that used to read `1.0.1` on `main` now reads `1.0.0-beta.22.1`.\
-**Solution**: Expected — see [Details → Changed](#changed-pre-release-labels-on-main-are-preserved). The label is now preserved instead of discarded.
+**Solution**: Expected, see [Details → Changed](#changed-pre-release-labels-on-main-are-preserved). The label is now preserved instead of discarded.
 
 **Symptom**: The wrong package's version shows up when several packages share a
 tagged commit.\

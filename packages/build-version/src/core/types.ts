@@ -47,7 +47,7 @@ export interface Options {
   /**
    * Ordered list of strategy descriptors to try; the first one to return a non-null result wins.
    * Overrides the built-in default list entirely.
-   * @default [Strategies.envOverride(), Strategies.git({ packageName }), Strategies.gitversion(), Strategies.fallback('0.1.0')]
+   * @default [Strategies.envOverride(), Strategies.gitversion(), Strategies.git({ packageName }), Strategies.fallback('0.1.0')]
    */
   strategies?: VersionStrategyDescriptor[];
   debug?: boolean;

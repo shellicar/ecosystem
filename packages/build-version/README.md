@@ -95,24 +95,26 @@ result wins. The default list covers the common cases without any configuration:
 VersionPlugin({})
 // same as:
 VersionPlugin({
-  strategies: [Strategies.envOverride(), Strategies.git(), Strategies.gitversion(), Strategies.fallback('0.1.0')],
+  strategies: [Strategies.envOverride(), Strategies.gitversion(), Strategies.git(), Strategies.fallback('0.1.0')],
 })
 ```
 
-- **`Strategies.envOverride()`** — uses `BUILD_VERSION_OVERRIDE` (and optionally
+- **`Strategies.envOverride()`**: uses `BUILD_VERSION_OVERRIDE` (and optionally
   `BUILD_BRANCH_OVERRIDE`) when a CI job already knows the exact version it's building.
-- **`Strategies.git({ packageName })`** — pure git commands, no GitVersion install
-  required. Following mainline versioning:
+- **`Strategies.gitversion({ strict })`**: shells out to the GitVersion CLI. Requires
+  GitVersion to be installed. `strict: true` throws instead of falling through to the
+  next strategy when GitVersion fails.
+- **`Strategies.git({ packageName })`**: pure git commands, no GitVersion install
+  required. Its main fallthrough case is GitVersion's CLI not being installed or
+  erroring; if there's no git working tree at all, it declines the same as GitVersion
+  does, for the same reason. Following mainline versioning:
   - Tagged commit on `main`: reports the tag exactly, e.g. `1.2.3` or `1.2.3-beta.1`.
   - `main` past the last tag: keeps counting from it, e.g. `1.2.3-beta.1.2`.
   - Feature branch: base version with branch name and commit count, e.g. `1.2.3-feature-name.2`.
   - PR branch: base version with PR number, e.g. `1.2.3-PullRequest-0123.2`.
   - `packageName` scopes tag matching to `<packageName>@*`, so the right tag is picked
     out of several packages' tags that can share a commit in a monorepo.
-- **`Strategies.gitversion({ strict })`** — shells out to the GitVersion CLI. Requires
-  GitVersion to be installed. `strict: true` throws instead of falling through to the
-  next strategy when GitVersion fails.
-- **`Strategies.fallback(version)`** — never declines; the last-resort default when
+- **`Strategies.fallback(version)`**: never declines; the last-resort default when
   nothing else resolves (e.g. outside a git working tree).
 
 Override the whole list, or just one strategy, by passing your own array:
@@ -125,7 +127,7 @@ VersionPlugin({
 
 **`Strategies.custom(strategy)`** wraps your own `VersionStrategy` function
 (`() => { version: string; branch: string } | null`, returning `null` to decline
-and fall through to the next one) — for anything the built-in strategies don't cover:
+and fall through to the next one), for anything the built-in strategies don't cover:
 
 ```ts
 VersionPlugin({
@@ -133,7 +135,7 @@ VersionPlugin({
 })
 ```
 
-> Upgrading from 1.x? See [MIGRATION.md](./MIGRATION.md) — the `versionCalculator`
+> Upgrading from 1.x? See [MIGRATION.md](./MIGRATION.md): the `versionCalculator`
 > option has been replaced by `strategies`.
 
 ## Options
