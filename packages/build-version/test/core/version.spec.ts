@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Strategies } from '../../src/core/strategies';
-import { getStrategies, runStrategies } from '../../src/core/version';
 import type { ILogger, VersionStrategy } from '../../src/core/types';
+import { getStrategies, runStrategies } from '../../src/core/version';
 
 const createFakeLogger = (): ILogger => ({
   debug: () => {},
