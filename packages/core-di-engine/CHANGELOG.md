@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `EngineComposition.defaultLifetime` is removed: the engine holds no default lifetime. The composing package stamps a concrete lifetime on every registration before building, and the engine refuses an un-stamped node. This also closes a captive-detection gap where a root that relied on the default was judged by its raw (undefined) lifetime and escaped the walk.
 - `EngineComposition.runtimeCaptivePolicy` is now required: every composition must answer whether a runtime captive throws at resolve, rather than the engine silently enforcing nothing when omitted.
+- Lifetime verbs are pre-commit only: once the composition stamps its default at build, a later verb throws with an error naming the commit.
 
 ## [5.0.0] - 2026-07-16
 

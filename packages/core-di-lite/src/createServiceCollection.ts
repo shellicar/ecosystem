@@ -40,8 +40,9 @@ const liteComposition = (): EngineComposition => ({
 const stampSingleton = (services: DescriptorMap): void => {
   for (const descriptors of services.values()) {
     for (const descriptor of descriptors) {
-      if (descriptor.forwardTarget == null) {
-        descriptor.lifetime ??= Lifetime.Singleton;
+      if (descriptor.forwardTarget == null && descriptor.lifetime === undefined) {
+        descriptor.lifetime = Lifetime.Singleton;
+        descriptor.stamped = true;
       }
     }
   }

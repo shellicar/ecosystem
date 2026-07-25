@@ -77,4 +77,20 @@ describe('defaultLifetime option: the lifetime an un-verbed registration gets', 
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
+
+  // Resolving commits the collection: the default lifetime is stamped onto every
+  // un-verbed registration at that point, so a verb arriving afterwards would be
+  // re-deciding a lifetime an instance may already have been served under. The
+  // refusal is deliberate, and the message names the commit, not a phantom verb.
+  it('refuses a lifetime verb on a scope registration that was already resolved, naming the commit', () => {
+    const services = createServiceCollection();
+    const provider = services.buildProvider();
+    const scope = provider.createScope();
+    const builder = scope.Services.register(Thing).as(IThing);
+    scope.resolve(IThing);
+
+    const actual = () => builder.scoped();
+
+    expect(actual).toThrow('already committed with the default lifetime');
+  });
 });

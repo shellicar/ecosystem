@@ -36,6 +36,8 @@ export type ServiceDescriptor<T extends SourceType> = {
   readonly implementation: ServiceRegistration<T>;
   readonly cacheKey: CacheKey<T>;
   lifetime?: Lifetime;
+  /** Set when the composing collection stamped its default lifetime at commit, rather than a verb being called. */
+  stamped?: boolean;
   createInstance: InstanceFactory<T>;
   readonly forwardTarget?: ServiceIdentifier<T>;
   usesFactory?: boolean;

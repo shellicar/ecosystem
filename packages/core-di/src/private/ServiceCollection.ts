@@ -116,8 +116,9 @@ export class ServiceCollection implements IServiceCollection {
   private stampLifetimes(): void {
     for (const descriptors of this.services.values()) {
       for (const descriptor of descriptors) {
-        if (descriptor.forwardTarget == null) {
-          descriptor.lifetime ??= this.options.defaultLifetime;
+        if (descriptor.forwardTarget == null && descriptor.lifetime === undefined) {
+          descriptor.lifetime = this.options.defaultLifetime;
+          descriptor.stamped = true;
         }
       }
     }
