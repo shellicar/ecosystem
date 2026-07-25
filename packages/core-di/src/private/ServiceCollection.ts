@@ -207,8 +207,13 @@ export class ServiceCollection implements IServiceCollection {
     return frozen;
   }
 
+  // A prebaked construction failure is only ever thrown when the engine is told
+  // to validate; without eagerSingletons defaulting it here, a failing eager
+  // singleton would construct at buildProvider but only throw at the first
+  // resolve of that token, defeating the fail-fast point of the option. An
+  // explicit `validate` still wins either way.
   private engineOptions(options?: BuildProviderOptions) {
-    return { validate: options?.validate, registrationMode: this.options.registrationMode };
+    return { validate: options?.validate ?? this.options.eagerSingletons, registrationMode: this.options.registrationMode };
   }
 
   private finish(frozen: ServiceCollection, engine: Parameters<typeof ServiceProvider.createRoot>[2], onTiming: InstrumentationHook | undefined, start: number | undefined): IServiceProvider {
