@@ -110,6 +110,20 @@ export class ServiceCollection implements IServiceCollection {
     });
   }
 
+  // The one stamping point: every consumer that turns descriptors into a graph
+  // (validate, buildProvider, a scope overlay's snapshot) stamps through here, so
+  // the engine and the policies always judge the same concrete lifetimes.
+  private stampLifetimes(): void {
+    for (const descriptors of this.services.values()) {
+      for (const descriptor of descriptors) {
+        if (descriptor.forwardTarget == null && descriptor.lifetime === undefined) {
+          descriptor.lifetime = this.options.defaultLifetime;
+          descriptor.stamped = true;
+        }
+      }
+    }
+  }
+
   public validate(): ValidationReport {
     const problems: ValidationProblem[] = [];
     for (const node of this.composed.unfaced()) {
@@ -118,8 +132,12 @@ export class ServiceCollection implements IServiceCollection {
         message: noDeclaredIdentity(node.implementation.name),
       });
     }
-    const graph = deriveFacts(this.services);
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy, Lifetime.Resolve)]));
+    // Stamp a throwaway clone, not the live collection: registrations may still
+    // be verbed after a standalone validate().
+    const stamped = this.clone() as ServiceCollection;
+    stamped.stampLifetimes();
+    const graph = deriveFacts(stamped.services);
+    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
     return { valid: problems.length === 0, problems };
   }
 
@@ -152,6 +170,7 @@ export class ServiceCollection implements IServiceCollection {
   }
 
   public snapshot(): { readonly services: DescriptorMap; readonly version: number } {
+    this.stampLifetimes();
     return { services: this.services, version: this.version };
   }
 
@@ -162,7 +181,6 @@ export class ServiceCollection implements IServiceCollection {
         [Lifetime.Scoped]: createScopedLifetime(),
         [Lifetime.Resolve]: createResolveLifetime(),
       },
-      defaultLifetime: Lifetime.Resolve,
       strategy: createPlanStrategy(),
       disposal: createDisposal(),
       runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
@@ -184,6 +202,7 @@ export class ServiceCollection implements IServiceCollection {
     this.built = true;
     const frozen = this.clone() as ServiceCollection;
     frozen.built = true;
+    frozen.stampLifetimes();
     return frozen;
   }
 

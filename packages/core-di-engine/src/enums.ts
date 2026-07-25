@@ -27,13 +27,12 @@ export enum CaptivePolicy {
   /**
    * The default. Reports only a scoped dependency, one whose table is torn down
    * at scope end, before the singleton holding it dies (the MS-DI-style rule).
-   * A transient or un-verbed dependency is not reported.
+   * A transient dependency is not reported.
    */
   Disposal = 'DISPOSAL',
   /**
-   * Reports any shorter-lived dependency in the singleton's tree: scoped,
-   * transient, or un-verbed (which resolves under the composed default lifetime).
-   * The strictest report: a singleton should reach only singletons.
+   * Reports any shorter-lived dependency in the singleton's tree: scoped or
+   * transient. The strictest report: a singleton should reach only singletons.
    */
   Strict = 'STRICT',
   /** Reports no captive at all. `validate()` stays silent about singleton lifetime reach. */
@@ -43,12 +42,13 @@ export enum CaptivePolicy {
 /**
  * Whether `resolve()` throws on a runtime captive: a singleton pulling a scoped
  * instance through an opaque factory, which {@link CaptivePolicy} cannot see.
- * Defaults to {@link RuntimeCaptivePolicy.None}.
+ * The engine holds no default: every composition must choose. core-di defaults
+ * to {@link RuntimeCaptivePolicy.Throw}; core-di-lite composes None.
  */
 export enum RuntimeCaptivePolicy {
   /**
-   * The default. `resolve()` never throws for a runtime captive; the singleton
-   * keeps whatever instance the factory returned. Nothing is enforced at resolve.
+   * `resolve()` never throws for a runtime captive; the singleton keeps
+   * whatever instance the factory returned. Nothing is enforced at resolve.
    */
   None = 'NONE',
   /**

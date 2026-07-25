@@ -2,7 +2,7 @@ import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ServiceIdentifier, SourceType } from '../types';
 import { createDescriptorMap } from '../types';
-import { lifetimeAlreadySet } from './messages';
+import { lifetimeAfterCommit, lifetimeAlreadySet } from './messages';
 import { pushBucket } from './pushBucket';
 import type { ComposableAbstractBuilder, ComposableCollection, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
 
@@ -91,12 +91,14 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       return builder;
     };
     // The verb list is exactly the composed lifetime set: transient is not appended
-    // here. Defaulting no longer routes through a verb (the engine's defaultLifetime
-    // owns it), so a composition that omits transient simply lacks the verb.
+    // here. Defaulting no longer routes through a verb (the collection stamps its
+    // default before build), so a composition that omits transient simply lacks the verb.
     for (const lifetime of lifetimes) {
       builder[lifetimeVerbNames[lifetime]] = () => {
         if (node.lifetime !== undefined) {
-          throw new InvalidOperationError(lifetimeAlreadySet(node.lifetime));
+          // Distinguish a genuine double verb from the composer's commit stamp: the
+          // user called no verb in the stamped case, so naming one would mislead.
+          throw new InvalidOperationError(node.stamped === true ? lifetimeAfterCommit(node.lifetime) : lifetimeAlreadySet(node.lifetime));
         }
         if (lifetime === Lifetime.Singleton && options.scoped === true) {
           throw new ScopedSingletonRegistrationError();

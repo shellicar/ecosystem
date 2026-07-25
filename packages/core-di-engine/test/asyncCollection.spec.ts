@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildEngine, buildEngineAsync, createCollection, createPlanStrategy, createResolveLifetime, createScopedLifetime, createSingletonLifetime, type EngineComposition, Lifetime } from '../src';
+import { buildEngine, buildEngineAsync, createCollection, createPlanStrategy, createResolveLifetime, createScopedLifetime, createSingletonLifetime, type EngineComposition, Lifetime, RuntimeCaptivePolicy } from '../src';
 
 const composition = (): EngineComposition => ({
   features: {
@@ -8,6 +8,7 @@ const composition = (): EngineComposition => ({
     [Lifetime.Resolve]: createResolveLifetime(),
   },
   strategy: createPlanStrategy(),
+  runtimeCaptivePolicy: RuntimeCaptivePolicy.None,
 });
 
 abstract class IResource {}

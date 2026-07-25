@@ -41,7 +41,7 @@ export const createNaiveStrategy =
 
     const nodeValue = (view: EngineView, node: GraphNode, env: Env, boundary: Boundary, path: ReadonlySet<GraphNode>): unknown => {
       const token = ownerFor(view, node);
-      const lifetime = kit.effectiveLifetime(node);
+      const lifetime = kit.lifetimeOf(node);
       const held = kit.heldErrorFor(node);
       if (held !== undefined) {
         throw held;
@@ -106,7 +106,7 @@ export const createNaiveStrategy =
           continue;
         }
         const asyncMark = node.createInstanceAsync != null ? ' (async)' : '';
-        lines.push(`${faces.map((face) => face.name).join(', ')} -> ${node.implementation.name} [${kit.effectiveLifetime(node)}]${asyncMark}`);
+        lines.push(`${faces.map((face) => face.name).join(', ')} -> ${node.implementation.name} [${kit.lifetimeOf(node)}]${asyncMark}`);
         const fieldDeps = Object.values(getMetadata<SourceType>(DesignDependenciesKey, node.implementation) ?? {});
         for (const dep of [...(node.declaredDeps ?? []), ...fieldDeps]) {
           lines.push(`    -> ${dep.name}`);

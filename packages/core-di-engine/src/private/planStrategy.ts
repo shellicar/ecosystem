@@ -25,7 +25,7 @@ export const createPlanStrategy =
       const { graph, planCache } = dataOf(view);
       let plan = planCache.get(node);
       if (plan === undefined) {
-        plan = buildPlan(graph, view.index, node, kit.effectiveLifetime, kit.isCached, kit.surfaceAt, kit.guardToken);
+        plan = buildPlan(graph, view.index, node, kit.lifetimeOf, kit.isCached, kit.surfaceAt, kit.guardToken);
         planCache.set(node, plan);
       }
       return plan;
@@ -78,6 +78,6 @@ export const createPlanStrategy =
         return locals[locals.length - 1];
       },
       prebakeCandidates: (view) => topologicalOrder(dataOf(view).graph),
-      graphLines: (view) => formatGraph(dataOf(view).graph, kit.effectiveLifetime),
+      graphLines: (view) => formatGraph(dataOf(view).graph, kit.lifetimeOf),
     };
   };

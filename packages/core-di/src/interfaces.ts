@@ -22,6 +22,13 @@ export abstract class IServiceModule {
  */
 export abstract class IScopedProvider extends IResolutionScope implements IDisposable, IAsyncDisposable {
   public abstract readonly Services: IServiceCollection;
+  /**
+   * Opens a nested scope. It starts with the registrations this scope holds at
+   * that moment (later additions here don't reach it), holds its own scoped
+   * instances, and shares singletons with the whole provider. Each scope is
+   * disposed independently.
+   */
+  public abstract createScope(): IScopedProvider;
   public abstract [Symbol.dispose](): void;
   public abstract [Symbol.asyncDispose](): Promise<void>;
 }
@@ -90,6 +97,10 @@ export abstract class IServiceCollection {
    * Runs the wiring diagnostics (intended for CI): reads the static dependency
    * graph with no construction and reports problems without throwing.
    * {@link buildProvider} stays lenient unless opted in.
+   *
+   * An opaque factory's own inline `scope.resolve(...)` has no static edge to
+   * read, so it is invisible here; a singleton capturing a scoped instance that
+   * way is caught by `runtimeCaptivePolicy` (default `Throw`), at resolve.
    */
   public abstract validate(): ValidationReport;
   public abstract registerModules(...modules: ServiceModuleType[]): void;

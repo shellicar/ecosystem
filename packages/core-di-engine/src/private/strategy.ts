@@ -30,7 +30,7 @@ export type EngineView = {
 export type ResolvedField = { readonly field: string; readonly value: unknown };
 
 export type StrategyKit = {
-  readonly effectiveLifetime: (node: GraphNode) => Lifetime;
+  readonly lifetimeOf: (node: GraphNode) => Lifetime;
   readonly isCached: (lifetime: Lifetime) => boolean;
   readonly surfaceAt: (token: ServiceIdentifier<SourceType>) => 'root' | 'boundary' | undefined;
   readonly surfaceValue: (at: 'root' | 'boundary', boundary: Boundary) => unknown;

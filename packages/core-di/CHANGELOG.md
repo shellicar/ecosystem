@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- `createServiceCollection({ defaultLifetime })` sets the lifetime a registration gets when no lifetime verb is called on it. Defaults to `Lifetime.Resolve` (unchanged behaviour when omitted); an explicit verb always wins.
+- `IScopedProvider.createScope()` opens a nested scope: it starts with the parent scope's registrations at that moment, holds its own scoped instances, and shares singletons with the whole provider.
+
+### Changed
+
+- `runtimeCaptivePolicy` now defaults to `RuntimeCaptivePolicy.Throw`: a singleton pulling a scoped instance through an opaque factory throws `CaptiveDependencyError` at `resolve()`. Pass `RuntimeCaptivePolicy.None` to allow the capture as before.
+- A registration's lifetime is fixed once the collection is committed (provider built, or resolved in a scope): a lifetime verb after that point throws, naming the commit.
+
 ## [5.0.0] - 2026-07-16
 
 Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di-lite also composes from. The version jumps to match core-di-lite and core-di-engine: the three packages now release in lockstep so a single engine copy resolves across them. The registration grammar is now the same shape as lite's: `register(Implementation).as(Identifier)` / `.asSelf()` / `.using(factory)`, not `register(Interface).to(Implementation)`.

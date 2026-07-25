@@ -14,7 +14,9 @@ import {
   type DisposalSink,
   type EngineComposition,
   type InstanceFactory,
+  InvalidOperationError,
   Lifetime,
+  RuntimeCaptivePolicy,
   SelfDependencyError,
   ServiceCreationError,
   type ServiceDescriptor,
@@ -38,6 +40,7 @@ const composition = (): EngineComposition => ({
     [Lifetime.Resolve]: createResolveLifetime(),
   },
   strategy: holder.factory,
+  runtimeCaptivePolicy: RuntimeCaptivePolicy.None,
 });
 
 type DescriptorOptions<T extends SourceType> = {
@@ -48,13 +51,13 @@ type DescriptorOptions<T extends SourceType> = {
   readonly declaredDeps?: readonly ServiceIdentifier<SourceType>[];
 };
 
-// An un-verbed registration carries no lifetime on its descriptor; the engine's
-// composed defaultLifetime supplies one. Only an explicit `options.lifetime`
-// stamps a concrete lifetime here, mirroring a lifetime verb at the call site.
+// The engine takes only stamped nodes: the composer answers un-verbed
+// registrations before build. This helper plays the composer, stamping Resolve
+// unless a test says otherwise, mirroring core-di's default.
 const descriptor = <T extends SourceType>(implementation: ServiceImplementation<T>, options: DescriptorOptions<T> = {}): ServiceDescriptor<T> => ({
   implementation,
   cacheKey: Symbol(implementation.name),
-  lifetime: options.lifetime,
+  lifetime: options.lifetime ?? Lifetime.Resolve,
   createInstance: options.factory ?? (() => new implementation()),
   createInstanceAsync: options.asyncFactory,
   usesFactory: options.factory != null || options.asyncFactory != null,
@@ -245,15 +248,6 @@ describe('boundaryEngine: prebakeSingletons constructs every singleton at build'
   it('does not construct a non-singleton at build', () => {
     const expected = 0;
     buildEngine(mapOf([IDep, descriptor(Dep, { lifetime: Lifetime.Transient })]), prebaking());
-
-    const actual = countOf('Dep');
-
-    expect(actual).toBe(expected);
-  });
-
-  it('constructs an un-verbed registration at build when the composed default is singleton', () => {
-    const expected = 1;
-    buildEngine(mapOf([IDep, descriptor(Dep)]), { ...prebaking(), defaultLifetime: Lifetime.Singleton });
 
     const actual = countOf('Dep');
 
@@ -526,7 +520,7 @@ describe('boundaryEngine: composition', () => {
     // could be composed): a composition that omits it has no scope to open, so the
     // call throws at runtime. An inline literal without a scoped key would have no
     // createScope on its type at all (see createScope-behaviour.spec).
-    const composition: EngineComposition = { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() }, strategy: holder.factory };
+    const composition: EngineComposition = { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() }, strategy: holder.factory, runtimeCaptivePolicy: RuntimeCaptivePolicy.None };
     const engine = buildEngine(mapOf([IDep, descriptor(Dep)]), composition);
 
     const actual = () => engine.createScope();
@@ -535,28 +529,20 @@ describe('boundaryEngine: composition', () => {
   });
 });
 
-describe('boundaryEngine: default lifetime is an engine composition parameter', () => {
-  // An un-verbed registration (no lifetime on its descriptor) resolves under the
-  // engine's composed defaultLifetime, not a register-layer default.
-  it('resolves an un-verbed registration under the composed default (resolve): shared within a pass', () => {
-    const composed: EngineComposition = { ...composition(), defaultLifetime: Lifetime.Resolve };
-    const engine = buildEngine(mapOf([IDep, descriptor(Dep)], [ITwoFields, descriptor(TwoFields)]), composed);
-    const parent = engine.resolve(ITwoFields);
-    const expected = parent.a;
+describe('boundaryEngine: the engine holds no default lifetime', () => {
+  // A node without a lifetime is a composer bug: the composition must stamp
+  // every registration before build, and the engine refuses instead of
+  // silently picking one.
+  it('refuses a node that reaches it without a lifetime', () => {
+    const unstamped: ServiceDescriptor<Dep> = {
+      implementation: Dep,
+      cacheKey: Symbol('Dep'),
+      createInstance: () => new Dep(),
+    };
 
-    const actual = parent.b;
+    const actual = () => buildEngine(mapOf([IDep, unstamped]), composition()).resolve(IDep);
 
-    expect(actual).toBe(expected);
-  });
-
-  it('honours a different composed default: transient gives a distinct instance per injection point', () => {
-    const composed: EngineComposition = { ...composition(), defaultLifetime: Lifetime.Transient };
-    const engine = buildEngine(mapOf([IDep, descriptor(Dep)], [ITwoFields, descriptor(TwoFields)]), composed);
-    const parent = engine.resolve(ITwoFields);
-
-    const actual = parent.a;
-
-    expect(actual).not.toBe(parent.b);
+    expect(actual).toThrow(InvalidOperationError);
   });
 });
 
