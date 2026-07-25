@@ -7,4 +7,5 @@ export const DefaultServiceCollectionOptions: ServiceCollectionOptions = {
   captivePolicy: CaptivePolicy.Disposal,
   runtimeCaptivePolicy: RuntimeCaptivePolicy.Throw,
   defaultLifetime: Lifetime.Resolve,
+  eagerSingletons: false,
 };

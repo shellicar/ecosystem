@@ -49,7 +49,7 @@ const stampSingleton = (services: DescriptorMap): void => {
 };
 
 export const createServiceCollection = (): IServiceCollection => {
-  const composed = createCollection([Lifetime.Singleton]);
+  const composed = createCollection([]);
 
   return {
     register: composed.register as IServiceCollection['register'],

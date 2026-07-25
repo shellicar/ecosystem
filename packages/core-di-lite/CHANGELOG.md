@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Removed
+
+- `.singleton()` is no longer a builder verb: singleton is the only lifetime and it was never configurable, so the verb could never override anything. Every registration is still stamped a singleton at `buildProvider`.
+
 ## [5.0.0] - 2026-07-16
 
 Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di also composes from. The version jumps to match core-di and core-di-engine: the three packages now release in lockstep so a single engine copy resolves across them. Lite keeps its purpose: everything is a singleton, everything is constructed at `buildProvider()`, and a resolve after build is a pure lookup.

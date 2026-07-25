@@ -14,8 +14,9 @@ check. It composes from the same shared engine as core-di
 (`@shellicar/core-di-engine`), so its errors, its `@dependsOn` decorator, and its
 registration behaviour are identical to core-di's wherever lite's surface overlaps with
 it. What it doesn't have is scopes or a choice of lifetime: there is no `createScope`,
-no `.scoped()`, no `.resolve()` (the per-call lifetime verb), and no `defaultLifetime`
-to pick — every registration is a singleton whether you call `.singleton()` or not.
+no `.scoped()`, no `.resolve()` (the per-call lifetime verb), no `defaultLifetime` to
+pick, and no `.singleton()` verb either — every registration is a singleton, and there's
+nothing to choose it over.
 
 Reach for it when you don't need per-request or per-call lifetimes — a CLI tool, a
 script, a small service with no request boundary — and want the registration ergonomics
@@ -62,7 +63,7 @@ const greeter = provider.resolve(IGreeter);
 ## How it differs from `@shellicar/core-di`
 
 * **No scopes.** `IServiceProvider` here is `Pick<IResolutionScope, 'resolve' | 'resolveAll'>` — there is no `createScope`, so there's nothing to open or dispose per request.
-* **Singleton is the only lifetime, and the default.** `.singleton()` is the only lifetime verb on the builder, and it's optional: a registration with no lifetime verb at all is still a singleton, because lite's engine composition sets `defaultLifetime: Lifetime.Singleton` (core-di's default is `Lifetime.Resolve`, not singleton — omitting a lifetime verb means something different in each package).
+* **Singleton is the only lifetime, and there's no verb for it.** The builder has no lifetime verb at all: every registration is stamped a singleton before it reaches the engine (core-di's un-verbed default is `Lifetime.Resolve`, not singleton — omitting a lifetime verb means something different in each package).
 * **Everything is prebaked.** `buildProvider()` constructs every registration, in dependency order, before returning. If a constructor throws or a dependency is missing, it throws there — not on the first `resolve()` a caller happens to make. This trades laziness for "the process either starts successfully or doesn't start at all", which is usually what you want for a CLI or a short-lived process.
 * **No async factories.** There's no `usingAsync` and no `buildProviderAsync`. Everything is synchronous.
 * **No `overrideLifetime` and no captive-dependency reporting.** Every registration is already a singleton, so there's no shorter-lived dependency a singleton could capture, and nothing to override.

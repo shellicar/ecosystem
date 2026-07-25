@@ -1,14 +1,15 @@
-import type { AbstractNewable, ComposableAbstractBuilder, ComposableNewableBuilder, IForwardBuilder, IResolutionScope, Lifetime, Newable, ServiceIdentifier, SourceType, ValidationReport } from '@shellicar/core-di-engine';
+import type { AbstractNewable, ComposableAbstractBuilder, ComposableNewableBuilder, IForwardBuilder, IResolutionScope, Newable, ServiceIdentifier, SourceType, ValidationReport } from '@shellicar/core-di-engine';
 
 /**
  * Lite's builder surface is core-di's grammar over the singleton-only lifetime
- * set: `.as()` / `.asSelf()` declare faces, `.using()` an optional factory, and
- * `.singleton()` is the only lifetime verb (also the default, so it may be
- * omitted). Shared identity rides on the register() call: every face declared
- * from one call resolves to the same instance, factory or not.
+ * set: `.as()` / `.asSelf()` declare faces, `.using()` an optional factory. There
+ * is no lifetime verb: singleton is the only lifetime and it is never configurable,
+ * so there is nothing for a verb to choose between. Shared identity rides on the
+ * register() call: every face declared from one call resolves to the same
+ * instance, factory or not.
  */
-export type INewableServiceBuilder<T extends SourceType> = ComposableNewableBuilder<T, Lifetime.Singleton, false>;
-export type IAbstractServiceBuilder<T extends SourceType> = ComposableAbstractBuilder<T, Lifetime.Singleton, false>;
+export type INewableServiceBuilder<T extends SourceType> = ComposableNewableBuilder<T, never, false>;
+export type IAbstractServiceBuilder<T extends SourceType> = ComposableAbstractBuilder<T, never, false>;
 
 /** The provider surface: resolution only. Everything was constructed at build. */
 export type IServiceProvider = Pick<IResolutionScope, 'resolve' | 'resolveAll'>;
