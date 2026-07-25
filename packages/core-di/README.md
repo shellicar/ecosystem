@@ -150,6 +150,13 @@ using scope = provider.createScope();
 scope.Services.register(Context).as(IContext);
 ```
 
+* Nest scopes. A scope can open its own scope: the nested scope starts with the registrations its parent holds at that moment, holds its own scoped instances, and shares singletons with the whole provider. Each scope is disposed independently.
+
+```ts
+using scope = provider.createScope();
+using nested = scope.createScope();
+```
+
 * Multiple registrations
 
 ```ts
@@ -257,7 +264,7 @@ scope.resolve(Connection);
 // the scoped Connection is disposed when the scope is disposed
 ```
 
-* Validate the wiring statically. `validate()` reads the dependency graph (unregistered targets, cycles, captive dependencies) with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`.
+* Validate the wiring statically. `validate()` reads the dependency graph (unregistered targets, cycles, captive dependencies) with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`. One shape is invisible to it by construction: a factory doing its own inline `scope.resolve(...)` has no static edge to read. A singleton capturing a scoped instance that way is caught at resolve time instead, by `runtimeCaptivePolicy` (default `Throw`).
 
 ```ts
 const report = services.validate();

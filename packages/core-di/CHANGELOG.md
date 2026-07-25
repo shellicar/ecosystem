@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `createServiceCollection({ defaultLifetime })` sets the lifetime a registration gets when no lifetime verb is called on it. Defaults to `Lifetime.Resolve` (unchanged behaviour when omitted); an explicit verb always wins.
+- `IScopedProvider.createScope()` opens a nested scope: it starts with the parent scope's registrations at that moment, holds its own scoped instances, and shares singletons with the whole provider.
 
 ### Changed
 
