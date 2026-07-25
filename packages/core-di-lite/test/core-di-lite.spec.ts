@@ -271,6 +271,13 @@ describe('the focused surface', () => {
     expect(actual).toEqual({ singleton: undefined, scoped: undefined, resolve: undefined, transient: undefined });
   });
 
+  it('rejects .singleton() at compile time: the verb this composition removed', () => {
+    const services = createServiceCollection();
+
+    // @ts-expect-error - lite composes no lifetime verbs; singleton is the fixed, un-chosen default
+    services.register(ConsoleLogger).as(ILogger).singleton;
+  });
+
   it('rejects an uncomposed verb at compile time', () => {
     const services = createServiceCollection();
 

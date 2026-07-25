@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createServiceCollection, Lifetime } from '../src';
+import { createServiceCollection } from '../src';
 
 let constructed: string[] = [];
 const track = (name: string): void => {
@@ -39,7 +39,7 @@ describe('eagerSingletons option: construct every singleton at buildProvider', (
   });
 
   it('leaves a non-singleton lifetime lazy even when true', () => {
-    const services = createServiceCollection({ eagerSingletons: true, defaultLifetime: Lifetime.Resolve });
+    const services = createServiceCollection({ eagerSingletons: true });
     services.register(Thing).as(IThing).transient();
     services.buildProvider();
 
