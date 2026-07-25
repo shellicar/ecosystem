@@ -37,8 +37,11 @@ export const missingTargetPolicy: GraphPolicy = (graph) =>
     message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
   }));
 
+// Lifetimes arrive stamped: the composition supplies a concrete lifetime on every
+// non-forward node before the graph is derived. Only a forward carries undefined
+// here, and a forward is judged through its target node, not itself.
 const captivePolicy =
-  (defaultLifetime: Lifetime, isCaptured: (lifetime: Lifetime) => boolean): GraphPolicy =>
+  (isCaptured: (lifetime: Lifetime) => boolean): GraphPolicy =>
   (graph) => {
     const problems: ValidationProblem[] = [];
     for (const [node, facts] of graph) {
@@ -47,11 +50,11 @@ const captivePolicy =
       }
       for (const dep of reachableFrom(graph, node)) {
         const depFacts = graph.get(dep);
-        const effectiveLifetime = depFacts?.lifetime ?? (dep.forwardTarget != null ? undefined : defaultLifetime);
-        if (effectiveLifetime != null && isCaptured(effectiveLifetime)) {
+        const lifetime = depFacts?.lifetime;
+        if (lifetime != null && isCaptured(lifetime)) {
           problems.push({
             kind: ValidationProblemKind.CaptiveDependency,
-            message: captiveDependency(facts.owner.name, depFacts?.owner.name, effectiveLifetime),
+            message: captiveDependency(facts.owner.name, depFacts?.owner.name, lifetime),
           });
         }
       }
@@ -59,9 +62,9 @@ const captivePolicy =
     return problems;
   };
 
-export const strictCaptive = (defaultLifetime: Lifetime): GraphPolicy => captivePolicy(defaultLifetime, (lifetime) => lifetime !== Lifetime.Singleton);
+export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !== Lifetime.Singleton);
 
-export const disposalCaptive = (defaultLifetime: Lifetime): GraphPolicy => captivePolicy(defaultLifetime, (lifetime) => lifetime === Lifetime.Scoped);
+export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped);
 
 export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
   const problems: ValidationProblem[] = [];
@@ -76,12 +79,12 @@ export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
   return problems;
 };
 
-export const captivePolicyFor = (policy: CaptivePolicy, defaultLifetime: Lifetime): GraphPolicy => {
+export const captivePolicyFor = (policy: CaptivePolicy): GraphPolicy => {
   switch (policy) {
     case CaptivePolicy.Disposal:
-      return disposalCaptive(defaultLifetime);
+      return disposalCaptive;
     case CaptivePolicy.Strict:
-      return strictCaptive(defaultLifetime);
+      return strictCaptive;
     case CaptivePolicy.None:
       return () => [];
   }

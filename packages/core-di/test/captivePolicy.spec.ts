@@ -86,6 +86,22 @@ describe('RuntimeCaptivePolicy governs the runtime captive (a singleton reaching
     expect(actual).toBeInstanceOf(SingletonHolder);
   });
 
+  it('defaults to Throw: the runtime capture errors at resolve with no option set, not at buildProvider', () => {
+    const services = createServiceCollection();
+    services.register(ScopedThing).as(IScopedThing).scoped();
+    services
+      .register(SingletonHolder)
+      .using((scope) => new SingletonHolder(scope.resolve(IScopedThing)))
+      .as(ISingletonHolder)
+      .singleton();
+    // The build must succeed: the edge is opaque, so nothing is known until resolve.
+    const provider = services.buildProvider();
+
+    const actual = () => provider.resolve(ISingletonHolder);
+
+    expect(actual).toThrow(CaptiveDependencyError);
+  });
+
   it('Throw makes the same runtime capture an error at resolve', () => {
     const services = createServiceCollection({ runtimeCaptivePolicy: RuntimeCaptivePolicy.Throw });
     services.register(ScopedThing).as(IScopedThing).scoped();

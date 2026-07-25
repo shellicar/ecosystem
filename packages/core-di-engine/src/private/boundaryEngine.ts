@@ -3,7 +3,7 @@ import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError,
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { followForward } from './followForward';
-import { asyncFactoryOnSyncPath, createScopeRequiresScoped, syncBuildOfAsyncFactory } from './messages';
+import { asyncFactoryOnSyncPath, createScopeRequiresScoped, nodeWithoutLifetime, syncBuildOfAsyncFactory } from './messages';
 import type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory } from './strategy';
 import type { AsyncNode, Env, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
 
@@ -13,7 +13,6 @@ const EMPTY_BUCKET: readonly GraphNode[] = [];
 
 export type EngineComposition = {
   readonly features?: LifetimeFeatures;
-  readonly defaultLifetime?: Lifetime;
   /**
    * How construction is driven: the plan strategy (compile once, replay) or the
    * naive strategy (recursive walk, no graph machinery). Semantics are
@@ -30,7 +29,12 @@ export type EngineComposition = {
   readonly prebakeSingletons?: boolean;
   readonly disposal?: DisposalSink;
   readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
-  readonly runtimeCaptivePolicy?: RuntimeCaptivePolicy;
+  /**
+   * Whether a runtime captive (a singleton pulling a scoped instance through an
+   * opaque factory) throws at resolve. Required: the engine holds no default —
+   * every composition must answer. core-di composes Throw; core-di-lite None.
+   */
+  readonly runtimeCaptivePolicy: RuntimeCaptivePolicy;
 };
 
 export type Boundary = { readonly id: symbol };
@@ -65,7 +69,6 @@ export type EngineFor<C extends EngineComposition> = Scope & (Lifetime.Scoped ex
 
 const setupEngine = (services: DescriptorMap, composition: EngineComposition, options: BuildEngineOptions) => {
   const heldErrors = new Map<GraphNode, unknown>();
-  const defaultLifetime = composition.defaultLifetime ?? Lifetime.Resolve;
   const disposal = composition.disposal;
   const runtimeCaptivePolicy = composition.runtimeCaptivePolicy;
   const constructing = new Set<GraphNode>();
@@ -81,7 +84,15 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const isCached = (lifetime: Lifetime): boolean => featureFor(lifetime) !== undefined;
 
-  const effectiveLifetime = (node: GraphNode): Lifetime => node.lifetime ?? defaultLifetime;
+  // The engine holds no default lifetime: the composition stamps every concrete
+  // node before build, so an undefined lifetime here is a composer bug.
+  const lifetimeOf = (node: GraphNode): Lifetime => {
+    const lifetime = node.lifetime;
+    if (lifetime === undefined) {
+      throw new InvalidOperationError(nodeWithoutLifetime(node.implementation.name));
+    }
+    return lifetime;
+  };
 
   const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => composition.surfaceTokens?.get(token);
 
@@ -178,7 +189,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   };
 
   const strategy: ResolutionStrategy = composition.strategy({
-    effectiveLifetime,
+    lifetimeOf,
     isCached,
     surfaceAt,
     surfaceValue,
@@ -208,7 +219,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     if (node.usesFactory === true && constructing.has(node)) {
       throw new CircularDependencyError(token);
     }
-    if (singletonDepth > 0 && runtimeCaptivePolicy === RuntimeCaptivePolicy.Throw && effectiveLifetime(node) === Lifetime.Scoped) {
+    if (singletonDepth > 0 && runtimeCaptivePolicy === RuntimeCaptivePolicy.Throw && lifetimeOf(node) === Lifetime.Scoped) {
       throw new CaptiveDependencyError(currentSingletonToken ?? token, token);
     }
   };
@@ -264,7 +275,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
   const rootBase: Env = boundaryFeature?.beginScope?.() ?? {};
 
-  const prebakedNodes = (): GraphNode[] => strategy.prebakeCandidates(rootView).filter((node) => node.forwardTarget == null && effectiveLifetime(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
+  const prebakedNodes = (): GraphNode[] => strategy.prebakeCandidates(rootView).filter((node) => node.forwardTarget == null && lifetimeOf(node) === Lifetime.Singleton && (composition.prebakeSingletons === true || node.eager === true || isAsyncNode(node)));
 
   const hold = (node: GraphNode, outcome: Outcome): void => {
     if (!outcome.ok) {
@@ -293,7 +304,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const holdAsyncNonSingletons = (): void => {
     for (const [token, descriptors] of rootView.services) {
       for (const node of descriptors) {
-        if (node.forwardTarget == null && isAsyncNode(node) && effectiveLifetime(node) !== Lifetime.Singleton) {
+        if (node.forwardTarget == null && isAsyncNode(node) && lifetimeOf(node) !== Lifetime.Singleton) {
           heldErrors.set(node, new InvalidOperationError(asyncFactoryOnSyncPath(token.name)));
         }
       }

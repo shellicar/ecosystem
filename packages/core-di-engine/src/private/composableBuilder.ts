@@ -91,8 +91,8 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       return builder;
     };
     // The verb list is exactly the composed lifetime set: transient is not appended
-    // here. Defaulting no longer routes through a verb (the engine's defaultLifetime
-    // owns it), so a composition that omits transient simply lacks the verb.
+    // here. Defaulting no longer routes through a verb (the collection stamps its
+    // default before build), so a composition that omits transient simply lacks the verb.
     for (const lifetime of lifetimes) {
       builder[lifetimeVerbNames[lifetime]] = () => {
         if (node.lifetime !== undefined) {

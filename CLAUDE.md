@@ -2,6 +2,11 @@
 
 Start — CI and release process only. Rest of the repo still needs writing up.
 
+## Beta packages
+
+A beta package makes no compatibility promise, so a change to one is never a
+breaking change. There is nothing to flag and no version-bump question to raise.
+
 ## CI pipeline
 
 `.github/workflows/ci.yml` is the one entrypoint, dispatching by event:

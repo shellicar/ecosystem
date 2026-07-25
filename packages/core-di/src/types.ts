@@ -1,7 +1,7 @@
 // Only core-di's own types live here: the collection-level options and hooks
 // that reference its surfaces (logger, modules, provider options). The core
 // service types are the engine's; import them from @shellicar/core-di-engine.
-import type { CaptivePolicy, LogLevel, Newable, ResolveMultipleMode, RuntimeCaptivePolicy } from '@shellicar/core-di-engine';
+import type { CaptivePolicy, Lifetime, LogLevel, Newable, ResolveMultipleMode, RuntimeCaptivePolicy } from '@shellicar/core-di-engine';
 import type { IServiceCollection, IServiceModule } from './interfaces';
 import type { ILogger } from './logger';
 import type { ConsoleLogger } from './private/consoleLogger';
@@ -34,9 +34,15 @@ export type ServiceCollectionOptions = {
   /**
    * Whether `resolve()` throws on a runtime captive: a singleton pulling a scoped
    * instance through an opaque factory, invisible to {@link captivePolicy}.
-   * @default RuntimeCaptivePolicy.None
+   * @default RuntimeCaptivePolicy.Throw
    */
   runtimeCaptivePolicy: RuntimeCaptivePolicy;
+  /**
+   * The lifetime a registration gets when no lifetime verb is called on it.
+   * An explicit verb always wins over this default.
+   * @default Lifetime.Resolve
+   */
+  defaultLifetime: Lifetime;
 };
 
 /** A timing from the instrumentation hook: the build once, and each `resolve`. */

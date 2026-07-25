@@ -12,6 +12,7 @@ import {
   type EngineComposition,
   InvalidOperationError,
   Lifetime,
+  RuntimeCaptivePolicy,
   type ServiceDescriptor,
   type ServiceIdentifier,
   type ServiceImplementation,
@@ -66,6 +67,7 @@ describe.each(strategies)('an async node on a synchronous resolution path (%s st
       [Lifetime.Scoped]: createScopedLifetime(),
     },
     strategy,
+    runtimeCaptivePolicy: RuntimeCaptivePolicy.None,
   });
 
   it('control: an async singleton settles at the async build boundary and resolves to the factory product', async () => {

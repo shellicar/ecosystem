@@ -1,4 +1,4 @@
-import { BuilderError, buildEngine, createCollection, createPlanStrategy, createResolveLifetime, createSingletonLifetime, type EngineComposition, Lifetime } from '@shellicar/core-di-engine';
+import { BuilderError, buildEngine, createCollection, createPlanStrategy, createResolveLifetime, createSingletonLifetime, type EngineComposition, Lifetime, RuntimeCaptivePolicy } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
 import { createServiceCollection } from '../src';
 
@@ -41,12 +41,13 @@ describe('createScope on a custom collection composed without the scoped feature
       [Lifetime.Resolve]: createResolveLifetime(),
     },
     strategy: createPlanStrategy(),
+    runtimeCaptivePolicy: RuntimeCaptivePolicy.None,
   });
 
   it('does not expose createScope when the scoped feature is not composed', () => {
     const services = createCollection([Lifetime.Singleton]);
     // Inline literal so its inferred type has no scoped key.
-    const engine = buildEngine(services.regs, { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() }, strategy: createPlanStrategy() });
+    const engine = buildEngine(services.regs, { features: { [Lifetime.Singleton]: createSingletonLifetime(), [Lifetime.Resolve]: createResolveLifetime() }, strategy: createPlanStrategy(), runtimeCaptivePolicy: RuntimeCaptivePolicy.None });
 
     // @ts-expect-error - a composition without the scoped feature must not carry createScope on the returned type
     engine.createScope;
