@@ -182,6 +182,7 @@ export class ServiceCollection implements IServiceCollection {
         [Lifetime.Resolve]: createResolveLifetime(),
       },
       strategy: createPlanStrategy(),
+      prebakeSingletons: this.options.eagerSingletons,
       disposal: createDisposal(),
       runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
       surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([

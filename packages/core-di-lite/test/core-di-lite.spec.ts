@@ -61,7 +61,7 @@ class Boom implements IBoom {
 describe('shared identity across faces (the 4.x gap)', () => {
   it('resolves one instance for two faces declared from one register call', () => {
     const services = createServiceCollection();
-    services.register(ConsoleLogger).as(ILogger).as(IAuditSink).singleton();
+    services.register(ConsoleLogger).as(ILogger).as(IAuditSink);
     const provider = services.buildProvider();
     const expected = provider.resolve(ILogger);
 
@@ -262,19 +262,19 @@ describe('multiplicity', () => {
 });
 
 describe('the focused surface', () => {
-  it('exposes no lifetime verb beyond singleton', () => {
+  it('exposes no lifetime verb at all: singleton is the only lifetime and it is never configurable', () => {
     const services = createServiceCollection();
 
     const builder = services.register(ConsoleLogger).as(ILogger) as unknown as Record<string, unknown>;
-    const actual = { scoped: builder.scoped, resolve: builder.resolve, transient: builder.transient };
+    const actual = { singleton: builder.singleton, scoped: builder.scoped, resolve: builder.resolve, transient: builder.transient };
 
-    expect(actual).toEqual({ scoped: undefined, resolve: undefined, transient: undefined });
+    expect(actual).toEqual({ singleton: undefined, scoped: undefined, resolve: undefined, transient: undefined });
   });
 
   it('rejects an uncomposed verb at compile time', () => {
     const services = createServiceCollection();
 
-    // @ts-expect-error - lite composes only the singleton lifetime; there is no scoped verb
+    // @ts-expect-error - lite composes no lifetime verbs; singleton is the fixed, un-chosen default
     services.register(ConsoleLogger).as(ILogger).scoped;
   });
 

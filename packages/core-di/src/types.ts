@@ -43,6 +43,12 @@ export type ServiceCollectionOptions = {
    * @default Lifetime.Resolve
    */
   defaultLifetime: Lifetime;
+  /**
+   * Construct every singleton at `buildProvider`, not just the `.eager()` and
+   * async ones, paying resolution cost once up front instead of on first resolve.
+   * @default false
+   */
+  eagerSingletons: boolean;
 };
 
 /** A timing from the instrumentation hook: the build once, and each `resolve`. */
