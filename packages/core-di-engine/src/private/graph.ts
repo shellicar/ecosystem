@@ -193,10 +193,23 @@ export type PlanStep =
 
 export type Plan = readonly PlanStep[];
 
+/**
+ * Which descriptor in a token's bucket wins at resolve(): a single `.shadow()`-flagged
+ * descriptor wins outright, over any ancestor's non-shadow registrations. With none
+ * flagged, whichever was registered last (unchanged from before shadow existed). Two
+ * or more flagged is a genuine duplicate, left to the multiplicity guard to reject.
+ * The one place this rule lives; the plan-compile path and the runtime resolve path
+ * both read it from here.
+ */
+export const winnerOf = (bucket: readonly GraphNode[]): GraphNode | undefined => {
+  const shadowing = bucket.filter((node) => node.shadow === true);
+  return shadowing.length === 1 ? shadowing[0] : bucket[bucket.length - 1];
+};
+
 export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceType>): GraphNode | undefined => {
   const bucket = index.get(token) ?? [];
-  const last = bucket[bucket.length - 1];
-  return last === undefined ? undefined : followForward(index, last);
+  const winner = winnerOf(bucket);
+  return winner === undefined ? undefined : followForward(index, winner);
 };
 
 export const buildPlan = (

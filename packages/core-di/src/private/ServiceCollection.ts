@@ -15,10 +15,10 @@ import {
   type DescriptorMap,
   deriveFacts,
   ForwardBuilder,
-  type IForwardBuilder,
   InvalidOperationError,
   InvalidServiceIdentifierError,
   IResolutionScope,
+  type IScopedForwardBuilder,
   Lifetime,
   missingTargetPolicy,
   type Newable,
@@ -34,8 +34,8 @@ import {
   ValidationProblemKind,
   type ValidationReport,
 } from '@shellicar/core-di-engine';
-import type { IAbstractServiceBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
-import { IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
+import type { IScopedAbstractServiceBuilder, IScopedNewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
+import { IScopedProvider, type IScopedServiceCollection, IServiceProvider as IServiceProviderToken } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { BuildProviderOptions, InstrumentationHook, InstrumentationOptions, ServiceCollectionOptions, ServiceModuleType } from '../types';
 import { ServiceProvider } from './provider';
@@ -46,7 +46,12 @@ const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve
 
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
-export class ServiceCollection implements IServiceCollection {
+// Implements the wider, shadow-capable interface: one class serves both the root
+// collection and every scope's collection. A caller holding it through IServiceProvider
+// (root) or IServiceCollection sees the narrower surface with no .shadow(); a caller
+// holding it through IScopedProvider sees IScopedServiceCollection, .shadow() included.
+// Runtime shadow support still gates on isScoped, via createCollection's own options.
+export class ServiceCollection implements IScopedServiceCollection {
   private readonly composed: ComposableCollection<Lifetime, boolean>;
   private version = 0;
   private built = false;
@@ -93,21 +98,25 @@ export class ServiceCollection implements IServiceCollection {
     }
   }
 
-  public register<T extends SourceType>(implementation: Newable<T>): INewableServiceBuilder<T>;
-  public register<T extends SourceType>(implementation: AbstractNewable<T>): IAbstractServiceBuilder<T>;
-  public register<T extends SourceType>(implementation: AbstractNewable<T>): INewableServiceBuilder<T> | IAbstractServiceBuilder<T> {
-    return this.composed.register(implementation as Newable<T>) as INewableServiceBuilder<T>;
+  public register<T extends SourceType>(implementation: Newable<T>): IScopedNewableServiceBuilder<T>;
+  public register<T extends SourceType>(implementation: AbstractNewable<T>): IScopedAbstractServiceBuilder<T>;
+  public register<T extends SourceType>(implementation: AbstractNewable<T>): IScopedNewableServiceBuilder<T> | IScopedAbstractServiceBuilder<T> {
+    return this.composed.register(implementation as Newable<T>) as IScopedNewableServiceBuilder<T>;
   }
 
-  public forward<S extends SourceType>(source: ServiceIdentifier<S>): IForwardBuilder<S> {
+  public forward<S extends SourceType>(source: ServiceIdentifier<S>): IScopedForwardBuilder<S> {
     if (source == null) {
       throw new InvalidServiceIdentifierError();
     }
-    return new ForwardBuilder<S>(source, (identifier, descriptor) => {
-      pushBucket(this.services, identifier, descriptor);
-      this.logger.info('Adding service', { identifier: identifier.name, descriptor });
-      this.version++;
-    });
+    return new ForwardBuilder<S>(
+      source,
+      (identifier, descriptor) => {
+        pushBucket(this.services, identifier, descriptor);
+        this.logger.info('Adding service', { identifier: identifier.name, descriptor });
+        this.version++;
+      },
+      this.isScoped,
+    );
   }
 
   // The one stamping point: every consumer that turns descriptors into a graph

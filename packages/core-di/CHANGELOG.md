@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `createServiceCollection({ defaultLifetime })` sets the lifetime a registration gets when no lifetime verb is called on it. Defaults to `Lifetime.Resolve` (unchanged behaviour when omitted); an explicit verb always wins.
 - `IScopedProvider.createScope()` opens a nested scope: it starts with the parent scope's registrations at that moment, holds its own scoped instances, and shares singletons with the whole provider.
 - `createServiceCollection({ eagerSingletons })` constructs every singleton at `buildProvider`, not just the `.eager()` and async ones, and a constructor that throws now throws there too instead of at the first resolve. Defaults to `false` (unchanged behaviour when omitted).
+- A scope can `.shadow()` a registration on `register()`/`forward()` to override an ancestor scope's registration of the same token, instead of throwing `MultipleRegistrationError`. Only available on `IScopedProvider.Services`; a root collection's `register()`/`forward()` never carry `.shadow()`.
 
 ### Changed
 

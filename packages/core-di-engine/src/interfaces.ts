@@ -1,3 +1,4 @@
+import type { ShadowVerb } from './private/types';
 import type { ServiceIdentifier, SourceType } from './types';
 
 /**
@@ -36,3 +37,18 @@ export abstract class IForwardBuilder<_S extends SourceType> {
  * so this exposes nothing to chain; a lifetime verb on it does not typecheck.
  */
 export abstract class IForwardResult {}
+
+/**
+ * The builder for a forward inside a scope: identical to {@link IForwardBuilder},
+ * except `.to()` completes into a result that also carries `.shadow()`. A separate
+ * (non-generic) type rather than a `Scoped` parameter on `IForwardBuilder` itself:
+ * TypeScript infers a class type parameter used only inside a conditional type as
+ * invariant, which would make `IForwardBuilder<S, true>` fail to satisfy
+ * `IForwardBuilder<S, false>` even though the capability is a pure superset.
+ */
+export abstract class IScopedForwardBuilder<_S extends SourceType> {
+  public abstract to<Target extends SourceType>(target: ServiceIdentifier<Target>): IScopedForwardResult;
+}
+
+/** The scoped equivalent of {@link IForwardResult}: adds `.shadow()`. */
+export type IScopedForwardResult = ShadowVerb<void>;

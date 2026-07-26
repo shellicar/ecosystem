@@ -1,7 +1,7 @@
 import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
 import type { ValidationProblem } from '../types';
-import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom } from './graph';
-import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleShadowed, missingTarget } from './messages';
+import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom, winnerOf } from './graph';
+import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget } from './messages';
 import type { Graph, GraphPolicy } from './types';
 
 export const cyclePolicy: GraphPolicy = (graph) => {
@@ -10,23 +10,23 @@ export const cyclePolicy: GraphPolicy = (graph) => {
     return [];
   }
   // Whether a cycle is an error depends on which door the app uses, and that is
-  // unknowable here: resolve() never walks a shadowed registration, resolveAll()
-  // walks every registration in both modes. So the report stays conservative
-  // and says which door a shadowed cycle bites through, letting a deliberate
-  // last-wins override be recognised for what it is.
+  // unknowable here: resolve() never walks a registration overridden by a later
+  // duplicate, resolveAll() walks every registration in both modes. So the report
+  // stays conservative and says which door an overridden cycle bites through,
+  // letting a deliberate last-wins override be recognised for what it is.
   const index = indexByOwner(graph);
-  const isShadowed = (node: (typeof cycles)[number][number]): boolean => {
+  const isOverridden = (node: (typeof cycles)[number][number]): boolean => {
     const facts = graph.get(node);
     return (facts?.owners ?? []).some((owner) => {
       const bucket = index.get(owner) ?? [];
-      return bucket.length > 1 && bucket[bucket.length - 1] !== node;
+      return bucket.length > 1 && winnerOf(bucket) !== node;
     });
   };
   return cycles.map((cycle) => {
     const names = cycle.map((node) => graph.get(node)?.owner.name ?? '');
     return {
       kind: ValidationProblemKind.Cycle,
-      message: cycle.some(isShadowed) ? dependencyCycleShadowed(names) : dependencyCycle(names),
+      message: cycle.some(isOverridden) ? dependencyCycleOverridden(names) : dependencyCycle(names),
     };
   });
 };

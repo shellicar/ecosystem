@@ -1,14 +1,14 @@
 import { InvalidOperationError, InvalidServiceIdentifierError } from '../errors';
-import type { IForwardBuilder, IForwardResult } from '../interfaces';
+import type { IForwardBuilder, IScopedForwardBuilder, IScopedForwardResult } from '../interfaces';
 import type { ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
-import { forwardIsTerminal } from './messages';
+import { forwardIsTerminal, shadowAlreadySet } from './messages';
 import type { AddService } from './types';
 
-const forwardResult = (): IForwardResult => {
+const forwardResult = (descriptor: ServiceDescriptor<SourceType>, scoped: boolean): IScopedForwardResult => {
   const reject = (): never => {
     throw new InvalidOperationError(forwardIsTerminal);
   };
-  const result: IForwardResult = {
+  const result: Record<string, unknown> = {
     singleton: reject,
     scoped: reject,
     transient: reject,
@@ -19,16 +19,27 @@ const forwardResult = (): IForwardResult => {
     using: reject,
     usingAsync: reject,
   };
-  return result;
+  // Symmetry with the newable/abstract builders: a capability the collection lacks
+  // (root, not scoped) is absent from the runtime object, not present-and-throwing.
+  if (scoped) {
+    result.shadow = () => {
+      if (descriptor.shadow === true) {
+        throw new InvalidOperationError(shadowAlreadySet);
+      }
+      descriptor.shadow = true;
+    };
+  }
+  return result as IScopedForwardResult;
 };
 
-export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S> {
+export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S>, IScopedForwardBuilder<S> {
   constructor(
     private readonly source: ServiceIdentifier<S>,
     private readonly addService: AddService,
+    private readonly scoped: boolean = false,
   ) {}
 
-  public to<Target extends SourceType>(target: ServiceIdentifier<Target>): IForwardResult {
+  public to<Target extends SourceType>(target: ServiceIdentifier<Target>): IScopedForwardResult {
     if (target == null) {
       throw new InvalidServiceIdentifierError();
     }
@@ -39,6 +50,6 @@ export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S> 
       forwardTarget: target,
     };
     this.addService(this.source, descriptor);
-    return forwardResult();
+    return forwardResult(descriptor, this.scoped);
   }
 }

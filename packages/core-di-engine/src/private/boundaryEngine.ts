@@ -3,6 +3,7 @@ import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError,
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { followForward } from './followForward';
+import { concreteNode } from './graph';
 import { asyncFactoryOnSyncPath, createScopeRequiresScoped, nodeWithoutLifetime, syncBuildOfAsyncFactory } from './messages';
 import type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory } from './strategy';
 import type { AsyncNode, Env, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
@@ -99,6 +100,17 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const surfaceValue = (at: 'root' | 'boundary', boundary: Boundary): unknown => surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
 
   const guardToken = (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]): unknown | undefined => {
+    const shadowing = nodes.filter((node) => node.shadow === true).length;
+    // Two or more shadow-flagged descriptors is a genuine duplicate: an ancestor
+    // can be shadowed at most once, so this errors regardless of registrationMode.
+    if (shadowing > 1) {
+      return new MultipleRegistrationError(token);
+    }
+    // Exactly one shadow-flagged descriptor wins outright; it is not a multiplicity
+    // error even though the bucket holds the ancestor's registration alongside it.
+    if (shadowing === 1) {
+      return undefined;
+    }
     if (nodes.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
       return new MultipleRegistrationError(token);
     }
@@ -113,8 +125,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     if (guardError !== undefined) {
       throw guardError;
     }
-    const last = bucket[bucket.length - 1];
-    const node = last === undefined ? undefined : last.forwardTarget != null ? followForward(view.index, last) : last;
+    const node = concreteNode(view.index, token);
     if (node === undefined) {
       throw new UnregisteredServiceError(token);
     }

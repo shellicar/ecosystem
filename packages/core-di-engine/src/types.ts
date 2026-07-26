@@ -43,6 +43,8 @@ export type ServiceDescriptor<T extends SourceType> = {
   usesFactory?: boolean;
   createInstanceAsync?: AsyncInstanceFactory<T>;
   eager?: boolean;
+  /** Set by `.shadow()`: this registration wins over an ancestor scope's registration of the same token, instead of colliding with it as a genuine duplicate. */
+  shadow?: boolean;
   declaredDeps?: readonly ServiceIdentifier<SourceType>[];
   createFromDeps?: (deps: readonly SourceType[]) => T;
 };
