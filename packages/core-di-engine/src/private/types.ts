@@ -56,6 +56,8 @@ export type ComposableCollection<L extends Lifetime, Async extends boolean, Scop
 export type CreateCollectionOptions<Async extends boolean, Scoped extends boolean = false> = {
   readonly async?: Async;
   readonly scoped?: Scoped;
+  /** Stamped onto every descriptor this collection registers; see `ServiceDescriptor.shadowDepth`. @default 0 */
+  readonly shadowDepth?: number;
   readonly onFace?: (token: ServiceIdentifier<SourceType>, descriptor: ComposableNode) => void;
 };
 export type SyncDisposable = { [Symbol.dispose](): void };

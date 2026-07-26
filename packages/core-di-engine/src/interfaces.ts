@@ -1,4 +1,3 @@
-import type { ShadowVerb } from './private/types';
 import type { ServiceIdentifier, SourceType } from './types';
 
 /**
@@ -39,16 +38,17 @@ export abstract class IForwardBuilder<_S extends SourceType> {
 export abstract class IForwardResult {}
 
 /**
- * The builder for a forward inside a scope: identical to {@link IForwardBuilder},
- * except `.to()` completes into a result that also carries `.shadow()`. A separate
- * (non-generic) type rather than a `Scoped` parameter on `IForwardBuilder` itself:
- * TypeScript infers a class type parameter used only inside a conditional type as
- * invariant, which would make `IForwardBuilder<S, true>` fail to satisfy
- * `IForwardBuilder<S, false>` even though the capability is a pure superset.
+ * The builder for a forward inside a scope: everything {@link IForwardBuilder} has,
+ * plus `.shadow()` — marks the forward about to be completed as allowed to win over
+ * an ancestor scope's registration of the same source token. `.shadow()` must be
+ * called before `.to()`: the flag is fixed at registration, not mutated on the
+ * descriptor afterward, so a scope created between `.to()` and a later `.shadow()`
+ * call can never observe it flip retroactively. A separate (non-generic) class
+ * rather than a `Scoped` parameter on `IForwardBuilder` itself: TypeScript infers a
+ * class type parameter used only inside a conditional type as invariant, which
+ * would make `IForwardBuilder<S, true>` fail to satisfy `IForwardBuilder<S, false>`
+ * even though the capability is a pure superset.
  */
-export abstract class IScopedForwardBuilder<_S extends SourceType> {
-  public abstract to<Target extends SourceType>(target: ServiceIdentifier<Target>): IScopedForwardResult;
+export abstract class IScopedForwardBuilder<S extends SourceType> extends IForwardBuilder<S> {
+  public abstract shadow(): IScopedForwardBuilder<S>;
 }
-
-/** The scoped equivalent of {@link IForwardResult}: adds `.shadow()`. */
-export type IScopedForwardResult = ShadowVerb<void>;

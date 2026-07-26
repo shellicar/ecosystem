@@ -14,7 +14,6 @@ import {
   cyclePolicy,
   type DescriptorMap,
   deriveFacts,
-  ForwardBuilder,
   InvalidOperationError,
   InvalidServiceIdentifierError,
   IResolutionScope,
@@ -26,6 +25,7 @@ import {
   overrideLifetimePreBuildOnly,
   pushBucket,
   runGraphPolicies,
+  ScopedForwardBuilder,
   type ServiceDescriptor,
   type ServiceIdentifier,
   type SourceType,
@@ -61,10 +61,12 @@ export class ServiceCollection implements IScopedServiceCollection {
     public readonly options: ServiceCollectionOptions,
     private readonly isScoped: boolean,
     private readonly isAsync: boolean,
+    private readonly shadowDepth: number = 0,
   ) {
     this.composed = createCollection(composedLifetimes, {
       async: this.isAsync,
       scoped: this.isScoped,
+      shadowDepth: this.shadowDepth,
       onFace: (identifier, descriptor) => {
         this.logger.info('Adding service', { identifier: identifier.name, descriptor });
         this.version++;
@@ -108,14 +110,14 @@ export class ServiceCollection implements IScopedServiceCollection {
     if (source == null) {
       throw new InvalidServiceIdentifierError();
     }
-    return new ForwardBuilder<S>(
+    return new ScopedForwardBuilder<S>(
       source,
       (identifier, descriptor) => {
         pushBucket(this.services, identifier, descriptor);
         this.logger.info('Adding service', { identifier: identifier.name, descriptor });
         this.version++;
       },
-      this.isScoped,
+      this.shadowDepth,
     );
   }
 
@@ -153,8 +155,8 @@ export class ServiceCollection implements IScopedServiceCollection {
   // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
   // copy (a multi-face descriptor stays one object in the clone), cloneShared shares the
   // descriptor itself so scope overlays see the same nodes.
-  private cloneWith(isScoped: boolean, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>): ServiceCollection {
-    const cloned = new ServiceCollection(this.logger, this.options, isScoped, this.isAsync);
+  private cloneWith(isScoped: boolean, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>, shadowDepth: number = this.shadowDepth): ServiceCollection {
+    const cloned = new ServiceCollection(this.logger, this.options, isScoped, this.isAsync, shadowDepth);
     for (const [key, descriptors] of this.services) {
       cloned.services.set(key, descriptors.map(copyOf));
     }
@@ -174,8 +176,12 @@ export class ServiceCollection implements IScopedServiceCollection {
     return this.cloneWith(scoped === true, copyOf);
   }
 
+  // A genuinely new scope, one generation deeper than this collection: shadow's
+  // ancestry check (winnerOf/guardToken, keyed by shadowDepth) is what lets a scope
+  // override an ancestor's registration but not a sibling registered alongside it
+  // in the same collection.
   public cloneShared(): ServiceCollection {
-    return this.cloneWith(true, (descriptor) => descriptor);
+    return this.cloneWith(true, (descriptor) => descriptor, this.shadowDepth + 1);
   }
 
   public snapshot(): { readonly services: DescriptorMap; readonly version: number } {

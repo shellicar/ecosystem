@@ -3,7 +3,7 @@ import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError,
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { followForward } from './followForward';
-import { concreteNode } from './graph';
+import { concreteNode, groupByDepth } from './graph';
 import { asyncFactoryOnSyncPath, createScopeRequiresScoped, nodeWithoutLifetime, syncBuildOfAsyncFactory } from './messages';
 import type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory } from './strategy';
 import type { AsyncNode, Env, GraphNode, LifetimeFeature, LifetimeFeatures } from './types';
@@ -100,19 +100,32 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const surfaceValue = (at: 'root' | 'boundary', boundary: Boundary): unknown => surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
 
   const guardToken = (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]): unknown | undefined => {
-    const shadowing = nodes.filter((node) => node.shadow === true).length;
-    // Two or more shadow-flagged descriptors is a genuine duplicate: an ancestor
-    // can be shadowed at most once, so this errors regardless of registrationMode.
-    if (shadowing > 1) {
-      return new MultipleRegistrationError(token);
-    }
-    // Exactly one shadow-flagged descriptor wins outright; it is not a multiplicity
-    // error even though the bucket holds the ancestor's registration alongside it.
-    if (shadowing === 1) {
+    // No shadow anywhere in the bucket: unchanged from before shadow existed.
+    if (!nodes.some((node) => node.shadow === true)) {
+      if (nodes.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
+        return new MultipleRegistrationError(token);
+      }
       return undefined;
     }
-    if (nodes.length > 1 && (options.registrationMode ?? ResolveMultipleMode.Error) === ResolveMultipleMode.Error) {
-      return new MultipleRegistrationError(token);
+    // A shadow is in play for this token: ancestry governs it entirely, regardless
+    // of registrationMode. Walking generations from root inward (matching winnerOf):
+    // two descriptors registered directly in the same generation are a genuine
+    // duplicate (shadow or not, you cannot shadow your own sibling registration);
+    // a plain (non-shadow) registration at a deeper generation than an inherited
+    // registration is also a genuine duplicate (it needed .shadow() to win and
+    // didn't call it).
+    const groups = groupByDepth(nodes);
+    const depths = [...groups.keys()].sort((a, b) => a - b);
+    let hasWinner = false;
+    for (const depth of depths) {
+      const group = groups.get(depth) as GraphNode[];
+      if (group.length > 1) {
+        return new MultipleRegistrationError(token);
+      }
+      if (hasWinner && group[0]?.shadow !== true) {
+        return new MultipleRegistrationError(token);
+      }
+      hasWinner = true;
     }
     return undefined;
   };

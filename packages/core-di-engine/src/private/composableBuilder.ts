@@ -16,6 +16,7 @@ export const lifetimeVerbNames = {
 export const createCollection = <const L extends Lifetime, const Async extends boolean = false, const Scoped extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async, Scoped> = {}): ComposableCollection<L, Async, Scoped> => {
   const async = options.async === true;
   const scoped = options.scoped === true;
+  const shadowDepth = options.shadowDepth ?? 0;
   const regs = createDescriptorMap<SourceType>() as DescriptorMap<SourceType, Async>;
   const withoutFace = new Set<ComposableNode>();
 
@@ -28,6 +29,7 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       cacheKey: Symbol(impl.name),
       createInstance: () => new (impl as Newable<SourceType>)(),
       usesFactory: false,
+      shadowDepth,
     };
     withoutFace.add(node);
     const addFace = (token: ServiceIdentifier<SourceType>): void => {

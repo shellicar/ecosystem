@@ -83,9 +83,88 @@ describe('.shadow() overriding an ancestor scope registration', () => {
     const provider = services.buildProvider();
     const scoped = provider.createScope();
 
-    scoped.Services.forward(IAlias).to(OtherTarget).shadow();
+    scoped.Services.forward(IAlias).shadow().to(OtherTarget);
 
     expect(scoped.resolve(IAlias)).toBeInstanceOf(OtherTarget);
     expect(provider.resolve(IAlias)).toBeInstanceOf(Target);
+  });
+});
+
+class NestedContext implements IContext {
+  public readonly user = 'nested';
+}
+
+describe('.shadow() scope boundaries', () => {
+  it('throws MultipleRegistrationError when a scope shadows a token it registered plainly itself, with no ancestor registration', () => {
+    const services = createServiceCollection();
+    const provider = services.buildProvider();
+    const scoped = provider.createScope();
+
+    scoped.Services.register(RootContext).as(IContext).resolve();
+    scoped.Services.register(ScopedContext).as(IContext).shadow().resolve();
+
+    const actual = () => scoped.resolve(IContext);
+
+    expect(actual).toThrow(MultipleRegistrationError);
+  });
+
+  it('lets a nested scope shadow what its parent scope already shadowed', () => {
+    const services = createServiceCollection();
+    services.register(RootContext).as(IContext).singleton();
+    const provider = services.buildProvider();
+    const scoped = provider.createScope();
+    scoped.Services.register(ScopedContext).as(IContext).shadow().resolve();
+    const nested = scoped.createScope();
+
+    nested.Services.register(NestedContext).as(IContext).shadow().resolve();
+
+    const expected = 'nested';
+    const actual = nested.resolve(IContext).user;
+
+    expect(actual).toBe(expected);
+  });
+});
+
+// Decided contract, not accident: shadow changes which registration resolve() picks;
+// resolveAll() is a different door that was never routed through winnerOf/guardToken,
+// so it keeps returning every registration for the token, shadowed or not.
+describe('.shadow() and resolveAll()', () => {
+  it('resolveAll still returns every registration for the token, including the ones shadow overrides', () => {
+    const services = createServiceCollection();
+    services.register(RootContext).as(IContext).singleton();
+    const provider = services.buildProvider();
+    const scoped = provider.createScope();
+
+    scoped.Services.register(ScopedContext).as(IContext).shadow().resolve();
+
+    const actual = scoped
+      .resolveAll(IContext)
+      .map((x) => x.user)
+      .sort();
+
+    expect(actual).toEqual(['root', 'scoped']);
+  });
+});
+
+// Decided contract, not accident: shadow has no "already resolved" guard, unlike a
+// lifetime verb after commit. A late .shadow() call changes the winner for the
+// token's *next* resolve in that scope; nothing pins the outcome of a resolve that
+// already happened.
+describe('a late .shadow() call', () => {
+  it('changes the outcome of the next resolve, after the token was already resolved once', () => {
+    const services = createServiceCollection();
+    services.register(RootContext).as(IContext).singleton();
+    const provider = services.buildProvider();
+    const scoped = provider.createScope();
+    const builder = scoped.Services.register(ScopedContext).as(IContext).resolve();
+
+    // Two unshadowed registrations for one token still collide, same as always.
+    const before = () => scoped.resolve(IContext);
+    expect(before).toThrow(MultipleRegistrationError);
+
+    builder.shadow();
+    const after = scoped.resolve(IContext).user;
+
+    expect(after).toBe('scoped');
   });
 });

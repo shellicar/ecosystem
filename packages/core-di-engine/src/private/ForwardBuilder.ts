@@ -1,14 +1,14 @@
 import { InvalidOperationError, InvalidServiceIdentifierError } from '../errors';
-import type { IForwardBuilder, IScopedForwardBuilder, IScopedForwardResult } from '../interfaces';
+import type { IForwardBuilder, IForwardResult, IScopedForwardBuilder } from '../interfaces';
 import type { ServiceDescriptor, ServiceIdentifier, SourceType } from '../types';
 import { forwardIsTerminal, shadowAlreadySet } from './messages';
 import type { AddService } from './types';
 
-const forwardResult = (descriptor: ServiceDescriptor<SourceType>, scoped: boolean): IScopedForwardResult => {
+const forwardResult = (): IForwardResult => {
   const reject = (): never => {
     throw new InvalidOperationError(forwardIsTerminal);
   };
-  const result: Record<string, unknown> = {
+  const result: IForwardResult = {
     singleton: reject,
     scoped: reject,
     transient: reject,
@@ -19,27 +19,21 @@ const forwardResult = (descriptor: ServiceDescriptor<SourceType>, scoped: boolea
     using: reject,
     usingAsync: reject,
   };
-  // Symmetry with the newable/abstract builders: a capability the collection lacks
-  // (root, not scoped) is absent from the runtime object, not present-and-throwing.
-  if (scoped) {
-    result.shadow = () => {
-      if (descriptor.shadow === true) {
-        throw new InvalidOperationError(shadowAlreadySet);
-      }
-      descriptor.shadow = true;
-    };
-  }
-  return result as IScopedForwardResult;
+  return result;
 };
 
-export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S>, IScopedForwardBuilder<S> {
+export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S> {
   constructor(
-    private readonly source: ServiceIdentifier<S>,
-    private readonly addService: AddService,
-    private readonly scoped: boolean = false,
+    protected readonly source: ServiceIdentifier<S>,
+    protected readonly addService: AddService,
+    protected readonly shadowDepth: number = 0,
   ) {}
 
-  public to<Target extends SourceType>(target: ServiceIdentifier<Target>): IScopedForwardResult {
+  protected shadowFlag(): boolean {
+    return false;
+  }
+
+  public to<Target extends SourceType>(target: ServiceIdentifier<Target>): IForwardResult {
     if (target == null) {
       throw new InvalidServiceIdentifierError();
     }
@@ -48,8 +42,33 @@ export class ForwardBuilder<S extends SourceType> implements IForwardBuilder<S>,
       cacheKey: Symbol(`forward:${this.source.name}`),
       createInstance: (scope) => scope.resolve(target),
       forwardTarget: target,
+      shadow: this.shadowFlag(),
+      shadowDepth: this.shadowDepth,
     };
     this.addService(this.source, descriptor);
-    return forwardResult(descriptor, this.scoped);
+    return forwardResult();
+  }
+}
+
+/**
+ * The scoped flavour: `.shadow()` sets a pending flag on the builder itself, read
+ * only once, when `.to()` creates the descriptor. The flag is fixed at that moment,
+ * never mutated on the descriptor afterward — a scope cloned in between `.to()` and
+ * a later `.shadow()` call would otherwise see the flag appear retroactively, since
+ * a clone shares the descriptor object by reference.
+ */
+export class ScopedForwardBuilder<S extends SourceType> extends ForwardBuilder<S> implements IScopedForwardBuilder<S> {
+  private pendingShadow = false;
+
+  public shadow(): this {
+    if (this.pendingShadow) {
+      throw new InvalidOperationError(shadowAlreadySet);
+    }
+    this.pendingShadow = true;
+    return this;
+  }
+
+  protected override shadowFlag(): boolean {
+    return this.pendingShadow;
   }
 }

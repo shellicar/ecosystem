@@ -45,6 +45,8 @@ export type ServiceDescriptor<T extends SourceType> = {
   eager?: boolean;
   /** Set by `.shadow()`: this registration wins over an ancestor scope's registration of the same token, instead of colliding with it as a genuine duplicate. */
   shadow?: boolean;
+  /** The nesting depth of the collection that registered this descriptor (root is 0). Lets `.shadow()` tell an inherited ancestor registration apart from a sibling registered in the same collection. */
+  shadowDepth?: number;
   declaredDeps?: readonly ServiceIdentifier<SourceType>[];
   createFromDeps?: (deps: readonly SourceType[]) => T;
 };
