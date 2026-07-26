@@ -26,12 +26,13 @@ export {
   UnregisteredServiceError,
   ValidationError,
 } from './errors';
-export { IForwardBuilder, IForwardResult, IResolutionScope } from './interfaces';
+export type { IForwardResult } from './interfaces';
+export { IForwardBuilder, IResolutionScope, IScopedForwardBuilder } from './interfaces';
 export { type Boundary, type BuildEngineOptions, buildEngine, buildEngineAsync, type DisposalSink, type Engine, type EngineComposition, type EngineFor, type Scope, type ScopeOverlay } from './private/boundaryEngine';
 export { createCollection, lifetimeVerbNames } from './private/composableBuilder';
 export { DesignDependenciesKey } from './private/constants';
 export { createDisposal } from './private/disposal';
-export { ForwardBuilder } from './private/ForwardBuilder';
+export { ForwardBuilder, ScopedForwardBuilder } from './private/ForwardBuilder';
 export { buildPlan, concreteNode, deriveFacts, detectCycles, findUnregisteredEdges, followForward, formatGraph, indexByOwner, type OwnerIndex, type Plan, type PlanStep, reachableFrom, topologicalOrder } from './private/graph';
 export { createEnvKeyedCache } from './private/lifetimeContracts';
 export { createResolveLifetime } from './private/lifetimeResolve';

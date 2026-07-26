@@ -185,7 +185,7 @@ import { deriveFacts, runGraphPolicies, missingTargetPolicy, cyclePolicy, dispos
 const graph = deriveFacts(composed.regs);
 const problems = runGraphPolicies(graph, [
   missingTargetPolicy, // a dependency or forward target that was never registered
-  cyclePolicy, // a dependency cycle, reported differently depending on whether it's shadowed by a later duplicate registration
+  cyclePolicy, // a dependency cycle, reported differently depending on whether it's overridden by a later duplicate registration
   disposalCaptive(Lifetime.Resolve), // a singleton statically reaching a scoped dependency (the MS-DI-style captive rule)
 ]);
 ```

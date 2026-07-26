@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createDescriptorMap, cyclePolicy, type DescriptorMap, deriveFacts, runGraphPolicies, type ServiceDescriptor, type ServiceIdentifier, type ServiceImplementation, type SourceType, ValidationProblemKind } from '../src';
 
-// A cycle through a registration that a later registration shadows for
+// A cycle through a registration that a later registration overrides for
 // resolve(). Whether this is an error depends on which door the app uses:
-// resolve() never walks the shadowed node (under Error mode it throws for the
+// resolve() never walks the overridden node (under Error mode it throws for the
 // multi-registered token; under LastRegistered it takes the last), but
 // resolveAll() walks EVERY registration in both modes, so the cycle is always
 // potentially reachable and never certainly reached — and validate() cannot
@@ -36,24 +36,24 @@ class OldA implements IA {}
 class NewA implements IA {}
 class B implements IB {}
 
-// OldA <-> B is a cycle; NewA shadows OldA for resolve(IA).
-const shadowedCycleMap = (): DescriptorMap => mapOf([IA, descriptor(OldA, [IB])], [IB, descriptor(B, [IA])], [IA, descriptor(NewA)]);
+// OldA <-> B is a cycle; NewA overrides OldA for resolve(IA).
+const overriddenCycleMap = (): DescriptorMap => mapOf([IA, descriptor(OldA, [IB])], [IB, descriptor(B, [IA])], [IA, descriptor(NewA)]);
 
-describe('cyclePolicy and shadowed registrations', () => {
-  it('reports a cycle reachable only through a shadowed registration: resolveAll walks every registration in both modes', () => {
-    const problems = runGraphPolicies(deriveFacts(shadowedCycleMap()), [cyclePolicy]);
+describe('cyclePolicy and overridden registrations', () => {
+  it('reports a cycle reachable only through an overridden registration: resolveAll walks every registration in both modes', () => {
+    const problems = runGraphPolicies(deriveFacts(overriddenCycleMap()), [cyclePolicy]);
 
     const actual = problems.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.Cycle]);
   });
 
-  it('says which door the cycle bites through: shadowed for resolve(), reachable via resolveAll()', () => {
-    const problems = runGraphPolicies(deriveFacts(shadowedCycleMap()), [cyclePolicy]);
+  it('says which door the cycle bites through: overridden for resolve(), reachable via resolveAll()', () => {
+    const problems = runGraphPolicies(deriveFacts(overriddenCycleMap()), [cyclePolicy]);
 
     const actual = problems[0]?.message;
 
-    expect(actual).toMatch(/shadowed for resolve\(\)/);
+    expect(actual).toMatch(/overridden for resolve\(\)/);
     expect(actual).toMatch(/resolveAll\(\)/);
   });
 
@@ -63,6 +63,6 @@ describe('cyclePolicy and shadowed registrations', () => {
 
     const actual = problems[0]?.message;
 
-    expect(actual).not.toMatch(/shadowed/);
+    expect(actual).not.toMatch(/overridden/);
   });
 });

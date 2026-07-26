@@ -1,27 +1,31 @@
 import type { Engine, Scope, ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
-import { IResolutionScope } from '@shellicar/core-di-engine';
+import { IResolutionScope, UnregisteredServiceError } from '@shellicar/core-di-engine';
 import { IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { InstrumentationHook } from '../types';
-import type { ScopeServicesSource } from './types';
+import type { ScopeServicesSource, ServicesSource } from './types';
 
-export class ServiceProvider implements IServiceProvider, IScopedProvider {
-  private constructor(
-    private readonly logger: ILogger,
-    public readonly Services: ScopeServicesSource,
-    private readonly scope: Scope,
-    private readonly engine: Engine,
-    private readonly rootProvider: ServiceProvider | undefined,
-    private readonly instrument: InstrumentationHook | undefined,
+// The root provider: Services carries no .shadow(), matching the root collection it
+// holds. ScopedServiceProvider (below) fixes the generic to ScopeServicesSource, born
+// whenever createScope() opens a scope (the root's own or a nested one) — the narrowing
+// flows through the constructor's own parameter type, not a re-declared field.
+export class ServiceProvider<S extends ServicesSource = ServicesSource> implements IServiceProvider {
+  protected constructor(
+    protected readonly logger: ILogger,
+    public readonly Services: S,
+    protected readonly scope: Scope,
+    protected readonly engine: Engine,
+    protected readonly rootProvider: ServiceProvider | undefined,
+    protected readonly instrument: InstrumentationHook | undefined,
   ) {}
 
-  public static createRoot(logger: ILogger, services: ScopeServicesSource, engine: Engine, instrument: InstrumentationHook | undefined): ServiceProvider {
+  public static createRoot(logger: ILogger, services: ServicesSource, engine: Engine, instrument: InstrumentationHook | undefined): ServiceProvider {
     const root = new ServiceProvider(logger, services, engine, engine, undefined, instrument);
     engine.bindSurface(root);
     return root;
   }
 
-  private get root(): ServiceProvider {
+  protected get root(): ServiceProvider {
     return this.rootProvider ?? this;
   }
 
@@ -37,12 +41,23 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
     }
   }
 
+  // Only a scope can honestly serve the IScopedProvider token: injecting it declares a
+  // need for scope semantics, which the root doesn't have. Overridden by
+  // ScopedServiceProvider to hand back itself; the base throws the same error an
+  // unregistered service gets, since the token genuinely isn't available there.
+  protected asScopedProvider(): IScopedProvider {
+    throw new UnregisteredServiceError(IScopedProvider);
+  }
+
   private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
     if (identifier.prototype === IServiceProvider.prototype) {
       return this.root as IServiceProvider as T;
     }
-    if (identifier.prototype === IResolutionScope.prototype || identifier.prototype === IScopedProvider.prototype) {
-      return this as IResolutionScope & IScopedProvider as T;
+    if (identifier.prototype === IResolutionScope.prototype) {
+      return this as IResolutionScope as T;
+    }
+    if (identifier.prototype === IScopedProvider.prototype) {
+      return this.asScopedProvider() as T;
     }
     this.logger.debug('Resolving', identifier.name);
     try {
@@ -63,7 +78,7 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   public createScope(): IScopedProvider {
     const scopeServices = this.Services.cloneShared();
     const engineScope = this.engine.createScope(() => scopeServices.snapshot());
-    const scoped = new ServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root, this.instrument);
+    const scoped = new ScopedServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root, this.instrument);
     engineScope.bindSurface(scoped);
     return scoped;
   }
@@ -78,5 +93,11 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.scope[Symbol.asyncDispose]();
+  }
+}
+
+export class ScopedServiceProvider extends ServiceProvider<ScopeServicesSource> implements IScopedProvider {
+  protected override asScopedProvider(): IScopedProvider {
+    return this;
   }
 }

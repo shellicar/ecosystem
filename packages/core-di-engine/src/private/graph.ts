@@ -193,10 +193,58 @@ export type PlanStep =
 
 export type Plan = readonly PlanStep[];
 
+/**
+ * Groups a token's bucket by `shadowDepth` (the nesting depth of the collection that
+ * registered each descriptor; root is 0). Shared by `winnerOf` and the multiplicity
+ * guard so both walk the same generations in the same order.
+ */
+export const groupByDepth = (bucket: readonly GraphNode[]): Map<number, GraphNode[]> => {
+  const groups = new Map<number, GraphNode[]>();
+  for (const node of bucket) {
+    const depth = node.shadowDepth ?? 0;
+    const group = groups.get(depth);
+    if (group === undefined) {
+      groups.set(depth, [node]);
+    } else {
+      group.push(node);
+    }
+  }
+  return groups;
+};
+
+/**
+ * Which descriptor in a token's bucket wins at resolve(). With no `.shadow()` anywhere
+ * in the bucket, unchanged from before shadow existed: whichever was registered last.
+ * Once a shadow is in play, ancestry decides instead of position: walking generations
+ * from root inward, a generation's own registration replaces the inherited winner only
+ * when it is shadow-flagged; a plain (non-shadow) registration at a deeper generation
+ * never silently overrides what an ancestor already holds — the multiplicity guard
+ * rejects that case instead. Two descriptors registered directly in the same
+ * generation are a genuine duplicate either way, left to the guard to reject.
+ * The one place this rule lives; the plan-compile path and the runtime resolve path
+ * both read it from here.
+ */
+export const winnerOf = (bucket: readonly GraphNode[]): GraphNode | undefined => {
+  if (!bucket.some((node) => node.shadow === true)) {
+    return bucket[bucket.length - 1];
+  }
+  const groups = groupByDepth(bucket);
+  const depths = [...groups.keys()].sort((a, b) => a - b);
+  let winner: GraphNode | undefined;
+  for (const depth of depths) {
+    const group = groups.get(depth) as GraphNode[];
+    const candidate = group[group.length - 1] as GraphNode;
+    if (winner === undefined || candidate.shadow === true) {
+      winner = candidate;
+    }
+  }
+  return winner;
+};
+
 export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceType>): GraphNode | undefined => {
   const bucket = index.get(token) ?? [];
-  const last = bucket[bucket.length - 1];
-  return last === undefined ? undefined : followForward(index, last);
+  const winner = winnerOf(bucket);
+  return winner === undefined ? undefined : followForward(index, winner);
 };
 
 export const buildPlan = (

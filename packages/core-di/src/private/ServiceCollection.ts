@@ -19,6 +19,7 @@ import {
   InvalidOperationError,
   InvalidServiceIdentifierError,
   IResolutionScope,
+  type IScopedForwardBuilder,
   Lifetime,
   missingTargetPolicy,
   type Newable,
@@ -26,6 +27,7 @@ import {
   overrideLifetimePreBuildOnly,
   pushBucket,
   runGraphPolicies,
+  ScopedForwardBuilder,
   type ServiceDescriptor,
   type ServiceIdentifier,
   type SourceType,
@@ -34,8 +36,8 @@ import {
   ValidationProblemKind,
   type ValidationReport,
 } from '@shellicar/core-di-engine';
-import type { IAbstractServiceBuilder, INewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
-import { IScopedProvider, IServiceProvider as IServiceProviderToken } from '../interfaces';
+import type { IAbstractServiceBuilder, INewableServiceBuilder, IScopedAbstractServiceBuilder, IScopedNewableServiceBuilder, IServiceCollection, IServiceProvider } from '../interfaces';
+import { IScopedProvider, type IScopedServiceCollection, IServiceProvider as IServiceProviderToken } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { BuildProviderOptions, InstrumentationHook, InstrumentationOptions, ServiceCollectionOptions, ServiceModuleType } from '../types';
 import { ServiceProvider } from './provider';
@@ -46,20 +48,25 @@ const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve
 
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
+// The root collection: register()/forward() carry no .shadow(), in their types or at
+// runtime. ScopedServiceCollection (below) is the only source of a shadow-capable
+// collection, born from cloneShared() when a scope is created.
 export class ServiceCollection implements IServiceCollection {
-  private readonly composed: ComposableCollection<Lifetime, boolean>;
+  protected readonly composed: ComposableCollection<Lifetime, boolean>;
   private version = 0;
   private built = false;
 
   constructor(
-    private readonly logger: ILogger,
+    protected readonly logger: ILogger,
     public readonly options: ServiceCollectionOptions,
-    private readonly isScoped: boolean,
-    private readonly isAsync: boolean,
+    isScoped: boolean,
+    protected readonly isAsync: boolean,
+    protected readonly shadowDepth: number = 0,
   ) {
     this.composed = createCollection(composedLifetimes, {
       async: this.isAsync,
-      scoped: this.isScoped,
+      scoped: isScoped,
+      shadowDepth: this.shadowDepth,
       onFace: (identifier, descriptor) => {
         this.logger.info('Adding service', { identifier: identifier.name, descriptor });
         this.version++;
@@ -67,7 +74,7 @@ export class ServiceCollection implements IServiceCollection {
     });
   }
 
-  private get services(): DescriptorMap {
+  protected get services(): DescriptorMap {
     return this.composed.regs as DescriptorMap;
   }
 
@@ -99,15 +106,19 @@ export class ServiceCollection implements IServiceCollection {
     return this.composed.register(implementation as Newable<T>) as INewableServiceBuilder<T>;
   }
 
+  // Shared by both classes' forward(): the only difference between them is which
+  // ForwardBuilder flavour they construct.
+  protected addService(identifier: ServiceIdentifier<SourceType>, descriptor: ServiceDescriptor<SourceType>): void {
+    pushBucket(this.services, identifier, descriptor);
+    this.logger.info('Adding service', { identifier: identifier.name, descriptor });
+    this.version++;
+  }
+
   public forward<S extends SourceType>(source: ServiceIdentifier<S>): IForwardBuilder<S> {
     if (source == null) {
       throw new InvalidServiceIdentifierError();
     }
-    return new ForwardBuilder<S>(source, (identifier, descriptor) => {
-      pushBucket(this.services, identifier, descriptor);
-      this.logger.info('Adding service', { identifier: identifier.name, descriptor });
-      this.version++;
-    });
+    return new ForwardBuilder<S>(source, (identifier, descriptor) => this.addService(identifier, descriptor), this.shadowDepth);
   }
 
   // The one stamping point: every consumer that turns descriptors into a graph
@@ -143,13 +154,13 @@ export class ServiceCollection implements IServiceCollection {
 
   // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
   // copy (a multi-face descriptor stays one object in the clone), cloneShared shares the
-  // descriptor itself so scope overlays see the same nodes.
-  private cloneWith(isScoped: boolean, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>): ServiceCollection {
-    const cloned = new ServiceCollection(this.logger, this.options, isScoped, this.isAsync);
+  // descriptor itself so scope overlays see the same nodes. Each caller constructs its own
+  // class directly, so the class a caller ends up with is provably the one it constructed,
+  // not an assertion on top of a boolean.
+  private copyInto(cloned: ServiceCollection, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>): void {
     for (const [key, descriptors] of this.services) {
       cloned.services.set(key, descriptors.map(copyOf));
     }
-    return cloned;
   }
 
   public clone(scoped?: unknown): IServiceCollection {
@@ -162,11 +173,19 @@ export class ServiceCollection implements IServiceCollection {
       }
       return copy;
     };
-    return this.cloneWith(scoped === true, copyOf);
+    const cloned = scoped === true ? new ScopedServiceCollection(this.logger, this.options, true, this.isAsync, this.shadowDepth) : new ServiceCollection(this.logger, this.options, false, this.isAsync, this.shadowDepth);
+    this.copyInto(cloned, copyOf);
+    return cloned;
   }
 
-  public cloneShared(): ServiceCollection {
-    return this.cloneWith(true, (descriptor) => descriptor);
+  // A genuinely new scope, one generation deeper than this collection: shadow's
+  // ancestry check (winnerOf/guardToken, keyed by shadowDepth) is what lets a scope
+  // override an ancestor's registration but not a sibling registered alongside it
+  // in the same collection.
+  public cloneShared(): ScopedServiceCollection {
+    const cloned = new ScopedServiceCollection(this.logger, this.options, true, this.isAsync, this.shadowDepth + 1);
+    this.copyInto(cloned, (descriptor) => descriptor);
+    return cloned;
   }
 
   public snapshot(): { readonly services: DescriptorMap; readonly version: number } {
@@ -238,5 +257,20 @@ export class ServiceCollection implements IServiceCollection {
     const frozen = this.freeze(options);
     const engine = await buildEngineAsync(frozen.services, this.composition(), this.engineOptions(options));
     return this.finish(frozen, engine, onTiming, start);
+  }
+}
+
+export class ScopedServiceCollection extends ServiceCollection implements IScopedServiceCollection {
+  public override register<T extends SourceType>(implementation: Newable<T>): IScopedNewableServiceBuilder<T>;
+  public override register<T extends SourceType>(implementation: AbstractNewable<T>): IScopedAbstractServiceBuilder<T>;
+  public override register<T extends SourceType>(implementation: AbstractNewable<T>): IScopedNewableServiceBuilder<T> | IScopedAbstractServiceBuilder<T> {
+    return this.composed.register(implementation as Newable<T>) as IScopedNewableServiceBuilder<T>;
+  }
+
+  public override forward<S extends SourceType>(source: ServiceIdentifier<S>): IScopedForwardBuilder<S> {
+    if (source == null) {
+      throw new InvalidServiceIdentifierError();
+    }
+    return new ScopedForwardBuilder<S>(source, (identifier, descriptor) => this.addService(identifier, descriptor), this.shadowDepth);
   }
 }

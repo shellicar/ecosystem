@@ -1,4 +1,4 @@
-import type { AbstractNewable, ComposableAbstractBuilder, ComposableNewableBuilder, IForwardBuilder, Lifetime, Newable, ResolveMultipleMode, ServiceDescriptor, ServiceIdentifier, SourceType, ValidationReport } from '@shellicar/core-di-engine';
+import type { AbstractNewable, ComposableAbstractBuilder, ComposableNewableBuilder, IForwardBuilder, IScopedForwardBuilder, Lifetime, Newable, ResolveMultipleMode, ServiceDescriptor, ServiceIdentifier, SourceType, ValidationReport } from '@shellicar/core-di-engine';
 import { IResolutionScope } from '@shellicar/core-di-engine';
 import type { BuildProviderOptions, ServiceCollectionOptions, ServiceModuleType } from './types';
 
@@ -21,7 +21,7 @@ export abstract class IServiceModule {
  * dispose of a scope holding an async-only disposable throws; use `await using`.
  */
 export abstract class IScopedProvider extends IResolutionScope implements IDisposable, IAsyncDisposable {
-  public abstract readonly Services: IServiceCollection;
+  public abstract readonly Services: IScopedServiceCollection;
   /**
    * Opens a nested scope. It starts with the registrations this scope holds at
    * that moment (later additions here don't reach it), holds its own scoped
@@ -113,6 +113,29 @@ export abstract class IServiceCollection {
   public abstract buildProvider(options?: BuildProviderOptions): IServiceProvider;
   public abstract clone(): IServiceCollection;
   public abstract clone(scoped: true): IServiceCollection;
+}
+
+/**
+ * The builder for a concrete (newable) registration inside a scope: everything
+ * {@link INewableServiceBuilder} has, plus `.shadow()` — marks the registration as
+ * allowed to win over an ancestor scope's registration of the same token, instead
+ * of colliding with it as a genuine duplicate.
+ */
+export type IScopedNewableServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableNewableBuilder<T, Lifetime, Async, Eager, false, true>;
+
+/** The abstract-registration equivalent of {@link IScopedNewableServiceBuilder}. */
+export type IScopedAbstractServiceBuilder<T extends SourceType, Async extends boolean = false, Eager extends boolean = false> = ComposableAbstractBuilder<T, Lifetime, Async, Eager, false, true>;
+
+/**
+ * A scope's collection: identical to {@link IServiceCollection}, except `register()`
+ * and `forward()` return the shadow-capable builders. Only reachable through
+ * {@link IScopedProvider.Services} — a root collection's `register()`/`forward()`
+ * never carry `.shadow()`, at the type level or at runtime.
+ */
+export abstract class IScopedServiceCollection extends IServiceCollection {
+  public abstract register<T extends SourceType>(implementation: Newable<T>): IScopedNewableServiceBuilder<T>;
+  public abstract register<T extends SourceType>(implementation: AbstractNewable<T>): IScopedAbstractServiceBuilder<T>;
+  public abstract forward<S extends SourceType>(source: ServiceIdentifier<S>): IScopedForwardBuilder<S>;
 }
 
 /**

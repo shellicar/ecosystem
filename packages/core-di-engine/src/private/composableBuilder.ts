@@ -2,7 +2,7 @@ import { Lifetime } from '../enums';
 import { InvalidImplementationError, InvalidOperationError, InvalidServiceIdentifierError, ScopedSingletonRegistrationError } from '../errors';
 import type { AbstractNewable, AsyncInstanceFactory, DescriptorMap, InstanceFactory, Newable, ServiceIdentifier, SourceType } from '../types';
 import { createDescriptorMap } from '../types';
-import { lifetimeAfterCommit, lifetimeAlreadySet } from './messages';
+import { lifetimeAfterCommit, lifetimeAlreadySet, shadowAlreadySet } from './messages';
 import { pushBucket } from './pushBucket';
 import type { ComposableAbstractBuilder, ComposableCollection, ComposableNewableBuilder, ComposableNode, CreateCollectionOptions } from './types';
 
@@ -13,12 +13,14 @@ export const lifetimeVerbNames = {
   [Lifetime.Transient]: 'transient',
 } as const satisfies Record<Lifetime, string>;
 
-export const createCollection = <const L extends Lifetime, const Async extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async> = {}): ComposableCollection<L, Async> => {
+export const createCollection = <const L extends Lifetime, const Async extends boolean = false, const Scoped extends boolean = false>(lifetimes: readonly L[], options: CreateCollectionOptions<Async, Scoped> = {}): ComposableCollection<L, Async, Scoped> => {
   const async = options.async === true;
+  const scoped = options.scoped === true;
+  const shadowDepth = options.shadowDepth ?? 0;
   const regs = createDescriptorMap<SourceType>() as DescriptorMap<SourceType, Async>;
   const withoutFace = new Set<ComposableNode>();
 
-  const register = <T extends SourceType>(impl: Newable<T> | AbstractNewable<T>): ComposableNewableBuilder<T, L, Async> | ComposableAbstractBuilder<T, L, Async> => {
+  const register = <T extends SourceType>(impl: Newable<T> | AbstractNewable<T>): ComposableNewableBuilder<T, L, Async, false, false, Scoped> | ComposableAbstractBuilder<T, L, Async, false, false, Scoped> => {
     if (impl == null) {
       throw new InvalidImplementationError<T>(undefined);
     }
@@ -27,6 +29,7 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       cacheKey: Symbol(impl.name),
       createInstance: () => new (impl as Newable<SourceType>)(),
       usesFactory: false,
+      shadowDepth,
     };
     withoutFace.add(node);
     const addFace = (token: ServiceIdentifier<SourceType>): void => {
@@ -90,6 +93,17 @@ export const createCollection = <const L extends Lifetime, const Async extends b
       node.eager = true;
       return builder;
     };
+    // Symmetry with usingAsync: a capability the collection lacks (root, not scoped)
+    // is absent from the runtime object, not present-and-throwing.
+    if (scoped) {
+      builder.shadow = () => {
+        if (node.shadow === true) {
+          throw new InvalidOperationError(shadowAlreadySet);
+        }
+        node.shadow = true;
+        return builder;
+      };
+    }
     // The verb list is exactly the composed lifetime set: transient is not appended
     // here. Defaulting no longer routes through a verb (the collection stamps its
     // default before build), so a composition that omits transient simply lacks the verb.
@@ -100,14 +114,14 @@ export const createCollection = <const L extends Lifetime, const Async extends b
           // user called no verb in the stamped case, so naming one would mislead.
           throw new InvalidOperationError(node.stamped === true ? lifetimeAfterCommit(node.lifetime) : lifetimeAlreadySet(node.lifetime));
         }
-        if (lifetime === Lifetime.Singleton && options.scoped === true) {
+        if (lifetime === Lifetime.Singleton && scoped) {
           throw new ScopedSingletonRegistrationError();
         }
         node.lifetime = lifetime;
         return builder;
       };
     }
-    return builder as ComposableNewableBuilder<T, L, Async>;
+    return builder as ComposableNewableBuilder<T, L, Async, false, false, Scoped>;
   };
-  return { regs, register: register as ComposableCollection<L, Async>['register'], unfaced: () => [...withoutFace] };
+  return { regs, register: register as ComposableCollection<L, Async, Scoped>['register'], unfaced: () => [...withoutFace] };
 };
