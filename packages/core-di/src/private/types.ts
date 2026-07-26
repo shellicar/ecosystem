@@ -1,9 +1,13 @@
-// ScopeServicesSource lives here (not the engine): it references
-// IScopedServiceCollection, which is core-di's surface.
+// ServicesSource/ScopeServicesSource live here (not the engine): they reference
+// IServiceCollection/IScopedServiceCollection, which are core-di's surface.
 import type { DescriptorMap } from '@shellicar/core-di-engine';
-import type { IScopedServiceCollection } from '../interfaces';
+import type { IScopedServiceCollection, IServiceCollection } from '../interfaces';
 
-export type ScopeServicesSource = IScopedServiceCollection & {
+/** What a root ServiceProvider needs from its collection: itself, plus the ability to open the first scope. */
+export type ServicesSource = IServiceCollection & {
   cloneShared(): ScopeServicesSource;
   snapshot(): { readonly services: DescriptorMap; readonly version: number };
 };
+
+/** What a scope's ServiceProvider needs: the same, but shadow-capable. */
+export type ScopeServicesSource = ServicesSource & IScopedServiceCollection;

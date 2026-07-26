@@ -3,25 +3,28 @@ import { IResolutionScope } from '@shellicar/core-di-engine';
 import { IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { InstrumentationHook } from '../types';
-import type { ScopeServicesSource } from './types';
+import type { ScopeServicesSource, ServicesSource } from './types';
 
-export class ServiceProvider implements IServiceProvider, IScopedProvider {
-  private constructor(
-    private readonly logger: ILogger,
-    public readonly Services: ScopeServicesSource,
-    private readonly scope: Scope,
-    private readonly engine: Engine,
-    private readonly rootProvider: ServiceProvider | undefined,
-    private readonly instrument: InstrumentationHook | undefined,
+// The root provider: Services carries no .shadow(), matching the root collection it
+// holds. ScopedServiceProvider (below) is the only source of a shadow-capable
+// Services, born whenever createScope() opens a scope (the root's own or a nested one).
+export class ServiceProvider implements IServiceProvider {
+  protected constructor(
+    protected readonly logger: ILogger,
+    public readonly Services: ServicesSource,
+    protected readonly scope: Scope,
+    protected readonly engine: Engine,
+    protected readonly rootProvider: ServiceProvider | undefined,
+    protected readonly instrument: InstrumentationHook | undefined,
   ) {}
 
-  public static createRoot(logger: ILogger, services: ScopeServicesSource, engine: Engine, instrument: InstrumentationHook | undefined): ServiceProvider {
+  public static createRoot(logger: ILogger, services: ServicesSource, engine: Engine, instrument: InstrumentationHook | undefined): ServiceProvider {
     const root = new ServiceProvider(logger, services, engine, engine, undefined, instrument);
     engine.bindSurface(root);
     return root;
   }
 
-  private get root(): ServiceProvider {
+  protected get root(): ServiceProvider {
     return this.rootProvider ?? this;
   }
 
@@ -37,12 +40,19 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
     }
   }
 
+  // Overridden by ScopedServiceProvider to hand back a genuinely IScopedProvider-shaped
+  // self: the base class only promises IResolutionScope, since its Services isn't
+  // shadow-capable and can't honestly satisfy IScopedProvider.
+  protected asBoundary(): IResolutionScope {
+    return this;
+  }
+
   private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
     if (identifier.prototype === IServiceProvider.prototype) {
       return this.root as IServiceProvider as T;
     }
     if (identifier.prototype === IResolutionScope.prototype || identifier.prototype === IScopedProvider.prototype) {
-      return this as IResolutionScope & IScopedProvider as T;
+      return this.asBoundary() as T;
     }
     this.logger.debug('Resolving', identifier.name);
     try {
@@ -63,7 +73,7 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
   public createScope(): IScopedProvider {
     const scopeServices = this.Services.cloneShared();
     const engineScope = this.engine.createScope(() => scopeServices.snapshot());
-    const scoped = new ServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root, this.instrument);
+    const scoped = new ScopedServiceProvider(this.logger, scopeServices, engineScope, this.engine, this.root, this.instrument);
     engineScope.bindSurface(scoped);
     return scoped;
   }
@@ -78,5 +88,13 @@ export class ServiceProvider implements IServiceProvider, IScopedProvider {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.scope[Symbol.asyncDispose]();
+  }
+}
+
+export class ScopedServiceProvider extends ServiceProvider implements IScopedProvider {
+  public declare readonly Services: ScopeServicesSource;
+
+  protected override asBoundary(): IScopedProvider {
+    return this;
   }
 }

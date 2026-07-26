@@ -54,7 +54,9 @@ describe('.shadow() overriding an ancestor scope registration', () => {
     const services = createServiceCollection();
 
     // @ts-expect-error - a root collection's builder never carries .shadow()
-    void services.register(RootContext).as(IContext).shadow;
+    const actual = services.register(RootContext).as(IContext).shadow;
+
+    expect(actual).toBeUndefined();
   });
 
   it('throws MultipleRegistrationError when a scope shadows the same token twice', () => {
@@ -173,9 +175,9 @@ describe('root forward surface', () => {
   it('has no .shadow() on a root forward builder at runtime', () => {
     const services = createServiceCollection();
 
-    const builder = services.forward(IContext);
+    // @ts-expect-error - a root collection's forward builder never carries .shadow()
+    const actual = services.forward(IContext).shadow;
 
-    // biome-ignore lint/suspicious/noExplicitAny: probing the runtime surface the types already hide
-    expect((builder as any).shadow).toBeUndefined();
+    expect(actual).toBeUndefined();
   });
 });
