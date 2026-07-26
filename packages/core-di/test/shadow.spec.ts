@@ -168,3 +168,14 @@ describe('a late .shadow() call', () => {
     expect(after).toBe('scoped');
   });
 });
+
+describe('root forward surface', () => {
+  it('has no .shadow() on a root forward builder at runtime', () => {
+    const services = createServiceCollection();
+
+    const builder = services.forward(IContext);
+
+    // biome-ignore lint/suspicious/noExplicitAny: probing the runtime surface the types already hide
+    expect((builder as any).shadow).toBeUndefined();
+  });
+});

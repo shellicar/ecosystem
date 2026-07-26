@@ -14,6 +14,7 @@ import {
   cyclePolicy,
   type DescriptorMap,
   deriveFacts,
+  ForwardBuilder,
   InvalidOperationError,
   InvalidServiceIdentifierError,
   IResolutionScope,
@@ -110,15 +111,15 @@ export class ServiceCollection implements IScopedServiceCollection {
     if (source == null) {
       throw new InvalidServiceIdentifierError();
     }
-    return new ScopedForwardBuilder<S>(
-      source,
-      (identifier, descriptor) => {
-        pushBucket(this.services, identifier, descriptor);
-        this.logger.info('Adding service', { identifier: identifier.name, descriptor });
-        this.version++;
-      },
-      this.shadowDepth,
-    );
+    const addService = (identifier: ServiceIdentifier<SourceType>, descriptor: ServiceDescriptor<SourceType>): void => {
+      pushBucket(this.services, identifier, descriptor);
+      this.logger.info('Adding service', { identifier: identifier.name, descriptor });
+      this.version++;
+    };
+    // Symmetry with register(): a capability the collection lacks (root, not scoped)
+    // is absent from the runtime object, not present-and-throwing.
+    const builder = this.isScoped ? new ScopedForwardBuilder<S>(source, addService, this.shadowDepth) : new ForwardBuilder<S>(source, addService, this.shadowDepth);
+    return builder as unknown as IScopedForwardBuilder<S>;
   }
 
   // The one stamping point: every consumer that turns descriptors into a graph
