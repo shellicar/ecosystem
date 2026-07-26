@@ -182,7 +182,6 @@ describe('root forward surface', () => {
   });
 });
 
-
 describe('the IScopedProvider token at the root', () => {
   it('throws UnregisteredServiceError: the root is not a scope, and anything injecting IScopedProvider is declaring it needs scope semantics', () => {
     const services = createServiceCollection();

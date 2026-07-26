@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `runtimeCaptivePolicy` now defaults to `RuntimeCaptivePolicy.Throw`: a singleton pulling a scoped instance through an opaque factory throws `CaptiveDependencyError` at `resolve()`. Pass `RuntimeCaptivePolicy.None` to allow the capture as before.
 - A registration's lifetime is fixed once the collection is committed (provider built, or resolved in a scope): a lifetime verb after that point throws, naming the commit.
+- Resolving the `IScopedProvider` token now throws `UnregisteredServiceError` at the root: the root is not a scope, so it no longer answers for the token, the same way an unregistered service does. Inside a scope, resolving it still returns the scope itself, unchanged.
 
 ## [5.0.0] - 2026-07-16
 

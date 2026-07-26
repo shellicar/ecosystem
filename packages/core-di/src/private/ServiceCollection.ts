@@ -154,15 +154,13 @@ export class ServiceCollection implements IServiceCollection {
 
   // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
   // copy (a multi-face descriptor stays one object in the clone), cloneShared shares the
-  // descriptor itself so scope overlays see the same nodes. Which class gets constructed
-  // follows isScoped: a scoped clone is always a ScopedServiceCollection, so its own
-  // register()/forward() carry .shadow(), matching the collection it was cloned into.
-  private cloneWith(isScoped: boolean, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>, shadowDepth: number = this.shadowDepth): ServiceCollection {
-    const cloned = isScoped ? new ScopedServiceCollection(this.logger, this.options, true, this.isAsync, shadowDepth) : new ServiceCollection(this.logger, this.options, false, this.isAsync, shadowDepth);
+  // descriptor itself so scope overlays see the same nodes. Each caller constructs its own
+  // class directly, so the class a caller ends up with is provably the one it constructed,
+  // not an assertion on top of a boolean.
+  private copyInto(cloned: ServiceCollection, copyOf: (descriptor: ServiceDescriptor<SourceType>) => ServiceDescriptor<SourceType>): void {
     for (const [key, descriptors] of this.services) {
       cloned.services.set(key, descriptors.map(copyOf));
     }
-    return cloned;
   }
 
   public clone(scoped?: unknown): IServiceCollection {
@@ -175,7 +173,9 @@ export class ServiceCollection implements IServiceCollection {
       }
       return copy;
     };
-    return this.cloneWith(scoped === true, copyOf);
+    const cloned = scoped === true ? new ScopedServiceCollection(this.logger, this.options, true, this.isAsync, this.shadowDepth) : new ServiceCollection(this.logger, this.options, false, this.isAsync, this.shadowDepth);
+    this.copyInto(cloned, copyOf);
+    return cloned;
   }
 
   // A genuinely new scope, one generation deeper than this collection: shadow's
@@ -183,7 +183,9 @@ export class ServiceCollection implements IServiceCollection {
   // override an ancestor's registration but not a sibling registered alongside it
   // in the same collection.
   public cloneShared(): ScopedServiceCollection {
-    return this.cloneWith(true, (descriptor) => descriptor, this.shadowDepth + 1) as ScopedServiceCollection;
+    const cloned = new ScopedServiceCollection(this.logger, this.options, true, this.isAsync, this.shadowDepth + 1);
+    this.copyInto(cloned, (descriptor) => descriptor);
+    return cloned;
   }
 
   public snapshot(): { readonly services: DescriptorMap; readonly version: number } {
