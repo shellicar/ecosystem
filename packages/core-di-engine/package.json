@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/core-di-engine",
   "private": false,
-  "version": "5.0.0-alpha.2",
+  "version": "5.0.0-alpha.4",
   "type": "module",
   "license": "MIT",
   "author": "Stephen Hellicar",
