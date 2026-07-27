@@ -91,7 +91,7 @@ const resolveNameKind = (name: string, file: string, seen: Set<string>): Kind =>
       // `export * from '...'`: try the wildcard target; it may not be where
       // `name` actually comes from, so a miss here isn't itself an error.
       try {
-        return resolveNameKind(name, resolved, seen);
+        return resolveNameKind(name, resolved, new Set(seen));
       } catch {
         continue;
       }
