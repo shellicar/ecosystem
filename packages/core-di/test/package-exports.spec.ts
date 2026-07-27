@@ -1,60 +1,9 @@
-import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { resolve } from 'node:path';
+import { describePackageExports } from '@shellicar/test-support/package-exports';
 
-// A name that type-checks as a value can still be dropped from the built JS if
-// the public barrel marks it `type`-only — and a bundler rolling up this
-// package's own internal modules won't leave a dangling reference behind, so
-// nothing throws when this package imports itself; the drop is silent. The
-// only way to catch it here is to check reality (where a name is actually
-// declared) against the barrel's claim, not trust the barrel's own `type`
-// annotation, which is exactly what's wrong when this bug happens.
-
-const packageDir = resolve(import.meta.dirname, '..');
+const srcDir = resolve(import.meta.dirname, '../src');
 // This package re-exports named values straight from core-di-engine, so its
 // declarations are part of "reality" too, not just this package's own src.
-const sourceRoots = [join(packageDir, 'src'), resolve(packageDir, '../core-di-engine/src')];
+const engineSrcDir = resolve(srcDir, '../../core-di-engine/src');
 
-const listTsFiles = (dir: string): string[] =>
-  readdirSync(dir).flatMap((entry) => {
-    const full = join(dir, entry);
-    return statSync(full).isDirectory() ? listTsFiles(full) : full.endsWith('.ts') ? [full] : [];
-  });
-
-const declaredValueNames = new Set<string>();
-for (const root of sourceRoots) {
-  for (const file of listTsFiles(root)) {
-    for (const m of readFileSync(file, 'utf8').matchAll(/export\s+(?:abstract\s+)?(?:class|const|function|enum)\s+([A-Za-z_$][\w$]*)/g)) {
-      declaredValueNames.add(m[1]);
-    }
-  }
-}
-
-const barrel = readFileSync(join(packageDir, 'src/index.ts'), 'utf8');
-const mustBeDefinedAtRuntime = new Set<string>();
-
-for (const m of barrel.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'([^']+)'/g)) {
-  for (const rawSpecifier of m[1].split(',')) {
-    const specifier = rawSpecifier.trim().replace(/^type\s+/, '');
-    if (!specifier) continue;
-    const [original, , alias] = specifier.split(/\s+/);
-    if (declaredValueNames.has(original)) {
-      mustBeDefinedAtRuntime.add(alias ?? original);
-    }
-  }
-}
-
-const assertDefined = `for (const name of ${JSON.stringify([...mustBeDefinedAtRuntime])}) if (m[name] === undefined) throw new Error(name + ' is undefined');`;
-
-describe('Every name declared as a class/const/function/enum in src, and re-exported by the barrel, is a real runtime value', () => {
-  it('is present in the ESM build (the "import" condition)', () => {
-    const script = `const m = await import('@shellicar/core-di'); ${assertDefined}`;
-    expect(() => execFileSync(process.execPath, ['--input-type=module'], { cwd: import.meta.dirname, input: script, stdio: 'pipe' })).not.toThrow();
-  });
-
-  it('is present in the CJS build (the "require" condition)', () => {
-    const script = `const m = require('@shellicar/core-di'); ${assertDefined}`;
-    expect(() => execFileSync(process.execPath, ['-e', script], { cwd: import.meta.dirname, stdio: 'pipe' })).not.toThrow();
-  });
-});
+describePackageExports('@shellicar/core-di', resolve(srcDir, 'index.ts'), [srcDir, engineSrcDir], import.meta.dirname);

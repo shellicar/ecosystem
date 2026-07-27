@@ -75,6 +75,7 @@
     "watch": "tsup --watch"
   },
   "devDependencies": {
+    "@shellicar/test-support": "workspace:*",
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
     "esbuild": "^0.28.1",
