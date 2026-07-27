@@ -404,18 +404,18 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
 export const buildEngine = <C extends EngineComposition>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}): EngineFor<C> => {
   const engine = setupEngine(services, composition, options);
-  const assembled = engine.assemble() as EngineFor<C>;
-  options.onAssembled?.(assembled as Engine);
+  const assembled = engine.assemble();
+  options.onAssembled?.(assembled);
   engine.prebakeSync();
   engine.throwIfValidating();
-  return assembled;
+  return assembled as EngineFor<C>;
 };
 
 export const buildEngineAsync = async <C extends EngineComposition>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions = {}): Promise<EngineFor<C>> => {
   const engine = setupEngine(services as DescriptorMap, composition, options);
-  const assembled = engine.assemble() as EngineFor<C>;
-  options.onAssembled?.(assembled as Engine);
+  const assembled = engine.assemble();
+  options.onAssembled?.(assembled);
   await engine.prebakeAsync();
   engine.throwIfValidating();
-  return assembled;
+  return assembled as EngineFor<C>;
 };
