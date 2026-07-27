@@ -15,3 +15,4 @@
 {"description":"Cycle-policy wording: a registration overridden by a later duplicate under `ResolveMultipleMode.LastRegistered` is now called \"overridden\", not \"shadowed\" — \"shadowed\" now names `.shadow()` exclusively.","category":"changed"}
 {"description":"`IForwardResult` is exported as a real value again.","category":"fixed"}
 {"description":"`buildEngine`/`buildEngineAsync` accept a `bindRoot` callback, invoked once the engine is assembled but before any `.eager()` singleton is prebaked, so a composing package can bind its own root surface before construction can observe it.","category":"added"}
+{"description":"`missingTargetPolicyFor(knownTargets)` builds a missing-target policy that treats the given tokens as always satisfied, for a composing package whose engine binds some tokens itself instead of through registration.","category":"added"}

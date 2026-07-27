@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `.shadow()` on a scoped collection's builder marks a registration as allowed to win over an ancestor scope's registration of the same token, instead of colliding with it as a genuine duplicate at resolve. Present only where the collection composes a scoped lifetime.
 - `buildEngine`/`buildEngineAsync` accept a `bindRoot` callback, invoked once the engine is assembled but before any `.eager()` singleton is prebaked, so a composing package can bind its own root surface before construction can observe it.
+- `missingTargetPolicyFor(knownTargets)` builds a missing-target policy that treats the given tokens as always satisfied, for a composing package whose engine binds some tokens itself instead of through registration.
 
 ### Changed
 

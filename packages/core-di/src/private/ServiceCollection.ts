@@ -48,6 +48,16 @@ const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve
 
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
 
+// The tokens the engine binds itself at build (root provider, scope surface,
+// resolution surface) rather than through registration: composition() wires them
+// in as engine surfaces, and validate() reads the same set to know a dependency
+// edge onto one of them is never actually missing.
+const surfaceTokens = new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
+  [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
+  [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],
+  [IResolutionScope as ServiceIdentifier<SourceType>, 'boundary'],
+]);
+
 // The root collection: register()/forward() carry no .shadow(), in their types or at
 // runtime. ScopedServiceCollection (below) is the only source of a shadow-capable
 // collection, born from cloneShared() when a scope is created.
@@ -148,8 +158,7 @@ export class ServiceCollection implements IServiceCollection {
     const stamped = this.clone() as ServiceCollection;
     stamped.stampLifetimes();
     const graph = deriveFacts(stamped.services);
-    const surfaceTargets = new Set(this.composition().surfaceTokens.keys());
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicyFor(surfaceTargets), cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
+    problems.push(...runGraphPolicies(graph, [missingTargetPolicyFor(new Set(surfaceTokens.keys())), cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
     return { valid: problems.length === 0, problems };
   }
 
@@ -205,11 +214,7 @@ export class ServiceCollection implements IServiceCollection {
       prebakeSingletons: this.options.eagerSingletons,
       disposal: createDisposal(),
       runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
-      surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
-        [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
-        [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],
-        [IResolutionScope as ServiceIdentifier<SourceType>, 'boundary'],
-      ]),
+      surfaceTokens,
     };
   }
 
