@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A registration's lifetime is fixed once the collection is committed (provider built, or resolved in a scope): a lifetime verb after that point throws, naming the commit.
 - Resolving the `IScopedProvider` token now throws `UnregisteredServiceError` at the root: the root is not a scope, so it no longer answers for the token, the same way an unregistered service does. Inside a scope, resolving it still returns the scope itself, unchanged.
 
+### Fixed
+
+- Fixed an `.eager()` singleton (or any singleton under `eagerSingletons`) resolving `IServiceProvider` or `IResolutionScope` during construction: it received `undefined` instead of the provider, because the root surface was bound only after eager construction ran.
+
 ## [5.0.0] - 2026-07-16
 
 Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di-lite also composes from. The version jumps to match core-di-lite and core-di-engine: the three packages now release in lockstep so a single engine copy resolves across them. The registration grammar is now the same shape as lite's: `register(Implementation).as(Identifier)` / `.asSelf()` / `.using(factory)`, not `register(Interface).to(Implementation)`.

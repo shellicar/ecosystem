@@ -14,7 +14,6 @@ import {
   cyclePolicy,
   type DescriptorMap,
   deriveFacts,
-  type Engine,
   ForwardBuilder,
   type IForwardBuilder,
   InvalidOperationError,
@@ -48,10 +47,6 @@ import { ServiceProvider } from './provider';
 const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve, Lifetime.Transient] as const satisfies readonly Lifetime[];
 
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
-
-// Thrown only if a future buildEngine path ever returns without invoking onAssembled:
-// an engine change that broke the contract this relies on, not a state a caller can reach.
-const engineAssembledWithoutSurface = 'buildEngine/buildEngineAsync returned without invoking onAssembled: the root provider was never bound to the engine.';
 
 // The root collection: register()/forward() carry no .shadow(), in their types or at
 // runtime. ScopedServiceCollection (below) is the only source of a shadow-capable
@@ -240,36 +235,25 @@ export class ServiceCollection implements IServiceCollection {
     return { validate: options?.validate ?? this.options.eagerSingletons, registrationMode: this.options.registrationMode };
   }
 
-  // The root provider is created and bound as the engine's surface from within
-  // onAssembled: an `.eager()` singleton that resolves IServiceProvider is
-  // constructed during prebake, which buildEngine runs immediately after
-  // onAssembled, so the surface must already be bound by then. Shared by both
-  // build paths so the binding logic exists exactly once.
-  private rootBinder(frozen: ServiceCollection, onTiming: InstrumentationHook | undefined): { onAssembled: (engine: Engine) => void; provider(): IServiceProvider } {
-    let provider: IServiceProvider | undefined;
-    return {
-      onAssembled: (engine) => {
-        provider = ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
-      },
-      provider: () => {
-        if (provider === undefined) {
-          throw new InvalidOperationError(engineAssembledWithoutSurface);
-        }
-        return provider;
-      },
-    };
+  // bindRoot runs between the engine's assembly and its prebake, so the root provider
+  // exists (and any `.eager()` singleton resolving IServiceProvider sees it) before
+  // prebake constructs anything. Its return value is buildEngine's own return value,
+  // so there is nothing here that can observe an unbound provider. If prebake or
+  // validate throws after this runs, the provider it created is simply unreachable
+  // (never returned to a caller, never referenced by anything else) and is collected
+  // with the rest of the failed build — it holds no resources of its own to release.
+  private announceBuild(onTiming: InstrumentationHook | undefined, start: number | undefined): void {
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
   }
 
   public buildProvider(options?: BuildProviderOptions): IServiceProvider {
     const onTiming = activeHook(options?.instrument);
     const start = onTiming === undefined ? undefined : performance.now();
     const frozen = this.freeze(options);
-    const binder = this.rootBinder(frozen, onTiming);
-    buildEngine(frozen.services, this.composition(), { ...this.engineOptions(options), onAssembled: binder.onAssembled });
-    const provider = binder.provider();
-    if (start !== undefined) {
-      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
-    }
+    const provider = buildEngine(frozen.services, this.composition(), this.engineOptions(options), (engine) => ServiceProvider.createRoot(this.logger, frozen, engine, onTiming));
+    this.announceBuild(onTiming, start);
     return provider;
   }
 
@@ -277,12 +261,8 @@ export class ServiceCollection implements IServiceCollection {
     const onTiming = activeHook(options?.instrument);
     const start = onTiming === undefined ? undefined : performance.now();
     const frozen = this.freeze(options);
-    const binder = this.rootBinder(frozen, onTiming);
-    await buildEngineAsync(frozen.services, this.composition(), { ...this.engineOptions(options), onAssembled: binder.onAssembled });
-    const provider = binder.provider();
-    if (start !== undefined) {
-      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
-    }
+    const provider = await buildEngineAsync(frozen.services, this.composition(), this.engineOptions(options), (engine) => ServiceProvider.createRoot(this.logger, frozen, engine, onTiming));
+    this.announceBuild(onTiming, start);
     return provider;
   }
 }
