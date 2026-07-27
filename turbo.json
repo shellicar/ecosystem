@@ -9,7 +9,7 @@
       "outputLogs": "new-only"
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "build"],
       "outputs": [],
       "outputLogs": "errors-only"
     },

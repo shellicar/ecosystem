@@ -79,6 +79,7 @@
   },
   "devDependencies": {
     "@js-joda/core": "^5.7.0",
+    "@shellicar/test-support": "workspace:*",
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
     "@vitest/coverage-v8": "^4.1.6",

@@ -1,0 +1,15 @@
+{
+  "name": "@shellicar/test-support",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package-exports": "./src/package-exports.ts"
+  },
+  "devDependencies": {
+    "@shellicar/typescript-config": "workspace:^",
+    "@types/node": "^25.8.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.6"
+  }
+}
