@@ -67,7 +67,7 @@ const collectMustBeDefined = (barrelPath: string, seen = new Set<string>()): Set
   for (const statement of sourceFile.statements) {
     if (!ts.isExportDeclaration(statement) || !statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
     const resolved = resolveSpecifier(statement.moduleSpecifier.text, barrelPath);
-    if (!resolved) continue;
+    if (!resolved) throw new Error(`Could not resolve '${statement.moduleSpecifier.text}' from ${barrelPath}`);
 
     if (!statement.exportClause) {
       // `export * from '...'`: every value the target module declares, or (if
