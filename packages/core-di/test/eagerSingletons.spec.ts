@@ -85,4 +85,13 @@ describe('eagerSingletons option: construct every singleton at buildProvider', (
 
     expect(actual).toThrow('boom');
   });
+
+  it('throws at buildProviderAsync when an eager singleton constructor throws', async () => {
+    const services = createServiceCollection({ eagerSingletons: true, async: true });
+    services.register(Boom).as(IBoom).singleton();
+
+    const actual = services.buildProviderAsync();
+
+    await expect(actual).rejects.toThrow('boom');
+  });
 });

@@ -395,11 +395,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   return { prebakeSync, prebakeAsync, throwIfValidating, assemble };
 };
 
-// bindRoot, when given, runs between assembly and prebake: a caller that needs to bind
-// its own surface (the root provider) into the engine gets the chance before any
-// `.eager()` singleton resolving that surface is constructed, and its return value
-// becomes buildEngine's own return value — there is no "was it called" question to ask,
-// the type signature is the proof.
+// bindRoot runs between assembly and prebake, so a caller can bind its own surface before any `.eager()` singleton can observe it.
 export function buildEngine<C extends EngineComposition>(services: DescriptorMap, composition: C, options?: BuildEngineOptions): EngineFor<C>;
 export function buildEngine<C extends EngineComposition, TSurface>(services: DescriptorMap, composition: C, options: BuildEngineOptions, bindRoot: (engine: EngineFor<C>) => TSurface): TSurface;
 export function buildEngine<C extends EngineComposition, TSurface>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}, bindRoot?: (engine: EngineFor<C>) => TSurface): EngineFor<C> | TSurface {

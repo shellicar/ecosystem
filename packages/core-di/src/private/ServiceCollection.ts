@@ -235,25 +235,15 @@ export class ServiceCollection implements IServiceCollection {
     return { validate: options?.validate ?? this.options.eagerSingletons, registrationMode: this.options.registrationMode };
   }
 
-  // bindRoot runs between the engine's assembly and its prebake, so the root provider
-  // exists (and any `.eager()` singleton resolving IServiceProvider sees it) before
-  // prebake constructs anything. Its return value is buildEngine's own return value,
-  // so there is nothing here that can observe an unbound provider. If prebake or
-  // validate throws after this runs, the provider it created is simply unreachable
-  // (never returned to a caller, never referenced by anything else) and is collected
-  // with the rest of the failed build — it holds no resources of its own to release.
-  private announceBuild(onTiming: InstrumentationHook | undefined, start: number | undefined): void {
-    if (start !== undefined) {
-      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
-    }
-  }
-
   public buildProvider(options?: BuildProviderOptions): IServiceProvider {
     const onTiming = activeHook(options?.instrument);
     const start = onTiming === undefined ? undefined : performance.now();
     const frozen = this.freeze(options);
+    // bindRoot binds the root provider before buildEngine prebakes any eager singleton.
     const provider = buildEngine(frozen.services, this.composition(), this.engineOptions(options), (engine) => ServiceProvider.createRoot(this.logger, frozen, engine, onTiming));
-    this.announceBuild(onTiming, start);
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
     return provider;
   }
 
@@ -261,8 +251,11 @@ export class ServiceCollection implements IServiceCollection {
     const onTiming = activeHook(options?.instrument);
     const start = onTiming === undefined ? undefined : performance.now();
     const frozen = this.freeze(options);
+    // bindRoot binds the root provider before buildEngineAsync prebakes any eager singleton.
     const provider = await buildEngineAsync(frozen.services, this.composition(), this.engineOptions(options), (engine) => ServiceProvider.createRoot(this.logger, frozen, engine, onTiming));
-    this.announceBuild(onTiming, start);
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
     return provider;
   }
 }
