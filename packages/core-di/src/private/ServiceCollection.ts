@@ -235,28 +235,42 @@ export class ServiceCollection implements IServiceCollection {
     return { validate: options?.validate ?? this.options.eagerSingletons, registrationMode: this.options.registrationMode };
   }
 
-  private finish(frozen: ServiceCollection, engine: Parameters<typeof ServiceProvider.createRoot>[2], onTiming: InstrumentationHook | undefined, start: number | undefined): IServiceProvider {
-    const provider = ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
-    if (start !== undefined) {
-      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
-    }
-    return provider;
-  }
-
+  // The root provider is created and bound as the engine's surface from within
+  // onAssembled: an `.eager()` singleton that resolves IServiceProvider is
+  // constructed during prebake, which buildEngine runs immediately after
+  // onAssembled, so the surface must already be bound by then.
   public buildProvider(options?: BuildProviderOptions): IServiceProvider {
     const onTiming = activeHook(options?.instrument);
     const start = onTiming === undefined ? undefined : performance.now();
     const frozen = this.freeze(options);
-    const engine = buildEngine(frozen.services, this.composition(), this.engineOptions(options));
-    return this.finish(frozen, engine, onTiming, start);
+    let provider: IServiceProvider | undefined;
+    buildEngine(frozen.services, this.composition(), {
+      ...this.engineOptions(options),
+      onAssembled: (engine) => {
+        provider = ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
+      },
+    });
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
+    return provider as IServiceProvider;
   }
 
   public async buildProviderAsync(options?: BuildProviderOptions): Promise<IServiceProvider> {
     const onTiming = activeHook(options?.instrument);
     const start = onTiming === undefined ? undefined : performance.now();
     const frozen = this.freeze(options);
-    const engine = await buildEngineAsync(frozen.services, this.composition(), this.engineOptions(options));
-    return this.finish(frozen, engine, onTiming, start);
+    let provider: IServiceProvider | undefined;
+    await buildEngineAsync(frozen.services, this.composition(), {
+      ...this.engineOptions(options),
+      onAssembled: (engine) => {
+        provider = ServiceProvider.createRoot(this.logger, frozen, engine, onTiming);
+      },
+    });
+    if (start !== undefined) {
+      onTiming?.({ kind: 'build', durationMs: performance.now() - start });
+    }
+    return provider as IServiceProvider;
   }
 }
 

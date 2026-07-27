@@ -49,6 +49,13 @@ export type DisposalSink = {
 export type BuildEngineOptions = {
   readonly validate?: boolean;
   readonly registrationMode?: ResolveMultipleMode;
+  /**
+   * Called once the engine is assembled but before singletons are prebaked, so a
+   * caller can bind its own surface (the root provider) into the engine first. Without
+   * this, an `.eager()` singleton resolving the root surface token during prebake would
+   * run before that surface exists.
+   */
+  readonly onAssembled?: (engine: Engine) => void;
 };
 
 export type Scope = {
@@ -397,14 +404,18 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
 
 export const buildEngine = <C extends EngineComposition>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}): EngineFor<C> => {
   const engine = setupEngine(services, composition, options);
+  const assembled = engine.assemble() as EngineFor<C>;
+  options.onAssembled?.(assembled as Engine);
   engine.prebakeSync();
   engine.throwIfValidating();
-  return engine.assemble() as EngineFor<C>;
+  return assembled;
 };
 
 export const buildEngineAsync = async <C extends EngineComposition>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions = {}): Promise<EngineFor<C>> => {
   const engine = setupEngine(services as DescriptorMap, composition, options);
+  const assembled = engine.assemble() as EngineFor<C>;
+  options.onAssembled?.(assembled as Engine);
   await engine.prebakeAsync();
   engine.throwIfValidating();
-  return engine.assemble() as EngineFor<C>;
+  return assembled;
 };
