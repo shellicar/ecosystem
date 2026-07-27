@@ -395,16 +395,25 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   return { prebakeSync, prebakeAsync, throwIfValidating, assemble };
 };
 
-export const buildEngine = <C extends EngineComposition>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}): EngineFor<C> => {
+// bindRoot runs between assembly and prebake, so a caller can bind its own surface before any `.eager()` singleton can observe it.
+export function buildEngine<C extends EngineComposition>(services: DescriptorMap, composition: C, options?: BuildEngineOptions): EngineFor<C>;
+export function buildEngine<C extends EngineComposition, TSurface>(services: DescriptorMap, composition: C, options: BuildEngineOptions, bindRoot: (engine: EngineFor<C>) => TSurface): TSurface;
+export function buildEngine<C extends EngineComposition, TSurface>(services: DescriptorMap, composition: C, options: BuildEngineOptions = {}, bindRoot?: (engine: EngineFor<C>) => TSurface): EngineFor<C> | TSurface {
   const engine = setupEngine(services, composition, options);
+  const assembled = engine.assemble() as EngineFor<C>;
+  const result = bindRoot === undefined ? assembled : bindRoot(assembled);
   engine.prebakeSync();
   engine.throwIfValidating();
-  return engine.assemble() as EngineFor<C>;
-};
+  return result;
+}
 
-export const buildEngineAsync = async <C extends EngineComposition>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions = {}): Promise<EngineFor<C>> => {
+export function buildEngineAsync<C extends EngineComposition>(services: DescriptorMap<SourceType, boolean>, composition: C, options?: BuildEngineOptions): Promise<EngineFor<C>>;
+export function buildEngineAsync<C extends EngineComposition, TSurface>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions, bindRoot: (engine: EngineFor<C>) => TSurface): Promise<TSurface>;
+export async function buildEngineAsync<C extends EngineComposition, TSurface>(services: DescriptorMap<SourceType, boolean>, composition: C, options: BuildEngineOptions = {}, bindRoot?: (engine: EngineFor<C>) => TSurface): Promise<EngineFor<C> | TSurface> {
   const engine = setupEngine(services as DescriptorMap, composition, options);
+  const assembled = engine.assemble() as EngineFor<C>;
+  const result = bindRoot === undefined ? assembled : bindRoot(assembled);
   await engine.prebakeAsync();
   engine.throwIfValidating();
-  return engine.assemble() as EngineFor<C>;
-};
+  return result;
+}
