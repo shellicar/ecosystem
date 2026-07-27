@@ -1,5 +1,5 @@
 import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
-import type { ValidationProblem } from '../types';
+import type { ServiceIdentifier, SourceType, ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom, winnerOf } from './graph';
 import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget } from './messages';
 import type { Graph, GraphPolicy } from './types';
@@ -31,11 +31,22 @@ export const cyclePolicy: GraphPolicy = (graph) => {
   });
 };
 
-export const missingTargetPolicy: GraphPolicy = (graph) =>
-  findUnregisteredEdges(graph).map((edge) => ({
-    kind: ValidationProblemKind.MissingTarget,
-    message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
-  }));
+// A token can be a dependency edge target without ever being registered: the
+// engine binds surface tokens (IServiceProvider et al.) itself at build, outside
+// the descriptor map deriveFacts walks. Those tokens are always satisfied, so a
+// caller passes them in to keep validate() agreeing with what buildProvider can
+// actually resolve.
+export const missingTargetPolicyFor =
+  (knownTargets: ReadonlySet<ServiceIdentifier<SourceType>>): GraphPolicy =>
+  (graph) =>
+    findUnregisteredEdges(graph)
+      .filter((edge) => !knownTargets.has(edge.missing))
+      .map((edge) => ({
+        kind: ValidationProblemKind.MissingTarget,
+        message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
+      }));
+
+export const missingTargetPolicy: GraphPolicy = missingTargetPolicyFor(new Set());
 
 // Lifetimes arrive stamped: the composition supplies a concrete lifetime on every
 // non-forward node before the graph is derived. Only a forward carries undefined

@@ -21,7 +21,7 @@ import {
   IResolutionScope,
   type IScopedForwardBuilder,
   Lifetime,
-  missingTargetPolicy,
+  missingTargetPolicyFor,
   type Newable,
   noDeclaredIdentity,
   overrideLifetimePreBuildOnly,
@@ -148,7 +148,8 @@ export class ServiceCollection implements IServiceCollection {
     const stamped = this.clone() as ServiceCollection;
     stamped.stampLifetimes();
     const graph = deriveFacts(stamped.services);
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
+    const surfaceTargets = new Set(this.composition().surfaceTokens.keys());
+    problems.push(...runGraphPolicies(graph, [missingTargetPolicyFor(surfaceTargets), cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
     return { valid: problems.length === 0, problems };
   }
 
