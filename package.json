@@ -17,13 +17,13 @@
     "updates": "npm-check-updates --workspaces"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.15",
-    "@vitest/coverage-v8": "^4.1.6",
+    "@biomejs/biome": "^2.4.16",
+    "@vitest/coverage-v8": "^4.1.10",
     "knip": "^5.88.1",
-    "lefthook": "^2.1.6",
+    "lefthook": "^2.1.10",
     "npm-check-updates": "^19.6.6",
     "syncpack": "^14.3.1",
-    "turbo": "^2.9.14",
-    "vitest": "^4.1.6"
+    "turbo": "^2.9.18",
+    "vitest": "^4.1.10"
   }
 }
