@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `IForwardResult` is now a real runtime export again; importing the built package no longer throws because a consumer statically re-exported a name the barrel had accidentally marked type-only.
+- `IForwardResult` is exported as a real value again.
 
 ## [5.0.0] - 2026-07-16
 
