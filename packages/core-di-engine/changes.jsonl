@@ -13,3 +13,4 @@
 {"description":"Lifetime verbs are pre-commit only: once the composition stamps its default at build, a later verb throws with an error naming the commit.","category":"changed"}
 {"description":"`.shadow()` on a scoped collection's builder marks a registration as allowed to win over an ancestor scope's registration of the same token, instead of colliding with it as a genuine duplicate at resolve. Present only where the collection composes a scoped lifetime.","category":"added"}
 {"description":"Cycle-policy wording: a registration overridden by a later duplicate under `ResolveMultipleMode.LastRegistered` is now called \"overridden\", not \"shadowed\" — \"shadowed\" now names `.shadow()` exclusively.","category":"changed"}
+{"description":"`IForwardResult` is now a real runtime export again; importing the built package no longer throws because a consumer statically re-exported a name the barrel had accidentally marked type-only.","category":"fixed"}

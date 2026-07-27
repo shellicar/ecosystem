@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lifetime verbs are pre-commit only: once the composition stamps its default at build, a later verb throws with an error naming the commit.
 - Cycle-policy wording: a registration overridden by a later duplicate under `ResolveMultipleMode.LastRegistered` is now called "overridden", not "shadowed" — "shadowed" now names `.shadow()` exclusively.
 
+### Fixed
+
+- `IForwardResult` is now a real runtime export again; importing the built package no longer throws because a consumer statically re-exported a name the barrel had accidentally marked type-only.
+
 ## [5.0.0] - 2026-07-16
 
 The shared engine that core-di and core-di-lite compose from: the static-DAG build/resolve model, composable lifetimes, graph-policy validation, and boundary-scoped disposal, extracted so both packages share a single engine copy.
