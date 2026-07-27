@@ -1,15 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
-// Imports the package by its own published name from a real `node` subprocess,
-// rather than through vitest. Vitest's own module loader (Vite's SSR resolver)
-// does not perform Node's strict ESM export linking: a named re-export that
-// does not actually exist upstream resolves as `undefined` there instead of
-// throwing, so a plain `await import('@shellicar/core-di-lite')` inside a
-// vitest test cannot see this class of bug at all. A real `node` process,
-// importing by the package's own name (going through its actual
-// `package.json` "exports" map, the same path a real consumer takes), is the
-// only thing that reproduces it.
+// Runs in a real node subprocess, not vitest: vitest's own module loader doesn't
+// enforce Node's strict ESM export linking, so a missing re-export wouldn't fail here.
 describe('The published package actually works when imported by name, under real Node', () => {
   it('loads through the ESM build (the "import" condition)', () => {
     const script = "const m = await import('@shellicar/core-di-lite'); if (typeof m.createServiceCollection !== 'function') throw new Error('createServiceCollection missing');";
