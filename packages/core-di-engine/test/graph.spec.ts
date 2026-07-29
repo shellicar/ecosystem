@@ -227,12 +227,15 @@ describe('buildPlan: a flat plan of per-injection steps', () => {
     return buildPlan(graph, index, root, lifetimeOf, notTransient);
   };
 
-  const diamond = (sharedLifetime: Lifetime): DescriptorMap => {
+  // The consumers are resolve-lifetime unless a test says otherwise: a singleton opens
+  // a pass of its own, which is a separate question from how a shared dependency is
+  // reached within one pass.
+  const diamond = (sharedLifetime: Lifetime, consumerLifetime: Lifetime = Lifetime.Resolve): DescriptorMap => {
     const services = createDescriptorMap();
     register(services, ID, { implementation: D, lifetime: sharedLifetime });
-    register(services, IB, { implementation: B });
-    register(services, IC, { implementation: C });
-    register(services, IA, { implementation: A });
+    register(services, IB, { implementation: B, lifetime: consumerLifetime });
+    register(services, IC, { implementation: C, lifetime: consumerLifetime });
+    register(services, IA, { implementation: A, lifetime: consumerLifetime });
     return services;
   };
 
@@ -250,6 +253,37 @@ describe('buildPlan: a flat plan of per-injection steps', () => {
 
     const expected = 1;
     const actual = buildSteps(plan).filter((step) => step.token === ID).length;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('emits a construction step per singleton for a cached dependency two singletons share', () => {
+    const plan = planFor(diamond(Lifetime.Scoped, Lifetime.Singleton), IA);
+
+    const expected = 2;
+    const actual = buildSteps(plan).filter((step) => step.token === ID).length;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('gives each singleton its own pass, and the caller none', () => {
+    const plan = planFor(diamond(Lifetime.Scoped, Lifetime.Singleton), IA);
+
+    const expected = 3;
+    const actual = new Set(buildSteps(plan).map((step) => (step.kind === 'build' ? step.pass : undefined))).size;
+
+    expect(actual).toBe(expected);
+  });
+
+  it('emits one construction step for a singleton reached from two places', () => {
+    const services = createDescriptorMap();
+    register(services, ID, { implementation: D, lifetime: Lifetime.Singleton });
+    register(services, IB, { implementation: B, lifetime: Lifetime.Transient });
+    register(services, IC, { implementation: C, lifetime: Lifetime.Transient });
+    register(services, IA, { implementation: A, lifetime: Lifetime.Transient });
+
+    const expected = 1;
+    const actual = buildSteps(planFor(services, IA)).filter((step) => step.token === ID).length;
 
     expect(actual).toBe(expected);
   });

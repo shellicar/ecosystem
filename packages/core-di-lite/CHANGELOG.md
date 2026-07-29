@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- `validate()` returns `errors` and `warnings` separately, each problem carrying its severity. Lite composes no policy that warns, so every problem it reports is an error.
+
 ### Removed
 
 - `.singleton()` is no longer a builder verb: singleton is the only lifetime and it was never configurable, so the verb could never override anything. Every registration is still stamped a singleton at `buildProvider`.

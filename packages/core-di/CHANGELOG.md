@@ -13,16 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IScopedProvider.createScope()` opens a nested scope: it starts with the parent scope's registrations at that moment, holds its own scoped instances, and shares singletons with the whole provider.
 - `createServiceCollection({ eagerSingletons })` constructs every singleton at `buildProvider`, not just the `.eager()` and async ones, and a constructor that throws now throws there too instead of at the first resolve. Defaults to `false` (unchanged behaviour when omitted).
 - A scope can `.shadow()` a registration on `register()`/`forward()` to override an ancestor scope's registration of the same token, instead of throwing `MultipleRegistrationError`. Only available on `IScopedProvider.Services`; a root collection's `register()`/`forward()` never carry `.shadow()`.
+- A dependency on `IScopedProvider` is reported as a scope mismatch: an error for a singleton, which serves the whole provider and so can never be given a scope, and a warning for any other lifetime, which is served correctly inside a scope and only wrong from the root.
+- `validate()` warns when a singleton holds a scoped or resolve dependency, which is shared more narrowly than the singleton itself: it takes a private instance where a shared one was asked for. A scoped dependency reports this alongside the captive dependency, which is the separate disposal hazard.
 
 ### Changed
 
 - `runtimeCaptivePolicy` now defaults to `RuntimeCaptivePolicy.Throw`: a singleton pulling a scoped instance through an opaque factory throws `CaptiveDependencyError` at `resolve()`. Pass `RuntimeCaptivePolicy.None` to allow the capture as before.
 - A registration's lifetime is fixed once the collection is committed (provider built, or resolved in a scope): a lifetime verb after that point throws, naming the commit.
 - Resolving the `IScopedProvider` token now throws `UnregisteredServiceError` at the root: the root is not a scope, so it no longer answers for the token, the same way an unregistered service does. Inside a scope, resolving it still returns the scope itself, unchanged.
+- `validate()` returns `errors` and `warnings` separately, each problem carrying its severity. Only errors make a report invalid, so `buildProvider({ validate: true })` refuses on an error and builds through a warning.
+- Resolving `IScopedProvider` from the root throws `ScopeMismatchError` instead of `UnregisteredServiceError`: the engine binds the token, so nothing is missing, the root simply has no scope to serve.
+- The root provider's `resolve` no longer accepts `IScopedProvider`: asking the root for a scope does not typecheck.
+- A `ValidationError` from `buildProvider({ validate: true })` carries `errors` and `warnings` rather than a single `problems`, so the warnings from the same run are on it too.
 
 ### Fixed
 
 - Fixed an `.eager()` singleton (or any singleton under `eagerSingletons`) resolving `IServiceProvider` or `IResolutionScope` during construction: it received `undefined` instead of the provider, because the root surface was bound only after eager construction ran.
+- Fixed `validate()` reporting `IServiceProvider`, `IScopedProvider`, and `IResolutionScope` as missing targets: these are bound by the engine at build, never registered, and `resolve()` already handled them correctly.
+- Injecting `IScopedProvider` into a service resolved from the root throws `ScopeMismatchError`, instead of silently handing it the root provider wearing the scoped type.
+- A singleton no longer captures what the scope that first resolved it owned. Its dependencies are the root's instances, resolved against the root's registrations, so a scope's `.shadow()` cannot reach an instance the whole provider shares.
+- A resolve-lifetime dependency of a singleton is no longer shared with whatever else happened to be built alongside it. Each singleton is constructed in its own pass, so what it holds is the same whichever call built it and whether or not `eagerSingletons` is set.
+- `validate()` reports a scope mismatch for a service a singleton can reach, not only for the singleton itself: a scoped service reached from a singleton resolves at the root with it, where `IScopedProvider` can never be served.
+- `resolveAll(IServiceProvider)` and `resolveAll(IResolutionScope)` return the resolving surface rather than an empty list, and `resolveAll(IScopedProvider)` returns the scope inside a scope and nothing at the root.
 
 ## [5.0.0] - 2026-07-16
 

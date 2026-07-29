@@ -1,5 +1,5 @@
 import { Lifetime, ResolveMultipleMode, RuntimeCaptivePolicy } from '../enums';
-import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ServiceCreationError, UnregisteredServiceError } from '../errors';
+import { CaptiveDependencyError, CircularDependencyError, InvalidOperationError, MultipleRegistrationError, ScopeMismatchError, ServiceCreationError, UnregisteredServiceError } from '../errors';
 import type { IResolutionScope } from '../interfaces';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
 import { followForward } from './followForward';
@@ -11,6 +11,19 @@ import type { AsyncNode, Env, GraphNode, LifetimeFeature, LifetimeFeatures } fro
 const isAsyncNode = (node: GraphNode): node is AsyncNode => node.createInstanceAsync != null;
 
 const EMPTY_BUCKET: readonly GraphNode[] = [];
+
+/**
+ * How far a surface token reaches: which boundaries can serve it.
+ *
+ * - `root` — always the root surface, from anywhere.
+ * - `nearest` — the boundary being resolved from, and the root counts as one.
+ * - `scope` — the boundary being resolved from, and the root does not count.
+ *
+ * `nearest` and `scope` differ only at the root, which is the whole distinction:
+ * a token naming "wherever I am" is answerable everywhere, and a token naming the
+ * scope has no answer where there is no scope.
+ */
+export type SurfaceReach = 'root' | 'nearest' | 'scope';
 
 export type EngineComposition = {
   readonly features?: LifetimeFeatures;
@@ -29,7 +42,7 @@ export type EngineComposition = {
    */
   readonly prebakeSingletons?: boolean;
   readonly disposal?: DisposalSink;
-  readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, 'root' | 'boundary'>;
+  readonly surfaceTokens?: ReadonlyMap<ServiceIdentifier<SourceType>, SurfaceReach>;
   /**
    * Whether a runtime captive (a singleton pulling a scoped instance through an
    * opaque factory) throws at resolve. Required: the engine holds no default —
@@ -95,9 +108,20 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     return lifetime;
   };
 
-  const surfaceAt = (token: ServiceIdentifier<SourceType>): 'root' | 'boundary' | undefined => composition.surfaceTokens?.get(token);
+  const surfaceAt = (token: ServiceIdentifier<SourceType>): SurfaceReach | undefined => composition.surfaceTokens?.get(token);
 
-  const surfaceValue = (at: 'root' | 'boundary', boundary: Boundary): unknown => surfaces.get(at === 'root' ? rootBoundary.id : boundary.id);
+  // The root is a boundary like any other, so it has a surface bound to it and would
+  // answer for a `scope` token as readily as a real scope does. Refusing here is what
+  // makes the reach mean anything: the root has no scope to give.
+  const surfaceValue = (at: SurfaceReach, boundary: Boundary, token: ServiceIdentifier<SourceType>): unknown => {
+    if (at === 'root') {
+      return surfaces.get(rootBoundary.id);
+    }
+    if (at === 'scope' && boundary.id === rootBoundary.id) {
+      throw new ScopeMismatchError(token);
+    }
+    return surfaces.get(boundary.id);
+  };
 
   const guardToken = (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]): unknown | undefined => {
     // No shadow anywhere in the bucket: unchanged from before shadow existed.
@@ -212,11 +236,20 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
     return instance;
   };
 
+  // A singleton lives at the root: it is announced for disposal there, and one instance
+  // serves every boundary. So its dependencies resolve there too, whatever boundary
+  // happened to ask for it first. Without this, the first caller decides what a
+  // provider-wide instance holds, and a scope's surfaces leak into an object that
+  // outlives the scope.
+  const rootPass = (): { readonly env: Env; readonly boundary: Boundary } => ({ env: freshPass(rootBase), boundary: rootBoundary });
+
   const strategy: ResolutionStrategy = composition.strategy({
     lifetimeOf,
     isCached,
     surfaceAt,
     surfaceValue,
+    rootPass,
+    rootView: () => rootView,
     guardToken,
     nodeForToken,
     ownerOf,
@@ -251,7 +284,7 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   const resolveValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown => {
     const at = surfaceAt(token);
     if (at !== undefined) {
-      return surfaceValue(at, boundary);
+      return surfaceValue(at, boundary, token);
     }
     const node = nodeForToken(view, token);
     guardNode(node, token);
@@ -263,6 +296,21 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   };
 
   const resolveManyValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown[] => {
+    // A surface is bound rather than registered, so it would otherwise be invisible here
+    // and every one of them would come back empty. It is exactly one instance where its
+    // reach allows, and none where it does not — which is what resolveAll says about
+    // anything it has nothing for, rather than the refusal the single door gives.
+    const at = surfaceAt(token);
+    if (at !== undefined) {
+      if (at === 'scope' && boundary.id === rootBoundary.id) {
+        return [];
+      }
+      // Nothing bound is nothing to list, the same answer as a reach that allows none:
+      // a composition that never bound its surface has none to give, not one that is
+      // undefined.
+      const surface = surfaceValue(at, boundary, token);
+      return surface === undefined ? [] : [surface];
+    }
     const descriptors = view.services.get(token) ?? [];
     return descriptors.map((descriptor) => {
       const node = followForward(view.index, descriptor);

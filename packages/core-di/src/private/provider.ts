@@ -1,5 +1,5 @@
 import type { Engine, Scope, ServiceIdentifier, SourceType } from '@shellicar/core-di-engine';
-import { IResolutionScope, UnregisteredServiceError } from '@shellicar/core-di-engine';
+import { IResolutionScope, ScopeMismatchError } from '@shellicar/core-di-engine';
 import { IScopedProvider, IServiceProvider } from '../interfaces';
 import type { ILogger } from '../logger';
 import type { InstrumentationHook } from '../types';
@@ -41,12 +41,13 @@ export class ServiceProvider<S extends ServicesSource = ServicesSource> implemen
     }
   }
 
-  // Only a scope can honestly serve the IScopedProvider token: injecting it declares a
+  // Only a scope can honestly serve the IScopedProvider token: asking for it declares a
   // need for scope semantics, which the root doesn't have. Overridden by
-  // ScopedServiceProvider to hand back itself; the base throws the same error an
-  // unregistered service gets, since the token genuinely isn't available there.
+  // ScopedServiceProvider to hand back itself; the base throws a scope mismatch, not an
+  // unregistered service: the token is bound by the engine, so nothing is missing — the
+  // root simply cannot serve it.
   protected asScopedProvider(): IScopedProvider {
-    throw new UnregisteredServiceError(IScopedProvider);
+    throw new ScopeMismatchError(IScopedProvider);
   }
 
   private resolveInternal<T extends SourceType>(identifier: ServiceIdentifier<T>): T {
@@ -68,10 +69,9 @@ export class ServiceProvider<S extends ServicesSource = ServicesSource> implemen
     }
   }
 
+  // No short-circuit on an empty bucket: the engine answers that with an empty list
+  // itself, and a surface token has no bucket to look in while still being resolvable.
   public resolveAll<T extends SourceType>(identifier: ServiceIdentifier<T>): T[] {
-    if (this.Services.get(identifier).length === 0) {
-      return [];
-    }
     return this.scope.resolveAll(identifier);
   }
 

@@ -1,3 +1,4 @@
+import { Lifetime } from '../enums';
 import { CircularDependencyError, SelfDependencyError } from '../errors';
 import type { DescriptorMap, ServiceIdentifier, SourceType } from '../types';
 import type { Boundary } from './boundaryEngine';
@@ -39,9 +40,15 @@ export const createNaiveStrategy =
   (kit: StrategyKit): ResolutionStrategy => {
     const ownerFor = (view: EngineView, node: GraphNode): ServiceIdentifier<SourceType> => (view.data as NaiveView).get(node) ?? kit.ownerOf(view, node);
 
-    const nodeValue = (view: EngineView, node: GraphNode, env: Env, boundary: Boundary, path: ReadonlySet<GraphNode>): unknown => {
-      const token = ownerFor(view, node);
+    const nodeValue = (callerView: EngineView, node: GraphNode, callerEnv: Env, callerBoundary: Boundary, path: ReadonlySet<GraphNode>): unknown => {
       const lifetime = kit.lifetimeOf(node);
+      // A singleton is resolved at the root, whoever asked: it outlives every scope, so
+      // nothing a scope owns may reach it, neither the scope's surfaces nor its
+      // registrations. Its whole subtree inherits that pass and those registrations.
+      const atRoot = lifetime === Lifetime.Singleton;
+      const { env, boundary } = atRoot ? kit.rootPass() : { env: callerEnv, boundary: callerBoundary };
+      const view = atRoot ? kit.rootView() : callerView;
+      const token = ownerFor(view, node);
       const held = kit.heldErrorFor(node);
       if (held !== undefined) {
         throw held;
@@ -55,7 +62,7 @@ export const createNaiveStrategy =
         try {
           const at = kit.surfaceAt(identifier);
           if (at !== undefined) {
-            return kit.surfaceValue(at, boundary);
+            return kit.surfaceValue(at, boundary, identifier);
           }
           return nodeValue(view, kit.nodeForToken(view, identifier), env, boundary, nextPath);
         } catch (err) {

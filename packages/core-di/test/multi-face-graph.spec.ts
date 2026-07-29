@@ -32,7 +32,7 @@ describe('multi-face registrations in the static graph', () => {
     services.register(Concrete).as(IFace).asSelf();
     services.register(Dependent).asSelf().singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual(expected);
   });
@@ -51,7 +51,7 @@ describe('multi-face registrations in the static graph', () => {
     services.register(Alpha).as(IAlpha).asSelf(); // IAlpha is the earlier face
     services.register(Beta).as(IBeta);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual(expected);
   });

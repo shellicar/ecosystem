@@ -1,8 +1,8 @@
-import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
-import type { ValidationProblem } from '../types';
+import { CaptivePolicy, Lifetime, Severity, ValidationProblemKind } from '../enums';
+import type { ServiceIdentifier, SourceType, ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom, winnerOf } from './graph';
-import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget } from './messages';
-import type { Graph, GraphPolicy } from './types';
+import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget, scopeMismatchRootReachable, scopeMismatchSingleton, scopeMismatchUnderSingleton, sharingMismatch } from './messages';
+import type { Graph, GraphNode, GraphPolicy } from './types';
 
 export const cyclePolicy: GraphPolicy = (graph) => {
   const cycles = detectCycles(graph);
@@ -26,22 +26,123 @@ export const cyclePolicy: GraphPolicy = (graph) => {
     const names = cycle.map((node) => graph.get(node)?.owner.name ?? '');
     return {
       kind: ValidationProblemKind.Cycle,
+      severity: Severity.Error,
       message: cycle.some(isOverridden) ? dependencyCycleOverridden(names) : dependencyCycle(names),
     };
   });
 };
 
-export const missingTargetPolicy: GraphPolicy = (graph) =>
-  findUnregisteredEdges(graph).map((edge) => ({
-    kind: ValidationProblemKind.MissingTarget,
-    message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
-  }));
+// A token can be a dependency edge target without ever being registered: the
+// engine binds surface tokens (IServiceProvider et al.) itself at build, outside
+// the descriptor map deriveFacts walks. Those tokens are always satisfied, so a
+// caller passes them in to keep validate() agreeing with what buildProvider can
+// actually resolve.
+export const missingTargetPolicyFor =
+  (knownTargets: ReadonlySet<ServiceIdentifier<SourceType>>): GraphPolicy =>
+  (graph) =>
+    findUnregisteredEdges(graph)
+      .filter((edge) => !knownTargets.has(edge.missing))
+      .map((edge) => ({
+        kind: ValidationProblemKind.MissingTarget,
+        severity: Severity.Error,
+        message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
+      }));
+
+export const missingTargetPolicy: GraphPolicy = missingTargetPolicyFor(new Set());
+
+const scopeMismatchMessage = (lifetime: Lifetime, neverServable: boolean, ownerName: string | undefined, tokenName: string): string => {
+  if (lifetime === Lifetime.Singleton) {
+    return scopeMismatchSingleton(ownerName, tokenName);
+  }
+  return neverServable ? scopeMismatchUnderSingleton(ownerName, tokenName, lifetime) : scopeMismatchRootReachable(ownerName, tokenName, lifetime);
+};
+
+/**
+ * A token only a scope can serve, depended on by a consumer that has no scope to be
+ * served from. `servedBy` is the one lifetime that always resolves inside a scope.
+ *
+ * A singleton is an error, and so is anything a singleton can reach: a singleton and
+ * everything under it resolves at the root, whatever the reached node's own lifetime
+ * says, so no boundary can ever give it a scope and it can never construct. That is the
+ * same shape as a missing target, a guaranteed failure deferred to resolve. Any other
+ * consumer is a warning: resolved inside a scope it is served correctly, and only the
+ * root is wrong, which no static read can tell apart.
+ *
+ * The token is never registered (the engine binds it), so `missingTargetPolicy` must
+ * still treat it as known: this is not a missing target, it is one that cannot be
+ * satisfied for this consumer.
+ */
+export const scopeMismatchPolicyFor =
+  (token: ServiceIdentifier<SourceType>, servedBy: Lifetime): GraphPolicy =>
+  (graph) => {
+    const atRoot = new Set<GraphNode>();
+    for (const [node, facts] of graph) {
+      if (facts.lifetime === Lifetime.Singleton) {
+        atRoot.add(node);
+        for (const reached of reachableFrom(graph, node)) {
+          atRoot.add(reached);
+        }
+      }
+    }
+
+    const problems: ValidationProblem[] = [];
+    for (const [node, facts] of graph) {
+      // A forward carries no lifetime of its own; its consumers are judged instead.
+      if (facts.lifetime === undefined || !facts.deps.includes(token)) {
+        continue;
+      }
+      const neverServable = atRoot.has(node);
+      if (facts.lifetime === servedBy && !neverServable) {
+        continue;
+      }
+      problems.push({
+        kind: ValidationProblemKind.ScopeMismatch,
+        severity: neverServable ? Severity.Error : Severity.Warning,
+        message: scopeMismatchMessage(facts.lifetime, neverServable, facts.owner.name, token.name),
+      });
+    }
+    return problems;
+  };
+
+/**
+ * A singleton may only hold what is shared at least as widely as itself, or not shared
+ * at all: another singleton, a transient (nothing shares it, so no contract breaks), or
+ * a provider-lived surface. A scoped or resolve dependency is shared with a set the
+ * singleton cannot belong to, so it takes a private instance wearing a shared
+ * contract — and which instance that is would depend on how it came to be built.
+ *
+ * A warning, and not governed by `CaptivePolicy`: every singleton resolves in a pass of
+ * its own, so what it holds is deterministic and nothing misbehaves — the consumer
+ * simply gets a private instance where it asked for a shared one. It sits beside the
+ * captive report rather than replacing it, since a scoped dependency is both this and a
+ * disposal hazard, and the hazard is what carries the severity.
+ */
+export const sharingMismatchPolicy: GraphPolicy = (graph) => {
+  const problems: ValidationProblem[] = [];
+  for (const [node, facts] of graph) {
+    if (facts.lifetime !== Lifetime.Singleton) {
+      continue;
+    }
+    for (const dep of reachableFrom(graph, node)) {
+      const depFacts = graph.get(dep);
+      const lifetime = depFacts?.lifetime;
+      if (lifetime === Lifetime.Scoped || lifetime === Lifetime.Resolve) {
+        problems.push({
+          kind: ValidationProblemKind.SharingMismatch,
+          severity: Severity.Warning,
+          message: sharingMismatch(facts.owner.name, depFacts?.owner.name, lifetime),
+        });
+      }
+    }
+  }
+  return problems;
+};
 
 // Lifetimes arrive stamped: the composition supplies a concrete lifetime on every
 // non-forward node before the graph is derived. Only a forward carries undefined
 // here, and a forward is judged through its target node, not itself.
 const captivePolicy =
-  (isCaptured: (lifetime: Lifetime) => boolean): GraphPolicy =>
+  (isCaptured: (lifetime: Lifetime) => boolean, severity: Severity): GraphPolicy =>
   (graph) => {
     const problems: ValidationProblem[] = [];
     for (const [node, facts] of graph) {
@@ -54,6 +155,7 @@ const captivePolicy =
         if (lifetime != null && isCaptured(lifetime)) {
           problems.push({
             kind: ValidationProblemKind.CaptiveDependency,
+            severity,
             message: captiveDependency(facts.owner.name, depFacts?.owner.name, lifetime),
           });
         }
@@ -62,9 +164,11 @@ const captivePolicy =
     return problems;
   };
 
-export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !== Lifetime.Singleton);
+// Strict errors: strictness a build ignores is not strict. Disposal warns: the
+// scoped captive is a real use-after-dispose hazard, but the composition runs.
+export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !== Lifetime.Singleton, Severity.Error);
 
-export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped);
+export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped, Severity.Warning);
 
 export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
   const problems: ValidationProblem[] = [];
@@ -72,6 +176,7 @@ export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
     if (facts.isAsync && facts.lifetime !== Lifetime.Singleton) {
       problems.push({
         kind: ValidationProblemKind.AsyncThroughSyncPath,
+        severity: Severity.Error,
         message: asyncThroughSyncPath(facts.owner.name, facts.lifetime),
       });
     }

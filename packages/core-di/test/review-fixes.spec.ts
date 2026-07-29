@@ -16,7 +16,7 @@ describe('captive detection judges the effective lifetime of an un-verbed depend
     services.register(UnverbedDep).as(IUnverbedDep);
     services.register(Holder).as(IHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -96,7 +96,7 @@ describe('validate() sees a factory node\u2019s @dependsOn field edges', () => {
       .as(IA);
     services.register(B).as(IB);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.Cycle]);
   });
@@ -159,7 +159,7 @@ describe('cycle diagnostics de-duplicate on identity, not name', () => {
     services.register(second.X).as(second.IX);
     services.register(second.Y).as(second.IY);
 
-    const actual = services.validate().problems.filter((p) => p.kind === ValidationProblemKind.Cycle).length;
+    const actual = services.validate().errors.filter((p) => p.kind === ValidationProblemKind.Cycle).length;
 
     expect(actual).toBe(2);
   });
@@ -179,10 +179,10 @@ describe('validate() completeness', () => {
     services.register(Dep).as(IDep).scoped();
     services.register(Holder).as(IHolder).singleton();
 
-    const before = services.validate().problems.map((p) => p.kind);
+    const before = services.validate().warnings.map((p) => p.kind);
     services.overrideLifetime(IDep, Lifetime.Singleton);
-    const after = services.validate().valid;
+    const after = services.validate();
 
-    expect([before, after]).toEqual([[ValidationProblemKind.CaptiveDependency], true]);
+    expect([before.includes(ValidationProblemKind.CaptiveDependency), after]).toEqual([true, { valid: true, errors: [], warnings: [] }]);
   });
 });

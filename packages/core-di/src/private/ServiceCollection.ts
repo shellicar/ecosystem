@@ -21,7 +21,7 @@ import {
   IResolutionScope,
   type IScopedForwardBuilder,
   Lifetime,
-  missingTargetPolicy,
+  missingTargetPolicyFor,
   type Newable,
   noDeclaredIdentity,
   overrideLifetimePreBuildOnly,
@@ -30,7 +30,11 @@ import {
   ScopedForwardBuilder,
   type ServiceDescriptor,
   type ServiceIdentifier,
+  Severity,
   type SourceType,
+  type SurfaceReach,
+  scopeMismatchPolicyFor,
+  sharingMismatchPolicy,
   ValidationError,
   type ValidationProblem,
   ValidationProblemKind,
@@ -47,6 +51,16 @@ import { ServiceProvider } from './provider';
 const composedLifetimes = [Lifetime.Singleton, Lifetime.Scoped, Lifetime.Resolve, Lifetime.Transient] as const satisfies readonly Lifetime[];
 
 const activeHook = (instrument: InstrumentationOptions | undefined): InstrumentationHook | undefined => (instrument?.enabled === true ? instrument.onTiming : undefined);
+
+// The tokens the engine binds itself at build (root provider, scope surface,
+// resolution surface) rather than through registration: composition() wires them
+// in as engine surfaces, and validate() reads the same set to know a dependency
+// edge onto one of them is never actually missing.
+const surfaceTokens = new Map<ServiceIdentifier<SourceType>, SurfaceReach>([
+  [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
+  [IScopedProvider as ServiceIdentifier<SourceType>, 'scope'],
+  [IResolutionScope as ServiceIdentifier<SourceType>, 'nearest'],
+]);
 
 // The root collection: register()/forward() carry no .shadow(), in their types or at
 // runtime. ScopedServiceCollection (below) is the only source of a shadow-capable
@@ -140,6 +154,7 @@ export class ServiceCollection implements IServiceCollection {
     for (const node of this.composed.unfaced()) {
       problems.push({
         kind: ValidationProblemKind.NoIdentity,
+        severity: Severity.Error,
         message: noDeclaredIdentity(node.implementation.name),
       });
     }
@@ -148,8 +163,20 @@ export class ServiceCollection implements IServiceCollection {
     const stamped = this.clone() as ServiceCollection;
     stamped.stampLifetimes();
     const graph = deriveFacts(stamped.services);
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicy, cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
-    return { valid: problems.length === 0, problems };
+    problems.push(
+      ...runGraphPolicies(graph, [
+        missingTargetPolicyFor(new Set(surfaceTokens.keys())),
+        // Only a scope can serve IScopedProvider, so the edge onto it is judged by
+        // the consumer's lifetime rather than swallowed with the other surfaces.
+        scopeMismatchPolicyFor(IScopedProvider as ServiceIdentifier<SourceType>, Lifetime.Scoped),
+        sharingMismatchPolicy,
+        cyclePolicy,
+        asyncThroughSyncPathPolicy,
+        captivePolicyFor(this.options.captivePolicy),
+      ]),
+    );
+    const errors = problems.filter((problem) => problem.severity === Severity.Error);
+    return { valid: errors.length === 0, errors, warnings: problems.filter((problem) => problem.severity === Severity.Warning) };
   }
 
   // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
@@ -204,11 +231,7 @@ export class ServiceCollection implements IServiceCollection {
       prebakeSingletons: this.options.eagerSingletons,
       disposal: createDisposal(),
       runtimeCaptivePolicy: this.options.runtimeCaptivePolicy,
-      surfaceTokens: new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
-        [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
-        [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],
-        [IResolutionScope as ServiceIdentifier<SourceType>, 'boundary'],
-      ]),
+      surfaceTokens,
     };
   }
 
@@ -216,7 +239,7 @@ export class ServiceCollection implements IServiceCollection {
     if (options?.validate) {
       const report = this.validate();
       if (!report.valid) {
-        throw new ValidationError(report.problems);
+        throw new ValidationError(report.errors, report.warnings);
       }
     }
     this.built = true;

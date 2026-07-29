@@ -58,10 +58,25 @@ export enum RuntimeCaptivePolicy {
   Throw = 'THROW',
 }
 
+/**
+ * How much a validation problem matters. An error means the wiring cannot be
+ * trusted to build: `validate()` reports the composition invalid, and a
+ * `buildProvider({ validate: true })` refuses. A warning is a hazard worth
+ * looking at that never blocks a build.
+ */
+export enum Severity {
+  Error = 'ERROR',
+  Warning = 'WARNING',
+}
+
 export enum ValidationProblemKind {
   NoIdentity = 'NO_IDENTITY',
   MissingTarget = 'MISSING_TARGET',
   CaptiveDependency = 'CAPTIVE_DEPENDENCY',
+  /** A singleton holding something shared more narrowly than itself. One instance serves the whole provider, so a per-scope or per-resolve dependency cannot be the instance its other consumers share, and what the singleton ends up holding would otherwise depend on how it happened to be built. */
+  SharingMismatch = 'SHARING_MISMATCH',
+  /** A token that only a scope can serve, reached by a consumer that has no scope to be served from. The token is registered nowhere because the engine binds it: it is not missing, it is unsatisfiable for this consumer. */
+  ScopeMismatch = 'SCOPE_MISMATCH',
   Cycle = 'CYCLE',
   AsyncThroughSyncPath = 'ASYNC_THROUGH_SYNC_PATH',
 }

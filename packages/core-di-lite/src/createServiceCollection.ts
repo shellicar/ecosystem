@@ -15,6 +15,7 @@ import {
   pushBucket,
   RuntimeCaptivePolicy,
   runGraphPolicies,
+  Severity,
   ValidationProblemKind,
 } from '@shellicar/core-di-engine';
 import type { IServiceCollection, IServiceProvider } from './interfaces';
@@ -62,12 +63,14 @@ export const createServiceCollection = (): IServiceCollection => {
     validate(): ValidationReport {
       const problems: ValidationProblem[] = composed.unfaced().map((node) => ({
         kind: ValidationProblemKind.NoIdentity,
+        severity: Severity.Error,
         message: noDeclaredIdentity(node.implementation.name),
       }));
       // No captive or async-path policies: lite composes neither scoped
       // lifetimes nor async factories, so those problems cannot exist here.
       problems.push(...runGraphPolicies(deriveFacts(composed.regs), [missingTargetPolicy, cyclePolicy]));
-      return { valid: problems.length === 0, problems };
+      // Lite composes no policy that warns, so every problem it can produce is an error.
+      return { valid: problems.length === 0, errors: problems, warnings: [] };
     },
     buildProvider(): IServiceProvider {
       stampSingleton(composed.regs);
