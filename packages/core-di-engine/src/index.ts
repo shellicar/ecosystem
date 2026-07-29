@@ -54,7 +54,7 @@ export * from './private/messages';
 export { getMetadata, tagFieldMetadata } from './private/metadata';
 export { createNaiveStrategy } from './private/naiveStrategy';
 export { createPlanStrategy } from './private/planStrategy';
-export { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, disposalCaptive, missingTargetPolicy, missingTargetPolicyFor, runGraphPolicies, scopeMismatchPolicyFor, strictCaptive } from './private/policies';
+export { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, disposalCaptive, missingTargetPolicy, missingTargetPolicyFor, runGraphPolicies, scopeMismatchPolicyFor, sharingMismatchPolicy, strictCaptive } from './private/policies';
 export { pushBucket } from './private/pushBucket';
 export type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory, StrategyKit } from './private/strategy';
 export type {

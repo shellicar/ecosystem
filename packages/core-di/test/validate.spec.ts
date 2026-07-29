@@ -45,7 +45,7 @@ describe('validate() as a diagnostic', () => {
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 
   it('reports a dependency cycle', () => {
@@ -104,7 +104,7 @@ describe('validate() as a diagnostic', () => {
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 
   it('reports a captive dependency reached through a forward (singleton to scoped via a forward)', () => {
@@ -122,7 +122,7 @@ describe('validate() as a diagnostic', () => {
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 
   it('reports a dependency cycle that runs through a declared-deps factory', () => {
@@ -172,7 +172,7 @@ describe('validate() as a diagnostic', () => {
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 
   it('does not flag a scoped dependency hidden behind an opaque factory (the chain terminates)', () => {
@@ -222,7 +222,7 @@ describe('validate() as a diagnostic', () => {
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 });
 

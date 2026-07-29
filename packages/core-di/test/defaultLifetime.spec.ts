@@ -75,7 +75,7 @@ describe('defaultLifetime option: the lifetime an un-verbed registration gets', 
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 
   // Resolving commits the collection: the default lifetime is stamped onto every

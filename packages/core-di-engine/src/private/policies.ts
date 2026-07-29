@@ -1,7 +1,7 @@
 import { CaptivePolicy, Lifetime, Severity, ValidationProblemKind } from '../enums';
 import type { ServiceIdentifier, SourceType, ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom, winnerOf } from './graph';
-import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget, scopeMismatchRootReachable, scopeMismatchSingleton } from './messages';
+import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget, scopeMismatchRootReachable, scopeMismatchSingleton, sharingMismatch } from './messages';
 import type { Graph, GraphPolicy } from './types';
 
 export const cyclePolicy: GraphPolicy = (graph) => {
@@ -82,6 +82,40 @@ export const scopeMismatchPolicyFor =
     }
     return problems;
   };
+
+/**
+ * A singleton may only hold what is shared at least as widely as itself, or not shared
+ * at all: another singleton, a transient (nothing shares it, so no contract breaks), or
+ * a provider-lived surface. A scoped or resolve dependency is shared with a set the
+ * singleton cannot belong to, so it takes a private instance wearing a shared
+ * contract — and which instance that is would depend on how it came to be built.
+ *
+ * A warning, and not governed by `CaptivePolicy`: every singleton resolves in a pass of
+ * its own, so what it holds is deterministic and nothing misbehaves — the consumer
+ * simply gets a private instance where it asked for a shared one. It sits beside the
+ * captive report rather than replacing it, since a scoped dependency is both this and a
+ * disposal hazard, and the hazard is what carries the severity.
+ */
+export const sharingMismatchPolicy: GraphPolicy = (graph) => {
+  const problems: ValidationProblem[] = [];
+  for (const [node, facts] of graph) {
+    if (facts.lifetime !== Lifetime.Singleton) {
+      continue;
+    }
+    for (const dep of reachableFrom(graph, node)) {
+      const depFacts = graph.get(dep);
+      const lifetime = depFacts?.lifetime;
+      if (lifetime === Lifetime.Scoped || lifetime === Lifetime.Resolve) {
+        problems.push({
+          kind: ValidationProblemKind.SharingMismatch,
+          severity: Severity.Warning,
+          message: sharingMismatch(facts.owner.name, depFacts?.owner.name, lifetime),
+        });
+      }
+    }
+  }
+  return problems;
+};
 
 // Lifetimes arrive stamped: the composition supplies a concrete lifetime on every
 // non-forward node before the graph is derived. Only a forward carries undefined

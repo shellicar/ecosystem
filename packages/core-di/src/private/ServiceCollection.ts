@@ -34,6 +34,7 @@ import {
   type SourceType,
   type SurfaceReach,
   scopeMismatchPolicyFor,
+  sharingMismatchPolicy,
   ValidationError,
   type ValidationProblem,
   ValidationProblemKind,
@@ -168,6 +169,7 @@ export class ServiceCollection implements IServiceCollection {
         // Only a scope can serve IScopedProvider, so the edge onto it is judged by
         // the consumer's lifetime rather than swallowed with the other surfaces.
         scopeMismatchPolicyFor(IScopedProvider as ServiceIdentifier<SourceType>, Lifetime.Scoped),
+        sharingMismatchPolicy,
         cyclePolicy,
         asyncThroughSyncPathPolicy,
         captivePolicyFor(this.options.captivePolicy),

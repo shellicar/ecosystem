@@ -181,8 +181,8 @@ describe('validate() completeness', () => {
 
     const before = services.validate().warnings.map((p) => p.kind);
     services.overrideLifetime(IDep, Lifetime.Singleton);
-    const after = services.validate().valid;
+    const after = services.validate();
 
-    expect([before, after]).toEqual([[ValidationProblemKind.CaptiveDependency], true]);
+    expect([before.includes(ValidationProblemKind.CaptiveDependency), after]).toEqual([true, { valid: true, errors: [], warnings: [] }]);
   });
 });

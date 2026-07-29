@@ -18,13 +18,16 @@ class TransientHolder implements ITransientHolder {
 }
 
 describe('CaptivePolicy configuration', () => {
+  // The sharing mismatch is reported whatever the captive policy says, so this asks
+  // only about the captive: the policy governs the disposal hazard, nothing else.
   it('None reports no captive problem for a singleton reaching a scoped dependency', () => {
     const services = createServiceCollection({ captivePolicy: CaptivePolicy.None });
     services.register(ScopedDep).as(IScopedDep).scoped();
     services.register(ScopedHolder).as(IScopedHolder).singleton();
 
-    const expected = { valid: true, errors: [], warnings: [] };
-    const actual = services.validate();
+    const expected: ValidationProblemKind[] = [];
+    const report = services.validate();
+    const actual = [...report.errors, ...report.warnings].filter((p) => p.kind === ValidationProblemKind.CaptiveDependency).map((p) => p.kind);
 
     expect(actual).toEqual(expected);
   });
@@ -57,7 +60,7 @@ describe('CaptivePolicy configuration', () => {
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 });
 
@@ -179,6 +182,6 @@ describe('the captive detectors partition: declared edges are static-only, facto
 
     const actual = services.validate().warnings.map((p) => p.kind);
 
-    expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
+    expect(actual).toContain(ValidationProblemKind.CaptiveDependency);
   });
 });
