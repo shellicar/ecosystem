@@ -21,3 +21,5 @@
 {"description":"`ValidationProblemKind.ScopeMismatch` and `scopeMismatchPolicyFor` report a token only a scope can serve being depended on by a consumer with no scope to be served from. The token is bound by the engine rather than registered, so it is not a missing target.","category":"added"}
 {"description":"`ScopeMismatchError` is thrown when a token only a scope can serve is resolved from somewhere that has no scope.","category":"added"}
 {"description":"A lifetime reads as a word in every message that names one, instead of the enum's wire value.","category":"changed"}
+{"description":"A surface token declares how far it reaches: `root` is always the root surface, `nearest` is the boundary being resolved from with the root counting as one, and `scope` is the boundary being resolved from with the root excluded. Resolving a `scope` token where there is no scope throws `ScopeMismatchError`.","category":"changed"}
+{"description":"A singleton resolves at the root, whichever boundary asked for it: its boundary, its resolution pass and its registrations are the root's, so nothing a scope owns can reach an instance the whole provider shares.","category":"fixed"}

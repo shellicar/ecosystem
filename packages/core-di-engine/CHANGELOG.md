@@ -24,10 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ValidationReport` separates `errors` from `warnings`, and every `ValidationProblem` carries a `Severity`. A report is valid when it has no errors; a warning never makes one invalid.
 - A captive dependency is reported as an error under `CaptivePolicy.Strict` and as a warning under `CaptivePolicy.Disposal`, so the severity comes from the policy that asked for the check.
 - A lifetime reads as a word in every message that names one, instead of the enum's wire value.
+- A surface token declares how far it reaches: `root` is always the root surface, `nearest` is the boundary being resolved from with the root counting as one, and `scope` is the boundary being resolved from with the root excluded. Resolving a `scope` token where there is no scope throws `ScopeMismatchError`.
 
 ### Fixed
 
 - `IForwardResult` is exported as a real value again.
+- A singleton resolves at the root, whichever boundary asked for it: its boundary, its resolution pass and its registrations are the root's, so nothing a scope owns can reach an instance the whole provider shares.
 
 ## [5.0.0] - 2026-07-16
 

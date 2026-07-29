@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed an `.eager()` singleton (or any singleton under `eagerSingletons`) resolving `IServiceProvider` or `IResolutionScope` during construction: it received `undefined` instead of the provider, because the root surface was bound only after eager construction ran.
 - Fixed `validate()` reporting `IServiceProvider`, `IScopedProvider`, and `IResolutionScope` as missing targets: these are bound by the engine at build, never registered, and `resolve()` already handled them correctly.
+- Injecting `IScopedProvider` into a service resolved from the root throws `ScopeMismatchError`, instead of silently handing it the root provider wearing the scoped type.
+- A singleton no longer captures what the scope that first resolved it owned. Its dependencies are the root's instances, resolved against the root's registrations, so a scope's `.shadow()` cannot reach an instance the whole provider shares.
 
 ## [5.0.0] - 2026-07-16
 
