@@ -69,10 +69,9 @@ export class ServiceProvider<S extends ServicesSource = ServicesSource> implemen
     }
   }
 
+  // No short-circuit on an empty bucket: the engine answers that with an empty list
+  // itself, and a surface token has no bucket to look in while still being resolvable.
   public resolveAll<T extends SourceType>(identifier: ServiceIdentifier<T>): T[] {
-    if (this.Services.get(identifier).length === 0) {
-      return [];
-    }
     return this.scope.resolveAll(identifier);
   }
 

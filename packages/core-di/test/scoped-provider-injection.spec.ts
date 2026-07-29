@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createServiceCollection, dependsOn, IScopedProvider, ScopeMismatchError } from '../src';
+import { createServiceCollection, dependsOn, IResolutionScope, IScopedProvider, IServiceProvider, ScopeMismatchError } from '../src';
 
 class ScopeConsumer {
   @dependsOn(IScopedProvider) public readonly scope!: IScopedProvider;
@@ -70,6 +70,47 @@ describe('injecting IScopedProvider into a resolve-lifetime service', () => {
     const actual = scope.resolve(ScopeConsumer).scope;
 
     expect(actual).toBe(expected);
+  });
+});
+
+// resolveAll asks how many there are, so a surface answers with the one instance its
+// reach allows and nothing where it allows none. It does not refuse the way resolve
+// does: an empty list is what resolveAll says about anything it has nothing for.
+describe('resolveAll on a surface token', () => {
+  it('gives the root provider for IServiceProvider', () => {
+    const provider = createServiceCollection().buildProvider();
+
+    const expected = [provider];
+    const actual = provider.resolveAll(IServiceProvider);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('gives the resolving surface for IResolutionScope', () => {
+    const provider = createServiceCollection().buildProvider();
+
+    const expected = [provider];
+    const actual = provider.resolveAll(IResolutionScope);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('gives nothing for IScopedProvider at the root, where there is no scope to list', () => {
+    const provider = createServiceCollection().buildProvider();
+
+    const expected: IScopedProvider[] = [];
+    const actual = provider.resolveAll(IScopedProvider);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('gives the scope itself for IScopedProvider inside a scope', () => {
+    const scope = createServiceCollection().buildProvider().createScope();
+
+    const expected = [scope];
+    const actual = scope.resolveAll(IScopedProvider);
+
+    expect(actual).toEqual(expected);
   });
 });
 

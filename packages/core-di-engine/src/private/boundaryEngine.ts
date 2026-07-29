@@ -296,6 +296,17 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
   };
 
   const resolveManyValue = (view: EngineView, token: ServiceIdentifier<SourceType>, env: Env, boundary: Boundary): unknown[] => {
+    // A surface is bound rather than registered, so it would otherwise be invisible here
+    // and every one of them would come back empty. It is exactly one instance where its
+    // reach allows, and none where it does not — which is what resolveAll says about
+    // anything it has nothing for, rather than the refusal the single door gives.
+    const at = surfaceAt(token);
+    if (at !== undefined) {
+      if (at === 'scope' && boundary.id === rootBoundary.id) {
+        return [];
+      }
+      return [surfaceValue(at, boundary, token)];
+    }
     const descriptors = view.services.get(token) ?? [];
     return descriptors.map((descriptor) => {
       const node = followForward(view.index, descriptor);
