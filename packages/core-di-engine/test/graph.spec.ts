@@ -275,6 +275,19 @@ describe('buildPlan: a flat plan of per-injection steps', () => {
     expect(actual).toBe(expected);
   });
 
+  it('emits one construction step for a singleton reached from two places', () => {
+    const services = createDescriptorMap();
+    register(services, ID, { implementation: D, lifetime: Lifetime.Singleton });
+    register(services, IB, { implementation: B, lifetime: Lifetime.Transient });
+    register(services, IC, { implementation: C, lifetime: Lifetime.Transient });
+    register(services, IA, { implementation: A, lifetime: Lifetime.Transient });
+
+    const expected = 1;
+    const actual = buildSteps(planFor(services, IA)).filter((step) => step.token === ID).length;
+
+    expect(actual).toBe(expected);
+  });
+
   it('collapses a multi-hop forward chain to its terminal node', () => {
     abstract class ITarget {}
     abstract class IMid {}

@@ -290,7 +290,19 @@ export const buildPlan = (
     }
     return slots;
   };
+  // A singleton's pass belongs to the singleton, not to the place it was reached from:
+  // reaching the same one twice must land on the same pass, or its slot memo cannot hit
+  // and the plan carries a second copy of everything under it.
+  const passOf = new Map<GraphNode, number>();
   let passes = 0;
+  const passFor = (node: GraphNode): number => {
+    let pass = passOf.get(node);
+    if (pass === undefined) {
+      pass = passes++;
+      passOf.set(node, pass);
+    }
+    return pass;
+  };
 
   const ownerOf = (node: GraphNode, pass: number | undefined): ServiceIdentifier<SourceType> => {
     const facts = registrationsFor(pass).graph.get(node) ?? graph.get(node);
@@ -326,7 +338,7 @@ export const buildPlan = (
     const lifetime = lifetimeOf(node);
     // Every singleton opens its own pass at the root, nested ones included: one
     // construction, one pass, shared by its subtree and nothing else.
-    const pass = lifetime === Lifetime.Singleton ? passes++ : callerPass;
+    const pass = lifetime === Lifetime.Singleton ? passFor(node) : callerPass;
     const token = ownerOf(node, pass);
     const cached = isCached(lifetime);
     const slots = slotsFor(pass);
