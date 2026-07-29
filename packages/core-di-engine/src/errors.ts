@@ -51,6 +51,19 @@ export class CircularDependencyError extends ServiceError {
   }
 }
 
+/**
+ * Thrown resolving a token only a scope can serve from somewhere that has no scope.
+ * Distinct from {@link UnregisteredServiceError}: the token is bound by the engine
+ * rather than registered, so nothing is missing — the boundary asking for it just
+ * cannot be served.
+ */
+export class ScopeMismatchError<T extends object> extends ServiceError {
+  name = 'ScopeMismatchError';
+  constructor(identifier: ServiceIdentifier<T>) {
+    super(`Resolving ${identifier.name} outside a scope: only a scope can serve it, and the root provider is not a scope. Open one with createScope().`);
+  }
+}
+
 export class ScopedSingletonRegistrationError extends BuilderError {
   name = 'ScopedSingletonRegistrationError';
   constructor() {
@@ -74,11 +87,11 @@ export class InvalidImplementationError<T extends object> extends BuilderError {
 
 export class ValidationError extends ServiceError {
   name = 'ValidationError';
-  constructor(public readonly problems: ValidationProblem[]) {
+  constructor(public readonly problems: readonly ValidationProblem[]) {
     super(ValidationError.getErrorMessage(problems));
   }
 
-  static getErrorMessage(problems: ValidationProblem[]): string {
+  static getErrorMessage(problems: readonly ValidationProblem[]): string {
     const detail = problems.map((problem) => `- ${problem.kind}: ${problem.message}`).join('\n');
     return `Service wiring validation failed with ${problems.length} problem(s):\n${detail}`;
   }

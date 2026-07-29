@@ -73,7 +73,7 @@ describe('defaultLifetime option: the lifetime an un-verbed registration gets', 
     services.register(ScopedDep).as(IScopedDep).scoped();
     services.register(Holder).as(IHolder);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });

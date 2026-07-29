@@ -24,7 +24,7 @@ describe('validate() as a diagnostic', () => {
     const services = createServiceCollection();
     services.register(Service); // no as / asSelf / forward
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.NoIdentity]);
   });
@@ -33,7 +33,7 @@ describe('validate() as a diagnostic', () => {
     const services = createServiceCollection();
     services.forward(IService).to(Dependency);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.MissingTarget]);
   });
@@ -43,7 +43,7 @@ describe('validate() as a diagnostic', () => {
     services.register(Dependency).as(IDependency).scoped();
     services.register(Service).as(IService).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -61,7 +61,7 @@ describe('validate() as a diagnostic', () => {
     services.register(CycleA).as(ICycleA);
     services.register(CycleB).as(ICycleB);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.Cycle]);
   });
@@ -81,7 +81,7 @@ describe('validate() as a diagnostic', () => {
     services.register(Beta).as(IBeta);
     services.forward(IForwarded).to(IBeta);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.Cycle]);
   });
@@ -102,7 +102,7 @@ describe('validate() as a diagnostic', () => {
     services.register(Middle).as(IMiddle).transient();
     services.register(Root).as(IRoot).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -120,7 +120,7 @@ describe('validate() as a diagnostic', () => {
     services.forward(IAliasToScoped).to(IScopedTarget);
     services.register(Holder).as(IHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -142,7 +142,7 @@ describe('validate() as a diagnostic', () => {
       .as(IA);
     services.register(B).as(IB);
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.Cycle]);
   });
@@ -170,7 +170,7 @@ describe('validate() as a diagnostic', () => {
       .transient();
     services.register(Root).as(IRoot).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -220,7 +220,7 @@ describe('validate() as a diagnostic', () => {
       .scoped();
     services.register(Holder).as(IHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });

@@ -1,6 +1,6 @@
 import { MultipleRegistrationError } from '@shellicar/core-di-engine';
 import { describe, expect, it } from 'vitest';
-import { createServiceCollection, IScopedProvider, UnregisteredServiceError } from '../src';
+import { createServiceCollection, IScopedProvider, ScopeMismatchError } from '../src';
 
 abstract class IContext {
   public abstract readonly user: string;
@@ -183,13 +183,13 @@ describe('root forward surface', () => {
 });
 
 describe('the IScopedProvider token at the root', () => {
-  it('throws UnregisteredServiceError: the root is not a scope, and anything injecting IScopedProvider is declaring it needs scope semantics', () => {
+  it('throws ScopeMismatchError: the root is not a scope, and anything asking for IScopedProvider is declaring it needs scope semantics', () => {
     const services = createServiceCollection();
     const provider = services.buildProvider();
 
     const actual = () => provider.resolve(IScopedProvider);
 
-    expect(actual).toThrow(UnregisteredServiceError);
+    expect(actual).toThrow(ScopeMismatchError);
   });
 
   it('still resolves to the scope itself inside a scope', () => {

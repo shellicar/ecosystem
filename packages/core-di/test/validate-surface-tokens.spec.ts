@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createServiceCollection, dependsOn, IResolutionScope, IScopedProvider, IServiceProvider } from '../src';
+import { createServiceCollection, dependsOn, IResolutionScope, IScopedProvider, IServiceProvider, type ValidationProblem } from '../src';
 
 abstract class INeedsProvider {
   abstract provider: IServiceProvider;
@@ -27,18 +27,21 @@ describe('validate() and engine-bound surface tokens', () => {
     const services = createServiceCollection();
     services.register(NeedsProvider).asSelf();
 
-    const expected = { valid: true, problems: [] };
+    const expected = { valid: true, errors: [], warnings: [] };
     const actual = services.validate();
 
     expect(actual).toEqual(expected);
   });
 
+  // The edge onto IScopedProvider is judged by the consumer's lifetime instead, as a
+  // scope mismatch (validate-scoped-provider.spec.ts); what this pins is only that it
+  // is never an error about the token not being registered.
   it('does not report IScopedProvider as a missing target: the engine binds it, it is never registered', () => {
     const services = createServiceCollection();
     services.register(NeedsScopedProvider).asSelf();
 
-    const expected = { valid: true, problems: [] };
-    const actual = services.validate();
+    const expected: ValidationProblem[] = [];
+    const actual = services.validate().errors;
 
     expect(actual).toEqual(expected);
   });
@@ -47,7 +50,7 @@ describe('validate() and engine-bound surface tokens', () => {
     const services = createServiceCollection();
     services.register(NeedsResolutionScope).asSelf();
 
-    const expected = { valid: true, problems: [] };
+    const expected = { valid: true, errors: [], warnings: [] };
     const actual = services.validate();
 
     expect(actual).toEqual(expected);

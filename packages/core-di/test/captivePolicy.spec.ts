@@ -23,9 +23,10 @@ describe('CaptivePolicy configuration', () => {
     services.register(ScopedDep).as(IScopedDep).scoped();
     services.register(ScopedHolder).as(IScopedHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const expected = { valid: true, errors: [], warnings: [] };
+    const actual = services.validate();
 
-    expect(actual).toEqual([]);
+    expect(actual).toEqual(expected);
   });
 
   it('Strict reports a captive problem for a singleton reaching a transient dependency', () => {
@@ -33,7 +34,7 @@ describe('CaptivePolicy configuration', () => {
     services.register(TransientDep).as(ITransientDep).transient();
     services.register(TransientHolder).as(ITransientHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().errors.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -43,9 +44,10 @@ describe('CaptivePolicy configuration', () => {
     services.register(TransientDep).as(ITransientDep).transient();
     services.register(TransientHolder).as(ITransientHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const expected = { valid: true, errors: [], warnings: [] };
+    const actual = services.validate();
 
-    expect(actual).toEqual([]);
+    expect(actual).toEqual(expected);
   });
 
   it('Disposal flags a singleton reaching a scoped dependency, driven through the option', () => {
@@ -53,7 +55,7 @@ describe('CaptivePolicy configuration', () => {
     services.register(ScopedDep).as(IScopedDep).scoped();
     services.register(ScopedHolder).as(IScopedHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });
@@ -175,7 +177,7 @@ describe('the captive detectors partition: declared edges are static-only, facto
     services.register(ScopedThing).as(IScopedThing).scoped();
     services.register(FieldHolder).as(IFieldHolder).singleton();
 
-    const actual = services.validate().problems.map((p) => p.kind);
+    const actual = services.validate().warnings.map((p) => p.kind);
 
     expect(actual).toEqual([ValidationProblemKind.CaptiveDependency]);
   });

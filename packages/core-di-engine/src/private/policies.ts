@@ -1,7 +1,7 @@
-import { CaptivePolicy, Lifetime, ValidationProblemKind } from '../enums';
+import { CaptivePolicy, Lifetime, Severity, ValidationProblemKind } from '../enums';
 import type { ServiceIdentifier, SourceType, ValidationProblem } from '../types';
 import { detectCycles, findUnregisteredEdges, indexByOwner, reachableFrom, winnerOf } from './graph';
-import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget } from './messages';
+import { asyncThroughSyncPath, captiveDependency, dependencyCycle, dependencyCycleOverridden, missingTarget, scopeMismatchRootReachable, scopeMismatchSingleton } from './messages';
 import type { Graph, GraphPolicy } from './types';
 
 export const cyclePolicy: GraphPolicy = (graph) => {
@@ -26,6 +26,7 @@ export const cyclePolicy: GraphPolicy = (graph) => {
     const names = cycle.map((node) => graph.get(node)?.owner.name ?? '');
     return {
       kind: ValidationProblemKind.Cycle,
+      severity: Severity.Error,
       message: cycle.some(isOverridden) ? dependencyCycleOverridden(names) : dependencyCycle(names),
     };
   });
@@ -43,16 +44,50 @@ export const missingTargetPolicyFor =
       .filter((edge) => !knownTargets.has(edge.missing))
       .map((edge) => ({
         kind: ValidationProblemKind.MissingTarget,
+        severity: Severity.Error,
         message: missingTarget(graph.get(edge.from)?.owner.name, edge.missing.name),
       }));
 
 export const missingTargetPolicy: GraphPolicy = missingTargetPolicyFor(new Set());
 
+/**
+ * A token only a scope can serve, depended on by a consumer that has no scope to be
+ * served from. `servedBy` is the one lifetime that always resolves inside a scope.
+ *
+ * A singleton is an error: one instance serves the whole provider, so no boundary can
+ * ever give it a scope and it can never construct — the same shape as a missing target,
+ * a guaranteed failure deferred to resolve. Any other lifetime is a warning: resolved
+ * inside a scope it is served correctly, and only the root is wrong, which no static
+ * read can tell apart.
+ *
+ * The token is never registered (the engine binds it), so `missingTargetPolicy` must
+ * still treat it as known: this is not a missing target, it is one that cannot be
+ * satisfied for this consumer.
+ */
+export const scopeMismatchPolicyFor =
+  (token: ServiceIdentifier<SourceType>, servedBy: Lifetime): GraphPolicy =>
+  (graph) => {
+    const problems: ValidationProblem[] = [];
+    for (const facts of graph.values()) {
+      // A forward carries no lifetime of its own; its consumers are judged instead.
+      if (facts.lifetime === undefined || facts.lifetime === servedBy || !facts.deps.includes(token)) {
+        continue;
+      }
+      const neverServable = facts.lifetime === Lifetime.Singleton;
+      problems.push({
+        kind: ValidationProblemKind.ScopeMismatch,
+        severity: neverServable ? Severity.Error : Severity.Warning,
+        message: neverServable ? scopeMismatchSingleton(facts.owner.name, token.name) : scopeMismatchRootReachable(facts.owner.name, token.name, facts.lifetime),
+      });
+    }
+    return problems;
+  };
+
 // Lifetimes arrive stamped: the composition supplies a concrete lifetime on every
 // non-forward node before the graph is derived. Only a forward carries undefined
 // here, and a forward is judged through its target node, not itself.
 const captivePolicy =
-  (isCaptured: (lifetime: Lifetime) => boolean): GraphPolicy =>
+  (isCaptured: (lifetime: Lifetime) => boolean, severity: Severity): GraphPolicy =>
   (graph) => {
     const problems: ValidationProblem[] = [];
     for (const [node, facts] of graph) {
@@ -65,6 +100,7 @@ const captivePolicy =
         if (lifetime != null && isCaptured(lifetime)) {
           problems.push({
             kind: ValidationProblemKind.CaptiveDependency,
+            severity,
             message: captiveDependency(facts.owner.name, depFacts?.owner.name, lifetime),
           });
         }
@@ -73,9 +109,11 @@ const captivePolicy =
     return problems;
   };
 
-export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !== Lifetime.Singleton);
+// Strict errors: strictness a build ignores is not strict. Disposal warns: the
+// scoped captive is a real use-after-dispose hazard, but the composition runs.
+export const strictCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime !== Lifetime.Singleton, Severity.Error);
 
-export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped);
+export const disposalCaptive: GraphPolicy = captivePolicy((lifetime) => lifetime === Lifetime.Scoped, Severity.Warning);
 
 export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
   const problems: ValidationProblem[] = [];
@@ -83,6 +121,7 @@ export const asyncThroughSyncPathPolicy: GraphPolicy = (graph) => {
     if (facts.isAsync && facts.lifetime !== Lifetime.Singleton) {
       problems.push({
         kind: ValidationProblemKind.AsyncThroughSyncPath,
+        severity: Severity.Error,
         message: asyncThroughSyncPath(facts.owner.name, facts.lifetime),
       });
     }

@@ -22,5 +22,9 @@ export const asyncFactoryOnSyncPath = (tokenName: string): string => `Cannot con
 export const dependencyCycle = (names: readonly string[]): string => `Dependency cycle: ${names.join(' -> ')} -> ${names[0]}`;
 export const dependencyCycleOverridden = (names: readonly string[]): string => `${dependencyCycle(names)} (through a registration overridden for resolve(); reachable via resolveAll(), which walks every registration)`;
 export const missingTarget = (fromName: string | undefined, missingName: string): string => `${fromName} depends on ${missingName}, which is not registered`;
+export const scopeMismatchSingleton = (ownerName: string | undefined, tokenName: string): string =>
+  `${ownerName} (singleton) depends on ${tokenName}, which only a scope can serve: one instance serves the whole provider, so it outlives every scope and no boundary can give it one`;
+export const scopeMismatchRootReachable = (ownerName: string | undefined, tokenName: string, lifetime: Lifetime): string =>
+  `${ownerName} (${lifetime}) depends on ${tokenName}, which only a scope can serve: resolved from the root it receives the root provider, which is not a scope`;
 export const captiveDependency = (ownerName: string | undefined, depName: string | undefined, lifetime: Lifetime): string => `${ownerName} (singleton) captures ${depName} (${lifetime}) in its dependency tree, a captive dependency`;
 export const asyncThroughSyncPath = (ownerName: string | undefined, lifetime: Lifetime | undefined): string => `${ownerName} is an async factory resolving under ${lifetime ?? 'the default lifetime'}, an async factory reachable through a synchronous path; register it as a singleton and build with buildProviderAsync`;

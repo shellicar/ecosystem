@@ -10,7 +10,7 @@
 // composed by presets: core-di is the full composition, core-di-lite the
 // focused one. Not a stable public API; presets compose from it.
 export { dependsOn } from './dependsOn';
-export { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy, ValidationProblemKind } from './enums';
+export { CaptivePolicy, Lifetime, LogLevel, ResolveMultipleMode, RuntimeCaptivePolicy, Severity, ValidationProblemKind } from './enums';
 export {
   BuilderError,
   CaptiveDependencyError,
@@ -20,6 +20,7 @@ export {
   InvalidServiceIdentifierError,
   MultipleRegistrationError,
   ScopedSingletonRegistrationError,
+  ScopeMismatchError,
   SelfDependencyError,
   ServiceCreationError,
   ServiceError,
@@ -41,7 +42,7 @@ export * from './private/messages';
 export { getMetadata, tagFieldMetadata } from './private/metadata';
 export { createNaiveStrategy } from './private/naiveStrategy';
 export { createPlanStrategy } from './private/planStrategy';
-export { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, disposalCaptive, missingTargetPolicy, missingTargetPolicyFor, runGraphPolicies, strictCaptive } from './private/policies';
+export { asyncThroughSyncPathPolicy, captivePolicyFor, cyclePolicy, disposalCaptive, missingTargetPolicy, missingTargetPolicyFor, runGraphPolicies, scopeMismatchPolicyFor, strictCaptive } from './private/policies';
 export { pushBucket } from './private/pushBucket';
 export type { EngineView, Outcome, ResolutionStrategy, ResolvedField, StrategyFactory, StrategyKit } from './private/strategy';
 export type {

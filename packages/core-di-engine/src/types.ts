@@ -1,4 +1,4 @@
-import type { Lifetime, ValidationProblemKind } from './enums';
+import type { Lifetime, Severity, ValidationProblemKind } from './enums';
 import type { IResolutionScope } from './interfaces';
 
 export type SourceType = object;
@@ -53,16 +53,19 @@ export type ServiceDescriptor<T extends SourceType> = {
 
 export type MetadataType<T extends SourceType> = Record<string | symbol, ServiceIdentifier<T>>;
 
-/** A single wiring problem reported by validation. */
+/** A single wiring problem reported by validation. The producing policy stamps the severity, so a problem carried away from its report still knows what it is. */
 export type ValidationProblem = {
   readonly kind: ValidationProblemKind;
+  readonly severity: Severity;
   readonly message: string;
 };
 
-/** The diagnostic report returned by validation. */
+/** The diagnostic report returned by validation. Errors and warnings are separate so "can I build?" and "what should I look at?" are each one property read. */
 export type ValidationReport = {
+  /** Whether the wiring can be trusted to build: true when there are no errors. Warnings never make a report invalid. */
   readonly valid: boolean;
-  readonly problems: ValidationProblem[];
+  readonly errors: readonly ValidationProblem[];
+  readonly warnings: readonly ValidationProblem[];
 };
 
 declare const asyncBrand: unique symbol;

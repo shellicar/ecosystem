@@ -27,7 +27,9 @@ import {
   overrideLifetimePreBuildOnly,
   pushBucket,
   runGraphPolicies,
+  scopeMismatchPolicyFor,
   ScopedForwardBuilder,
+  Severity,
   type ServiceDescriptor,
   type ServiceIdentifier,
   type SourceType,
@@ -150,6 +152,7 @@ export class ServiceCollection implements IServiceCollection {
     for (const node of this.composed.unfaced()) {
       problems.push({
         kind: ValidationProblemKind.NoIdentity,
+        severity: Severity.Error,
         message: noDeclaredIdentity(node.implementation.name),
       });
     }
@@ -158,8 +161,19 @@ export class ServiceCollection implements IServiceCollection {
     const stamped = this.clone() as ServiceCollection;
     stamped.stampLifetimes();
     const graph = deriveFacts(stamped.services);
-    problems.push(...runGraphPolicies(graph, [missingTargetPolicyFor(new Set(surfaceTokens.keys())), cyclePolicy, asyncThroughSyncPathPolicy, captivePolicyFor(this.options.captivePolicy)]));
-    return { valid: problems.length === 0, problems };
+    problems.push(
+      ...runGraphPolicies(graph, [
+        missingTargetPolicyFor(new Set(surfaceTokens.keys())),
+        // Only a scope can serve IScopedProvider, so the edge onto it is judged by
+        // the consumer's lifetime rather than swallowed with the other surfaces.
+        scopeMismatchPolicyFor(IScopedProvider as ServiceIdentifier<SourceType>, Lifetime.Scoped),
+        cyclePolicy,
+        asyncThroughSyncPathPolicy,
+        captivePolicyFor(this.options.captivePolicy),
+      ]),
+    );
+    const errors = problems.filter((problem) => problem.severity === Severity.Error);
+    return { valid: errors.length === 0, errors, warnings: problems.filter((problem) => problem.severity === Severity.Warning) };
   }
 
   // clone and cloneShared differ only in how a descriptor crosses: clone takes a memoised
@@ -222,7 +236,7 @@ export class ServiceCollection implements IServiceCollection {
     if (options?.validate) {
       const report = this.validate();
       if (!report.valid) {
-        throw new ValidationError(report.problems);
+        throw new ValidationError(report.errors);
       }
     }
     this.built = true;
