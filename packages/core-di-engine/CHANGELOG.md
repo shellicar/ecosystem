@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A captive dependency is reported as an error under `CaptivePolicy.Strict` and as a warning under `CaptivePolicy.Disposal`, so the severity comes from the policy that asked for the check.
 - A lifetime reads as a word in every message that names one, instead of the enum's wire value.
 - A surface token declares how far it reaches: `root` is always the root surface, `nearest` is the boundary being resolved from with the root counting as one, and `scope` is the boundary being resolved from with the root excluded. Resolving a `scope` token where there is no scope throws `ScopeMismatchError`.
+- `ValidationError` carries `errors` and `warnings`, the same two lists the report has, in place of a single `problems`.
 
 ### Fixed
 
@@ -34,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every singleton is constructed in a resolution pass of its own. A resolve-lifetime dependency inside a singleton is shared with that construction and nothing else, so two singletons never share one and the object graph is the same whether they were built by the same resolve or prebaked separately.
 - A scope mismatch is reported on everything a singleton can reach, not only on the singleton's own edges: a singleton resolves at the root and so does everything under it, so a scoped node reached that way can never be given a scope either.
 - `resolveAll` answers a surface token with the one surface its reach allows, instead of an empty list. Where the reach allows none, such as a scope-only token at the root, it still answers empty, which is what `resolveAll` says about anything it has nothing for.
+- A singleton reached from more than one place is compiled once. It was compiled once per place it was reached from, which built and discarded its resolve-lifetime dependencies again each time.
+- `resolveAll` answers a surface token with an empty list when the composition bound no surface, instead of a list holding `undefined`.
 
 ## [5.0.0] - 2026-07-16
 

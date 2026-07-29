@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `validate()` returns `errors` and `warnings` separately, each problem carrying its severity. Only errors make a report invalid, so `buildProvider({ validate: true })` refuses on an error and builds through a warning.
 - Resolving `IScopedProvider` from the root throws `ScopeMismatchError` instead of `UnregisteredServiceError`: the engine binds the token, so nothing is missing, the root simply has no scope to serve.
 - The root provider's `resolve` no longer accepts `IScopedProvider`: asking the root for a scope does not typecheck.
+- A `ValidationError` from `buildProvider({ validate: true })` carries `errors` and `warnings` rather than a single `problems`, so the warnings from the same run are on it too.
 
 ### Fixed
 
