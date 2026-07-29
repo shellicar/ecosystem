@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IForwardResult` is exported as a real value again.
 - A singleton resolves at the root, whichever boundary asked for it: its boundary, its resolution pass and its registrations are the root's, so nothing a scope owns can reach an instance the whole provider shares.
 - Every singleton is constructed in a resolution pass of its own. A resolve-lifetime dependency inside a singleton is shared with that construction and nothing else, so two singletons never share one and the object graph is the same whether they were built by the same resolve or prebaked separately.
+- A scope mismatch is reported on everything a singleton can reach, not only on the singleton's own edges: a singleton resolves at the root and so does everything under it, so a scoped node reached that way can never be given a scope either.
+- `resolveAll` answers a surface token with the one surface its reach allows, instead of an empty list. Where the reach allows none, such as a scope-only token at the root, it still answers empty, which is what `resolveAll` says about anything it has nothing for.
 
 ## [5.0.0] - 2026-07-16
 

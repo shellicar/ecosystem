@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Injecting `IScopedProvider` into a service resolved from the root throws `ScopeMismatchError`, instead of silently handing it the root provider wearing the scoped type.
 - A singleton no longer captures what the scope that first resolved it owned. Its dependencies are the root's instances, resolved against the root's registrations, so a scope's `.shadow()` cannot reach an instance the whole provider shares.
 - A resolve-lifetime dependency of a singleton is no longer shared with whatever else happened to be built alongside it. Each singleton is constructed in its own pass, so what it holds is the same whichever call built it and whether or not `eagerSingletons` is set.
+- `validate()` reports a scope mismatch for a service a singleton can reach, not only for the singleton itself: a scoped service reached from a singleton resolves at the root with it, where `IScopedProvider` can never be served.
+- `resolveAll(IServiceProvider)` and `resolveAll(IResolutionScope)` return the resolving surface rather than an empty list, and `resolveAll(IScopedProvider)` returns the scope inside a scope and nothing at the root.
 
 ## [5.0.0] - 2026-07-16
 
