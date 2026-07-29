@@ -32,6 +32,7 @@ import {
   type ServiceIdentifier,
   Severity,
   type SourceType,
+  type SurfaceReach,
   scopeMismatchPolicyFor,
   ValidationError,
   type ValidationProblem,
@@ -54,10 +55,10 @@ const activeHook = (instrument: InstrumentationOptions | undefined): Instrumenta
 // resolution surface) rather than through registration: composition() wires them
 // in as engine surfaces, and validate() reads the same set to know a dependency
 // edge onto one of them is never actually missing.
-const surfaceTokens = new Map<ServiceIdentifier<SourceType>, 'root' | 'boundary'>([
+const surfaceTokens = new Map<ServiceIdentifier<SourceType>, SurfaceReach>([
   [IServiceProviderToken as ServiceIdentifier<SourceType>, 'root'],
-  [IScopedProvider as ServiceIdentifier<SourceType>, 'boundary'],
-  [IResolutionScope as ServiceIdentifier<SourceType>, 'boundary'],
+  [IScopedProvider as ServiceIdentifier<SourceType>, 'scope'],
+  [IResolutionScope as ServiceIdentifier<SourceType>, 'nearest'],
 ]);
 
 // The root collection: register()/forward() carry no .shadow(), in their types or at

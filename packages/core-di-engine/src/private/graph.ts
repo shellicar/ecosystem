@@ -1,6 +1,7 @@
-import type { Lifetime } from '../enums';
+import { Lifetime } from '../enums';
 import { CircularDependencyError, SelfDependencyError, UnregisteredServiceError } from '../errors';
 import type { DescriptorMap, ServiceIdentifier, SourceType } from '../types';
+import type { SurfaceReach } from './boundaryEngine';
 import { DesignDependenciesKey } from './constants';
 import { followForward } from './followForward';
 import { buildPlanMissingFacts } from './messages';
@@ -171,6 +172,12 @@ export type { OwnerIndex } from './strategy';
 
 import type { OwnerIndex } from './strategy';
 
+/**
+ * `atRoot` marks a step compiled beneath a singleton. A plan is flat, so a
+ * singleton's dependencies are slots of their own, evaluated before the step that
+ * consumes them: without the mark they would be evaluated against whichever boundary
+ * replayed the plan, and the singleton would hold whatever that boundary gave it.
+ */
 export type PlanStep =
   | {
       readonly kind: 'build';
@@ -179,6 +186,7 @@ export type PlanStep =
       readonly lifetime: Lifetime;
       readonly fields: readonly { readonly field: string; readonly slot: number }[];
       readonly args: readonly number[];
+      readonly atRoot: boolean;
     }
   | {
       readonly kind: 'error';
@@ -188,7 +196,8 @@ export type PlanStep =
   | {
       readonly kind: 'surface';
       readonly token: ServiceIdentifier<SourceType>;
-      readonly at: 'root' | 'boundary';
+      readonly at: SurfaceReach;
+      readonly atRoot: boolean;
     };
 
 export type Plan = readonly PlanStep[];
@@ -247,20 +256,30 @@ export const concreteNode = (index: OwnerIndex, token: ServiceIdentifier<SourceT
   return winner === undefined ? undefined : followForward(index, winner);
 };
 
+/**
+ * `rootRegistrations` is where everything beneath a singleton is looked up. Which
+ * registration serves a token is decided here, at compile, so a scope's overlay would
+ * otherwise be baked into a plan for an instance the whole provider shares.
+ */
 export const buildPlan = (
   graph: Graph,
   index: OwnerIndex,
   rootNode: GraphNode,
   lifetimeOf: (node: GraphNode) => Lifetime,
   isCached: (lifetime: Lifetime) => boolean,
-  surfaceAt?: (token: ServiceIdentifier<SourceType>) => 'root' | 'boundary' | undefined,
+  surfaceAt?: (token: ServiceIdentifier<SourceType>) => SurfaceReach | undefined,
   guardToken?: (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]) => unknown | undefined,
+  rootRegistrations?: { readonly graph: Graph; readonly index: OwnerIndex },
 ): Plan => {
+  const registrationsFor = (atRoot: boolean): { readonly graph: Graph; readonly index: OwnerIndex } => (atRoot ? (rootRegistrations ?? { graph, index }) : { graph, index });
   const steps: PlanStep[] = [];
-  const sharedSlot = new Map<GraphNode, number>();
+  // Keyed by boundary as well as node: the same cached node reached both beneath a
+  // singleton and outside one is two different instances, resolved against two
+  // different boundaries, so it cannot share one slot.
+  const sharedSlot = { root: new Map<GraphNode, number>(), local: new Map<GraphNode, number>() };
 
-  const ownerOf = (node: GraphNode): ServiceIdentifier<SourceType> => {
-    const facts = graph.get(node);
+  const ownerOf = (node: GraphNode, atRoot: boolean): ServiceIdentifier<SourceType> => {
+    const facts = registrationsFor(atRoot).graph.get(node) ?? graph.get(node);
     if (facts === undefined) {
       throw new Error(buildPlanMissingFacts);
     }
@@ -272,27 +291,32 @@ export const buildPlan = (
     return steps.length - 1;
   };
 
-  const emitToken = (identifier: ServiceIdentifier<SourceType>, path: ReadonlySet<GraphNode>): number => {
+  const emitToken = (identifier: ServiceIdentifier<SourceType>, path: ReadonlySet<GraphNode>, atRoot: boolean): number => {
     const at = surfaceAt?.(identifier);
     if (at !== undefined) {
-      return push({ kind: 'surface', token: identifier, at });
+      return push({ kind: 'surface', token: identifier, at, atRoot });
     }
-    const guardError = guardToken?.(identifier, index.get(identifier) ?? []);
+    const registrations = registrationsFor(atRoot);
+    const guardError = guardToken?.(identifier, registrations.index.get(identifier) ?? []);
     if (guardError !== undefined) {
       return push({ kind: 'error', token: identifier, error: guardError });
     }
-    const node = concreteNode(index, identifier);
+    const node = concreteNode(registrations.index, identifier);
     if (node === undefined) {
       return push({ kind: 'error', token: identifier, error: new UnregisteredServiceError(identifier) });
     }
-    return emitNode(node, path);
+    return emitNode(node, path, atRoot);
   };
 
-  const emitNode = (node: GraphNode, path: ReadonlySet<GraphNode>): number => {
-    const token = ownerOf(node);
+  const emitNode = (node: GraphNode, path: ReadonlySet<GraphNode>, atRoot: boolean): number => {
     const lifetime = lifetimeOf(node);
+    const token = ownerOf(node, atRoot || lifetime === Lifetime.Singleton);
     const cached = isCached(lifetime);
-    const existing = sharedSlot.get(node);
+    // A singleton pins itself and everything below it to the root, whatever boundary
+    // replays the plan.
+    const rootBound = atRoot || lifetime === Lifetime.Singleton;
+    const slots = rootBound ? sharedSlot.root : sharedSlot.local;
+    const existing = slots.get(node);
     if (cached && existing !== undefined) {
       return existing;
     }
@@ -307,7 +331,7 @@ export const buildPlan = (
         fields.push({ field, slot: push({ kind: 'error', token, error: new SelfDependencyError() }) });
         continue;
       }
-      fields.push({ field, slot: emitToken(identifier, nextPath) });
+      fields.push({ field, slot: emitToken(identifier, nextPath, rootBound) });
     }
     const args: number[] = [];
     for (const identifier of node.declaredDeps ?? []) {
@@ -315,16 +339,16 @@ export const buildPlan = (
         args.push(push({ kind: 'error', token, error: new SelfDependencyError() }));
         continue;
       }
-      args.push(emitToken(identifier, nextPath));
+      args.push(emitToken(identifier, nextPath, rootBound));
     }
-    const slot = push({ kind: 'build', node, token, lifetime, fields, args });
+    const slot = push({ kind: 'build', node, token, lifetime, fields, args, atRoot: rootBound });
     if (cached) {
-      sharedSlot.set(node, slot);
+      slots.set(node, slot);
     }
     return slot;
   };
 
-  emitNode(rootNode, new Set());
+  emitNode(rootNode, new Set(), false);
   return steps;
 };
 

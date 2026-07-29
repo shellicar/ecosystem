@@ -1,6 +1,6 @@
 import type { Lifetime } from '../enums';
 import type { DescriptorMap, ServiceIdentifier, ServiceRegistration, SourceType } from '../types';
-import type { Boundary } from './boundaryEngine';
+import type { Boundary, SurfaceReach } from './boundaryEngine';
 import type { BuildFn, Env, GraphNode } from './types';
 
 /**
@@ -32,8 +32,13 @@ export type ResolvedField = { readonly field: string; readonly value: unknown };
 export type StrategyKit = {
   readonly lifetimeOf: (node: GraphNode) => Lifetime;
   readonly isCached: (lifetime: Lifetime) => boolean;
-  readonly surfaceAt: (token: ServiceIdentifier<SourceType>) => 'root' | 'boundary' | undefined;
-  readonly surfaceValue: (at: 'root' | 'boundary', boundary: Boundary) => unknown;
+  readonly surfaceAt: (token: ServiceIdentifier<SourceType>) => SurfaceReach | undefined;
+  /** The surface serving this token at this boundary. Throws when the reach excludes the boundary, so a strategy must convert it like any other failure. */
+  readonly surfaceValue: (at: SurfaceReach, boundary: Boundary, token: ServiceIdentifier<SourceType>) => unknown;
+  /** A fresh resolution pass at the root boundary, where a singleton and everything it depends on belongs. */
+  readonly rootPass: () => { readonly env: Env; readonly boundary: Boundary };
+  /** The root's registrations. A singleton is provider-wide, so a scope's overlay (a `.shadow()`, say) must not reach what it depends on. */
+  readonly rootView: () => EngineView;
   /** The multiplicity guard: an error to raise for this token's bucket, or undefined. */
   readonly guardToken: (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]) => unknown | undefined;
   /** Token to concrete node: applies the guard, picks the last registration, follows forwards. Throws. */

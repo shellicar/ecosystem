@@ -25,7 +25,8 @@ export const createPlanStrategy =
       const { graph, planCache } = dataOf(view);
       let plan = planCache.get(node);
       if (plan === undefined) {
-        plan = buildPlan(graph, view.index, node, kit.lifetimeOf, kit.isCached, kit.surfaceAt, kit.guardToken);
+        const root = kit.rootView();
+        plan = buildPlan(graph, view.index, node, kit.lifetimeOf, kit.isCached, kit.surfaceAt, kit.guardToken, { graph: dataOf(root).graph, index: root.index });
         planCache.set(node, plan);
       }
       return plan;
@@ -35,9 +36,20 @@ export const createPlanStrategy =
       if (step.kind === 'error') {
         return failed(step.error);
       }
+      // A surface can refuse the boundary it is asked at, and every failure in a plan
+      // travels as a failed slot rather than a throw: a prebaked node holds its failure
+      // for its first resolve, which a throw escaping here would skip.
+      //
+      // Resolved at replay, never at compile: one plan is replayed at every boundary,
+      // so which surface serves it is not knowable when the plan is built.
       if (step.kind === 'surface') {
-        return ok(kit.surfaceValue(step.at, boundary));
+        try {
+          return ok(kit.surfaceValue(step.at, boundary, step.token));
+        } catch (err) {
+          return failed(err);
+        }
       }
+
       if (step.lifetime === Lifetime.Singleton) {
         const held = kit.heldErrorFor(step.node);
         if (held !== undefined) {
@@ -72,8 +84,20 @@ export const createPlanStrategy =
       createView: (services: DescriptorMap): PlanView => ({ graph: deriveFacts(services), planCache: new Map() }),
       instanceFor: (view, node, env, boundary): Outcome => {
         const locals: Outcome[] = [];
+        // One root pass for the whole replay, made only if a step needs it: the steps
+        // beneath a singleton share a resolution pass with each other, the way the
+        // caller's steps share theirs.
+        let root: { readonly env: Env; readonly boundary: Boundary; readonly view: EngineView } | undefined;
+        const passFor = (step: PlanStep): { readonly env: Env; readonly boundary: Boundary; readonly view: EngineView } => {
+          if (step.kind === 'error' || !step.atRoot) {
+            return { env, boundary, view };
+          }
+          root ??= { ...kit.rootPass(), view: kit.rootView() };
+          return root;
+        };
         for (const step of planFor(view, node)) {
-          locals.push(runStep(view, step, locals, env, boundary));
+          const pass = passFor(step);
+          locals.push(runStep(pass.view, step, locals, pass.env, pass.boundary));
         }
         return locals[locals.length - 1];
       },
