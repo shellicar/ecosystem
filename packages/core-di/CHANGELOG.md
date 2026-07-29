@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `createServiceCollection({ eagerSingletons })` constructs every singleton at `buildProvider`, not just the `.eager()` and async ones, and a constructor that throws now throws there too instead of at the first resolve. Defaults to `false` (unchanged behaviour when omitted).
 - A scope can `.shadow()` a registration on `register()`/`forward()` to override an ancestor scope's registration of the same token, instead of throwing `MultipleRegistrationError`. Only available on `IScopedProvider.Services`; a root collection's `register()`/`forward()` never carry `.shadow()`.
 - A dependency on `IScopedProvider` is reported as a scope mismatch: an error for a singleton, which serves the whole provider and so can never be given a scope, and a warning for any other lifetime, which is served correctly inside a scope and only wrong from the root.
+- `validate()` warns when a singleton holds a scoped or resolve dependency, which is shared more narrowly than the singleton itself: it takes a private instance where a shared one was asked for. A scoped dependency reports this alongside the captive dependency, which is the separate disposal hazard.
 
 ### Changed
 
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `validate()` reporting `IServiceProvider`, `IScopedProvider`, and `IResolutionScope` as missing targets: these are bound by the engine at build, never registered, and `resolve()` already handled them correctly.
 - Injecting `IScopedProvider` into a service resolved from the root throws `ScopeMismatchError`, instead of silently handing it the root provider wearing the scoped type.
 - A singleton no longer captures what the scope that first resolved it owned. Its dependencies are the root's instances, resolved against the root's registrations, so a scope's `.shadow()` cannot reach an instance the whole provider shares.
+- A resolve-lifetime dependency of a singleton is no longer shared with whatever else happened to be built alongside it. Each singleton is constructed in its own pass, so what it holds is the same whichever call built it and whether or not `eagerSingletons` is set.
 
 ## [5.0.0] - 2026-07-16
 

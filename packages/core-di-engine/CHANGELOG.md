@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `missingTargetPolicyFor(knownTargets)` builds a missing-target policy that treats the given tokens as always satisfied, for a composing package whose engine binds some tokens itself instead of through registration.
 - `ValidationProblemKind.ScopeMismatch` and `scopeMismatchPolicyFor` report a token only a scope can serve being depended on by a consumer with no scope to be served from. The token is bound by the engine rather than registered, so it is not a missing target.
 - `ScopeMismatchError` is thrown when a token only a scope can serve is resolved from somewhere that has no scope.
+- `ValidationProblemKind.SharingMismatch` and `sharingMismatchPolicy` report a singleton holding something shared more narrowly than itself: a scoped or resolve dependency it cannot take part in sharing. Reported as a warning whatever `CaptivePolicy` says, since the two ask different questions.
 
 ### Changed
 
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `IForwardResult` is exported as a real value again.
 - A singleton resolves at the root, whichever boundary asked for it: its boundary, its resolution pass and its registrations are the root's, so nothing a scope owns can reach an instance the whole provider shares.
+- Every singleton is constructed in a resolution pass of its own. A resolve-lifetime dependency inside a singleton is shared with that construction and nothing else, so two singletons never share one and the object graph is the same whether they were built by the same resolve or prebaked separately.
 
 ## [5.0.0] - 2026-07-16
 
