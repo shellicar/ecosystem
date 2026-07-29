@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.shadow()` on a scoped collection's builder marks a registration as allowed to win over an ancestor scope's registration of the same token, instead of colliding with it as a genuine duplicate at resolve. Present only where the collection composes a scoped lifetime.
 - `buildEngine`/`buildEngineAsync` accept a `bindRoot` callback, invoked once the engine is assembled but before any `.eager()` singleton is prebaked, so a composing package can bind its own root surface before construction can observe it.
 - `missingTargetPolicyFor(knownTargets)` builds a missing-target policy that treats the given tokens as always satisfied, for a composing package whose engine binds some tokens itself instead of through registration.
+- `ValidationProblemKind.ScopeMismatch` and `scopeMismatchPolicyFor` report a token only a scope can serve being depended on by a consumer with no scope to be served from. The token is bound by the engine rather than registered, so it is not a missing target.
+- `ScopeMismatchError` is thrown when a token only a scope can serve is resolved from somewhere that has no scope.
 
 ### Changed
 
@@ -19,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EngineComposition.runtimeCaptivePolicy` is now required: every composition must answer whether a runtime captive throws at resolve, rather than the engine silently enforcing nothing when omitted.
 - Lifetime verbs are pre-commit only: once the composition stamps its default at build, a later verb throws with an error naming the commit.
 - Cycle-policy wording: a registration overridden by a later duplicate under `ResolveMultipleMode.LastRegistered` is now called "overridden", not "shadowed" — "shadowed" now names `.shadow()` exclusively.
+- `ValidationReport` separates `errors` from `warnings`, and every `ValidationProblem` carries a `Severity`. A report is valid when it has no errors; a warning never makes one invalid.
+- A captive dependency is reported as an error under `CaptivePolicy.Strict` and as a warning under `CaptivePolicy.Disposal`, so the severity comes from the policy that asked for the check.
+- A lifetime reads as a word in every message that names one, instead of the enum's wire value.
 
 ### Fixed
 
