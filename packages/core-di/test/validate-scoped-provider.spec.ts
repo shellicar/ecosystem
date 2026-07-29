@@ -58,6 +58,26 @@ describe('validate() on a dependency edge onto IScopedProvider', () => {
     expect(actual).toEqual(expected);
   });
 
+  it('errors on a scoped consumer a singleton can reach, which resolves at the root with it', () => {
+    abstract class IInner {
+      abstract readonly scope: IScopedProvider;
+    }
+    class Inner implements IInner {
+      @dependsOn(IScopedProvider) public readonly scope!: IScopedProvider;
+    }
+    class Outer {
+      @dependsOn(IInner) public readonly inner!: IInner;
+    }
+    const services = createServiceCollection();
+    services.register(Inner).as(IInner).scoped();
+    services.register(Outer).asSelf().singleton();
+
+    const expected = [ValidationProblemKind.ScopeMismatch];
+    const actual = services.validate().errors.map((p) => p.kind);
+
+    expect(actual).toEqual(expected);
+  });
+
   it('warns about a resolve-lifetime consumer, which receives the root provider when resolved from the root', () => {
     const services = createServiceCollection();
     services.register(ScopeConsumer).asSelf().resolve();
