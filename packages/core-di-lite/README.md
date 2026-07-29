@@ -149,10 +149,8 @@ services.forward(ILegacyName).to(IGreeter);
 
 ```ts
 const report = services.validate();
-if (!report.valid) {
-  for (const problem of report.problems) {
-    console.warn(problem.kind, problem.message);
-  }
+for (const problem of [...report.errors, ...report.warnings]) {
+  console.warn(problem.severity, problem.kind, problem.message);
 }
 ```
 
