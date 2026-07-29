@@ -239,7 +239,7 @@ export class ServiceCollection implements IServiceCollection {
     if (options?.validate) {
       const report = this.validate();
       if (!report.valid) {
-        throw new ValidationError(report.errors);
+        throw new ValidationError(report.errors, report.warnings);
       }
     }
     this.built = true;

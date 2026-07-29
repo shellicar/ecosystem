@@ -85,15 +85,23 @@ export class InvalidImplementationError<T extends object> extends BuilderError {
   }
 }
 
+/**
+ * Thrown by a build that was asked to validate. It carries the report's two lists as the
+ * report itself does: the errors are what refused the build, and the warnings are what
+ * the same run had to say about wiring that would have built.
+ */
 export class ValidationError extends ServiceError {
   name = 'ValidationError';
-  constructor(public readonly problems: readonly ValidationProblem[]) {
-    super(ValidationError.getErrorMessage(problems));
+  constructor(
+    public readonly errors: readonly ValidationProblem[],
+    public readonly warnings: readonly ValidationProblem[] = [],
+  ) {
+    super(ValidationError.getErrorMessage(errors));
   }
 
-  static getErrorMessage(problems: readonly ValidationProblem[]): string {
-    const detail = problems.map((problem) => `- ${problem.kind}: ${problem.message}`).join('\n');
-    return `Service wiring validation failed with ${problems.length} problem(s):\n${detail}`;
+  static getErrorMessage(errors: readonly ValidationProblem[]): string {
+    const detail = errors.map((problem) => `- ${problem.kind}: ${problem.message}`).join('\n');
+    return `Service wiring validation failed with ${errors.length} error(s):\n${detail}`;
   }
 }
 
