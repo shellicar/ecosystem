@@ -264,14 +264,12 @@ scope.resolve(Connection);
 // the scoped Connection is disposed when the scope is disposed
 ```
 
-* Validate the wiring statically. `validate()` reads the dependency graph (unregistered targets, cycles, captive dependencies) with no construction and returns a report without throwing (cheap to run in CI). `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError`. One shape is invisible to it by construction: a factory doing its own inline `scope.resolve(...)` has no static edge to read. A singleton capturing a scoped instance that way is caught at resolve time instead, by `runtimeCaptivePolicy` (default `Throw`).
+* Validate the wiring statically. `validate()` reads the dependency graph (unregistered targets, cycles, captive dependencies, scope mismatches) with no construction and returns a report without throwing (cheap to run in CI). The report separates `errors` from `warnings`: errors are wiring that cannot be trusted to build and are what make a report invalid, warnings are hazards worth looking at that never block a build. `buildProvider` stays lenient by default; pass `{ validate: true }` to fail fast with a `ValidationError` carrying the errors. One shape is invisible to it by construction: a factory doing its own inline `scope.resolve(...)` has no static edge to read. A singleton capturing a scoped instance that way is caught at resolve time instead, by `runtimeCaptivePolicy` (default `Throw`).
 
 ```ts
 const report = services.validate();
-if (!report.valid) {
-  for (const problem of report.problems) {
-    console.warn(problem.kind, problem.message);
-  }
+for (const problem of [...report.errors, ...report.warnings]) {
+  console.warn(problem.severity, problem.kind, problem.message);
 }
 
 // Or fail fast at build:

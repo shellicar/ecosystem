@@ -15,6 +15,17 @@ export abstract class IServiceModule {
   public abstract registerServices(services: IServiceCollection): void;
 }
 
+declare const requiresAScope: unique symbol;
+/**
+ * A marker no real token carries, so asking the root for one fails to compile. The
+ * diagnostic is the name: TypeScript reports the type it could not satisfy and the
+ * property missing from it, not any string written inside it.
+ */
+type RequiresAScope = { readonly [requiresAScope]: true };
+
+/** `RequiresAScope` for a token only a scope can serve, and nothing extra for every other token. */
+type ScopeOnly<T> = T extends IScopedProvider ? RequiresAScope : unknown;
+
 /**
  * A scope's resolution surface. Disposables it resolves are disposed when the
  * scope is disposed (a singleton survives, disposed with the provider). A sync
@@ -40,6 +51,13 @@ export abstract class IScopedProvider extends IResolutionScope implements IDispo
  */
 export abstract class IServiceProvider extends IResolutionScope implements IDisposable, IAsyncDisposable {
   public abstract readonly Services: IServiceCollection;
+  /**
+   * Resolves a single implementation, except {@link IScopedProvider}: the root is not
+   * a scope, so asking it for one does not typecheck. A scope's own `resolve` is
+   * unaffected. Resolving it here anyway (past the types, or through injection) throws
+   * {@link ScopeMismatchError}.
+   */
+  public abstract override resolve<T extends SourceType>(identifier: ServiceIdentifier<T> & ScopeOnly<T>): T;
   public abstract createScope(): IScopedProvider;
   /**
    * Writes a human-readable visualisation of the built dependency graph to

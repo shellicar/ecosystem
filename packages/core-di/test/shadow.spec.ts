@@ -187,6 +187,9 @@ describe('the IScopedProvider token at the root', () => {
     const services = createServiceCollection();
     const provider = services.buildProvider();
 
+    // The root's resolve refuses the token in its own types; this pins what happens to
+    // a caller who gets past them, from plain JS or through injection.
+    // @ts-expect-error - the root cannot be asked for a scope
     const actual = () => provider.resolve(IScopedProvider);
 
     expect(actual).toThrow(ScopeMismatchError);
