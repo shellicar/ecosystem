@@ -51,9 +51,9 @@
     "@types/set-cookie-parser": "^2.4.10",
     "set-cookie-parser": "^2.7.2",
     "tsup": "^8.5.1",
-    "tsx": "^4.22.0",
+    "tsx": "^4.22.5",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "esbuild": "^0.28.1"
