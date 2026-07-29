@@ -84,15 +84,18 @@ export const createPlanStrategy =
       createView: (services: DescriptorMap): PlanView => ({ graph: deriveFacts(services), planCache: new Map() }),
       instanceFor: (view, node, env, boundary): Outcome => {
         const locals: Outcome[] = [];
-        // One root pass for the whole replay, made only if a step needs it: the steps
-        // beneath a singleton share a resolution pass with each other, the way the
-        // caller's steps share theirs.
-        let root: { readonly env: Env; readonly boundary: Boundary; readonly view: EngineView } | undefined;
+        // One pass per singleton, made when its first step runs: a singleton is one
+        // construction, so its subtree shares a pass with it and with nothing else.
+        const roots = new Map<number, { readonly env: Env; readonly boundary: Boundary; readonly view: EngineView }>();
         const passFor = (step: PlanStep): { readonly env: Env; readonly boundary: Boundary; readonly view: EngineView } => {
-          if (step.kind === 'error' || !step.atRoot) {
+          if (step.kind === 'error' || step.pass === undefined) {
             return { env, boundary, view };
           }
-          root ??= { ...kit.rootPass(), view: kit.rootView() };
+          let root = roots.get(step.pass);
+          if (root === undefined) {
+            root = { ...kit.rootPass(), view: kit.rootView() };
+            roots.set(step.pass, root);
+          }
           return root;
         };
         for (const step of planFor(view, node)) {

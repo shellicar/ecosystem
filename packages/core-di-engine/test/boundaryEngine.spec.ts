@@ -888,3 +888,65 @@ describe('boundaryEngine: async at the build boundary: buildEngineAsync', () => 
     expect(actual).toThrow(/IAsyncResource/);
   });
 });
+
+abstract class IPer {}
+class Per implements IPer {}
+
+abstract class IFirstHolder {
+  abstract readonly per: IPer;
+}
+class FirstHolder implements IFirstHolder {
+  @dependsOn(IPer) public readonly per!: IPer;
+}
+
+abstract class ISecondHolder {
+  abstract readonly per: IPer;
+}
+class SecondHolder implements ISecondHolder {
+  @dependsOn(IPer) public readonly per!: IPer;
+}
+
+abstract class ICaller {
+  abstract readonly per: IPer;
+  abstract readonly first: IFirstHolder;
+  abstract readonly second: ISecondHolder;
+}
+class Caller implements ICaller {
+  @dependsOn(IPer) public readonly per!: IPer;
+  @dependsOn(IFirstHolder) public readonly first!: IFirstHolder;
+  @dependsOn(ISecondHolder) public readonly second!: ISecondHolder;
+}
+
+// A singleton is constructed once and shared by everything, so it cannot take part in
+// the sharing a resolve-lifetime dependency promises: it resolves in a pass of its own.
+// What it holds is therefore the same however it came to be built, which is what stops
+// call order and prebaking from changing the object graph.
+describe('a singleton resolves in a pass of its own', () => {
+  const holders = (eager: boolean): DescriptorMap => mapOf([IPer, descriptor(Per)], [IFirstHolder, descriptor(FirstHolder, { lifetime: Lifetime.Singleton, eager })], [ISecondHolder, descriptor(SecondHolder, { lifetime: Lifetime.Singleton, eager })], [ICaller, descriptor(Caller, { lifetime: Lifetime.Transient })]);
+
+  it('does not share a resolve-lifetime dependency with another singleton built in the same resolve', () => {
+    const engine = buildEngine(holders(false), composition());
+
+    const caller = engine.resolve(ICaller);
+    const actual = caller.first.per === caller.second.per;
+
+    expect(actual).toBe(false);
+  });
+
+  it('does not share a resolve-lifetime dependency with the resolve that triggered its construction', () => {
+    const engine = buildEngine(holders(false), composition());
+
+    const caller = engine.resolve(ICaller);
+    const actual = caller.per === caller.first.per;
+
+    expect(actual).toBe(false);
+  });
+
+  it('gives the same answer when the singletons are prebaked instead', () => {
+    const engine = buildEngine(holders(true), composition());
+
+    const actual = engine.resolve(IFirstHolder).per === engine.resolve(ISecondHolder).per;
+
+    expect(actual).toBe(false);
+  });
+});

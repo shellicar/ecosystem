@@ -173,10 +173,16 @@ export type { OwnerIndex } from './strategy';
 import type { OwnerIndex } from './strategy';
 
 /**
- * `atRoot` marks a step compiled beneath a singleton. A plan is flat, so a
+ * `pass` names which resolution pass a step belongs to. A plan is flat, so a
  * singleton's dependencies are slots of their own, evaluated before the step that
  * consumes them: without the mark they would be evaluated against whichever boundary
  * replayed the plan, and the singleton would hold whatever that boundary gave it.
+ *
+ * `undefined` is the caller's pass. Every singleton opens one of its own, at the root,
+ * and its subtree shares it: a singleton is constructed once, so a resolve-lifetime
+ * dependency inside it is shared with that construction and nothing else. Two
+ * singletons never share one, whether they were built by the same resolve or prebaked
+ * separately, so what a singleton holds never depends on how it came to be built.
  */
 export type PlanStep =
   | {
@@ -186,7 +192,7 @@ export type PlanStep =
       readonly lifetime: Lifetime;
       readonly fields: readonly { readonly field: string; readonly slot: number }[];
       readonly args: readonly number[];
-      readonly atRoot: boolean;
+      readonly pass: number | undefined;
     }
   | {
       readonly kind: 'error';
@@ -197,7 +203,7 @@ export type PlanStep =
       readonly kind: 'surface';
       readonly token: ServiceIdentifier<SourceType>;
       readonly at: SurfaceReach;
-      readonly atRoot: boolean;
+      readonly pass: number | undefined;
     };
 
 export type Plan = readonly PlanStep[];
@@ -271,15 +277,23 @@ export const buildPlan = (
   guardToken?: (token: ServiceIdentifier<SourceType>, nodes: readonly GraphNode[]) => unknown | undefined,
   rootRegistrations?: { readonly graph: Graph; readonly index: OwnerIndex },
 ): Plan => {
-  const registrationsFor = (atRoot: boolean): { readonly graph: Graph; readonly index: OwnerIndex } => (atRoot ? (rootRegistrations ?? { graph, index }) : { graph, index });
+  const registrationsFor = (pass: number | undefined): { readonly graph: Graph; readonly index: OwnerIndex } => (pass === undefined ? { graph, index } : (rootRegistrations ?? { graph, index }));
   const steps: PlanStep[] = [];
-  // Keyed by boundary as well as node: the same cached node reached both beneath a
-  // singleton and outside one is two different instances, resolved against two
-  // different boundaries, so it cannot share one slot.
-  const sharedSlot = { root: new Map<GraphNode, number>(), local: new Map<GraphNode, number>() };
+  // Keyed by pass as well as node: the same cached node reached from two passes is two
+  // instances, resolved against two different boundaries, so it cannot share one slot.
+  const sharedSlot = new Map<number | undefined, Map<GraphNode, number>>();
+  const slotsFor = (pass: number | undefined): Map<GraphNode, number> => {
+    let slots = sharedSlot.get(pass);
+    if (slots === undefined) {
+      slots = new Map<GraphNode, number>();
+      sharedSlot.set(pass, slots);
+    }
+    return slots;
+  };
+  let passes = 0;
 
-  const ownerOf = (node: GraphNode, atRoot: boolean): ServiceIdentifier<SourceType> => {
-    const facts = registrationsFor(atRoot).graph.get(node) ?? graph.get(node);
+  const ownerOf = (node: GraphNode, pass: number | undefined): ServiceIdentifier<SourceType> => {
+    const facts = registrationsFor(pass).graph.get(node) ?? graph.get(node);
     if (facts === undefined) {
       throw new Error(buildPlanMissingFacts);
     }
@@ -291,12 +305,12 @@ export const buildPlan = (
     return steps.length - 1;
   };
 
-  const emitToken = (identifier: ServiceIdentifier<SourceType>, path: ReadonlySet<GraphNode>, atRoot: boolean): number => {
+  const emitToken = (identifier: ServiceIdentifier<SourceType>, path: ReadonlySet<GraphNode>, pass: number | undefined): number => {
     const at = surfaceAt?.(identifier);
     if (at !== undefined) {
-      return push({ kind: 'surface', token: identifier, at, atRoot });
+      return push({ kind: 'surface', token: identifier, at, pass });
     }
-    const registrations = registrationsFor(atRoot);
+    const registrations = registrationsFor(pass);
     const guardError = guardToken?.(identifier, registrations.index.get(identifier) ?? []);
     if (guardError !== undefined) {
       return push({ kind: 'error', token: identifier, error: guardError });
@@ -305,17 +319,17 @@ export const buildPlan = (
     if (node === undefined) {
       return push({ kind: 'error', token: identifier, error: new UnregisteredServiceError(identifier) });
     }
-    return emitNode(node, path, atRoot);
+    return emitNode(node, path, pass);
   };
 
-  const emitNode = (node: GraphNode, path: ReadonlySet<GraphNode>, atRoot: boolean): number => {
+  const emitNode = (node: GraphNode, path: ReadonlySet<GraphNode>, callerPass: number | undefined): number => {
     const lifetime = lifetimeOf(node);
-    const token = ownerOf(node, atRoot || lifetime === Lifetime.Singleton);
+    // Every singleton opens its own pass at the root, nested ones included: one
+    // construction, one pass, shared by its subtree and nothing else.
+    const pass = lifetime === Lifetime.Singleton ? passes++ : callerPass;
+    const token = ownerOf(node, pass);
     const cached = isCached(lifetime);
-    // A singleton pins itself and everything below it to the root, whatever boundary
-    // replays the plan.
-    const rootBound = atRoot || lifetime === Lifetime.Singleton;
-    const slots = rootBound ? sharedSlot.root : sharedSlot.local;
+    const slots = slotsFor(pass);
     const existing = slots.get(node);
     if (cached && existing !== undefined) {
       return existing;
@@ -331,7 +345,7 @@ export const buildPlan = (
         fields.push({ field, slot: push({ kind: 'error', token, error: new SelfDependencyError() }) });
         continue;
       }
-      fields.push({ field, slot: emitToken(identifier, nextPath, rootBound) });
+      fields.push({ field, slot: emitToken(identifier, nextPath, pass) });
     }
     const args: number[] = [];
     for (const identifier of node.declaredDeps ?? []) {
@@ -339,16 +353,16 @@ export const buildPlan = (
         args.push(push({ kind: 'error', token, error: new SelfDependencyError() }));
         continue;
       }
-      args.push(emitToken(identifier, nextPath, rootBound));
+      args.push(emitToken(identifier, nextPath, pass));
     }
-    const slot = push({ kind: 'build', node, token, lifetime, fields, args, atRoot: rootBound });
+    const slot = push({ kind: 'build', node, token, lifetime, fields, args, pass });
     if (cached) {
       slots.set(node, slot);
     }
     return slot;
   };
 
-  emitNode(rootNode, new Set(), false);
+  emitNode(rootNode, new Set(), undefined);
   return steps;
 };
 
