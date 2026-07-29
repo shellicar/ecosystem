@@ -305,7 +305,11 @@ const setupEngine = (services: DescriptorMap, composition: EngineComposition, op
       if (at === 'scope' && boundary.id === rootBoundary.id) {
         return [];
       }
-      return [surfaceValue(at, boundary, token)];
+      // Nothing bound is nothing to list, the same answer as a reach that allows none:
+      // a composition that never bound its surface has none to give, not one that is
+      // undefined.
+      const surface = surfaceValue(at, boundary, token);
+      return surface === undefined ? [] : [surface];
     }
     const descriptors = view.services.get(token) ?? [];
     return descriptors.map((descriptor) => {

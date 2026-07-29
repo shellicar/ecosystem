@@ -17,12 +17,14 @@ import {
   InvalidOperationError,
   Lifetime,
   RuntimeCaptivePolicy,
+  ScopeMismatchError,
   SelfDependencyError,
   ServiceCreationError,
   type ServiceDescriptor,
   type ServiceIdentifier,
   type ServiceImplementation,
   type SourceType,
+  type SurfaceReach,
   UnregisteredServiceError,
 } from '../src';
 import { dependsOn } from '../src/dependsOn';
@@ -33,6 +35,13 @@ import { holder } from './strategyHolder';
 
 // The strategy comes from the holder: plan by default, naive under the parity
 // run (boundaryEngine-naive.spec.ts), which must observe identical behaviour.
+// The three reaches, each bound to a token the rest of the suite never touches: `root`
+// always answers with the root surface, `nearest` with whichever boundary asked, and
+// `scope` only with a real scope.
+abstract class IRootReach {}
+abstract class INearestReach {}
+abstract class IScopeReach {}
+
 const composition = (): EngineComposition => ({
   features: {
     [Lifetime.Singleton]: createSingletonLifetime(),
@@ -41,6 +50,11 @@ const composition = (): EngineComposition => ({
   },
   strategy: holder.factory,
   runtimeCaptivePolicy: RuntimeCaptivePolicy.None,
+  surfaceTokens: new Map<ServiceIdentifier<SourceType>, SurfaceReach>([
+    [IRootReach as ServiceIdentifier<SourceType>, 'root'],
+    [INearestReach as ServiceIdentifier<SourceType>, 'nearest'],
+    [IScopeReach as ServiceIdentifier<SourceType>, 'scope'],
+  ]),
 });
 
 type DescriptorOptions<T extends SourceType> = {
@@ -948,5 +962,89 @@ describe('a singleton resolves in a pass of its own', () => {
     const actual = engine.resolve(IFirstHolder).per === engine.resolve(ISecondHolder).per;
 
     expect(actual).toBe(false);
+  });
+});
+
+// A surface is bound, not registered, so both doors have to know about it: resolve
+// answers with the surface its reach allows and refuses where the reach allows none,
+// while resolveAll lists what is there, which is nothing rather than a refusal.
+describe('a surface token and how far its reach carries', () => {
+  const bound = () => {
+    const engine = buildEngine(mapOf(), composition());
+    engine.bindSurface('root-surface');
+    const scope = engine.createScope();
+    scope.bindSurface('scope-surface');
+    return { engine, scope };
+  };
+
+  it('answers a root-reach token with the root surface, from a scope', () => {
+    const { scope } = bound();
+
+    const expected = 'root-surface';
+    const actual = scope.resolve(IRootReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toBe(expected);
+  });
+
+  it('answers a nearest-reach token with the root surface at the root', () => {
+    const { engine } = bound();
+
+    const expected = 'root-surface';
+    const actual = engine.resolve(INearestReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toBe(expected);
+  });
+
+  it('answers a nearest-reach token with the scope inside a scope', () => {
+    const { scope } = bound();
+
+    const expected = 'scope-surface';
+    const actual = scope.resolve(INearestReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toBe(expected);
+  });
+
+  it('answers a scope-reach token with the scope inside a scope', () => {
+    const { scope } = bound();
+
+    const expected = 'scope-surface';
+    const actual = scope.resolve(IScopeReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toBe(expected);
+  });
+
+  it('refuses a scope-reach token at the root, where there is no scope', () => {
+    const { engine } = bound();
+
+    const actual = () => engine.resolve(IScopeReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toThrow(ScopeMismatchError);
+  });
+
+  it('lists the one surface a reach allows', () => {
+    const { scope } = bound();
+
+    const expected = ['scope-surface'];
+    const actual = scope.resolveAll(IScopeReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('lists nothing for a scope-reach token at the root, rather than refusing', () => {
+    const { engine } = bound();
+
+    const expected: unknown[] = [];
+    const actual = engine.resolveAll(IScopeReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('lists nothing when the composition never bound a surface', () => {
+    const engine = buildEngine(mapOf(), composition());
+
+    const expected: unknown[] = [];
+    const actual = engine.resolveAll(IRootReach as ServiceIdentifier<SourceType>);
+
+    expect(actual).toEqual(expected);
   });
 });
