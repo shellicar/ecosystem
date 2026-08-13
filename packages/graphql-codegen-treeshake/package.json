@@ -60,10 +60,10 @@
     "@graphql-codegen/plugin-helpers": "^6.3.0",
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
-    "@vitest/coverage-v8": "^4.1.6",
-    "graphql": "^16.14.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "graphql": "^16.14.2",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.10"
   }
 }
