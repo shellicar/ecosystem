@@ -1,37 +1,38 @@
 import { relative, resolve } from 'node:path';
 import type { ILogger } from '../types';
 
-export const validateOutDir = (outDir: string, logger: ILogger) => {
-  const cwd = process.cwd();
+// baseDir is esbuild's working directory. The project to protect is the one the
+// build is rooted at, which is not always the process working directory.
+export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger) => {
   const resolvedOutDir = resolve(outDir);
-  const relativePath = relative(cwd, resolvedOutDir);
+  const relativePath = relative(baseDir, resolvedOutDir);
   const normalizedPath = outDir.replace(/\\/g, '/');
-  const isAbsolutePath = resolve(outDir) !== resolve(cwd, outDir);
-  const isSameAsCurrentDir = resolvedOutDir === cwd;
-  const isParentOfCurrentDirUnix = cwd.startsWith(`${resolvedOutDir}/`);
-  const isParentOfCurrentDirWindows = cwd.startsWith(`${resolvedOutDir}\\`);
+  const isAbsolutePath = resolve(outDir) !== resolve(baseDir, outDir);
+  const isSameAsCurrentDir = resolvedOutDir === baseDir;
+  const isParentOfCurrentDirUnix = baseDir.startsWith(`${resolvedOutDir}/`);
+  const isParentOfCurrentDirWindows = baseDir.startsWith(`${resolvedOutDir}\\`);
   const isParentOfCurrentDir = isParentOfCurrentDirUnix || isParentOfCurrentDirWindows;
   const goesUpDirectory = relativePath.startsWith('..');
 
   logger.verbose('Path validation:');
   logger.verbose(`  Input: "${outDir}"`);
-  logger.verbose(`  Current working directory: "${cwd}"`);
+  logger.verbose(`  Base directory: "${baseDir}"`);
   logger.verbose(`  Resolved output directory: "${resolvedOutDir}"`);
-  logger.verbose(`  Relative path from cwd: "${relativePath}"`);
+  logger.verbose(`  Relative path from base directory: "${relativePath}"`);
   logger.verbose(`  Normalized path: "${normalizedPath}"`);
   logger.verbose(`  Is absolute path outside project: ${isAbsolutePath}`);
   logger.verbose(`  Is same as current directory: ${isSameAsCurrentDir}`);
-  logger.verbose(`  Is parent of current directory (Unix): ${isParentOfCurrentDirUnix}`);
-  logger.verbose(`  Is parent of current directory (Windows): ${isParentOfCurrentDirWindows}`);
-  logger.verbose(`  Is parent of current directory: ${isParentOfCurrentDir}`);
+  logger.verbose(`  Is parent of base directory (Unix): ${isParentOfCurrentDirUnix}`);
+  logger.verbose(`  Is parent of base directory (Windows): ${isParentOfCurrentDirWindows}`);
+  logger.verbose(`  Is parent of base directory: ${isParentOfCurrentDir}`);
   logger.verbose(`  Goes up directory levels: ${goesUpDirectory}`);
 
-  // Check if the resolved path is the same as current directory
+  // Check if the resolved path is the same as the base directory
   if (isSameAsCurrentDir) {
     throw new Error(`[build-cleaner] Refusing to clean current directory: "${outDir}". Use a subdirectory like "dist" or "build".`);
   }
 
-  // Check if the resolved path is a parent of current directory
+  // Check if the resolved path is a parent of the base directory
   if (isParentOfCurrentDir) {
     throw new Error(`[build-cleaner] Refusing to clean parent directory: "${outDir}". This would delete the current project.`);
   }

@@ -29,7 +29,12 @@ export const pluginFactory: UnpluginFactory<Options | undefined> = (initialOptio
           const builtFiles = new Set(Object.keys(result.metafile.outputs));
           logger.debug(`Found ${builtFiles.size} built files in metafile for directory: "${outdir}"`);
 
-          await cleanUnusedFiles(outdir, builtFiles, options);
+          // Metafile paths are relative to esbuild's working directory, which
+          // only defaults to the process one.
+          const baseDir = build.initialOptions.absWorkingDir ?? process.cwd();
+          logger.debug(`Base directory: "${baseDir}"`);
+
+          await cleanUnusedFiles(outdir, builtFiles, baseDir, options);
         });
       },
     },

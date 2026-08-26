@@ -1,20 +1,24 @@
-import { relative } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { Feature } from '../enums';
 import { deleteFile } from './deleteFile';
+import { fileIdentity } from './fileIdentity';
 import { getAllFiles } from './getAllFiles';
 import { removeEmptyDirs } from './removeEmptyDirs';
 import type { ResolvedOptions } from './types';
 import { validateOutDir } from './validateOutDir';
 
-export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, options: ResolvedOptions): Promise<void> {
+// baseDir is esbuild's working directory, which is what its metafile paths are
+// relative to. It is not always the process working directory.
+export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, baseDir: string, options: ResolvedOptions): Promise<void> {
   const { logger } = options;
-  validateOutDir(outDir, logger);
+  const resolvedOutDir = resolve(baseDir, outDir);
+  validateOutDir(resolvedOutDir, baseDir, logger);
 
   try {
-    logger.debug(`Starting cleanup of directory: "${outDir}"`);
+    logger.debug(`Starting cleanup of directory: "${resolvedOutDir}"`);
     logger.debug(`Built files count: ${builtFiles.size}`);
 
-    const existingFiles = await getAllFiles(outDir, logger);
+    const existingFiles = await getAllFiles(resolvedOutDir, logger);
     logger.debug(`Existing files count: ${existingFiles.length}`);
 
     if (existingFiles.length === 0 && builtFiles.size > 0) {
@@ -24,13 +28,23 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
 
     logger.info(`Processing ${existingFiles.length} existing files vs ${builtFiles.size} built files`);
 
+    const builtIdentities = new Set<string>();
+    for (const builtFile of builtFiles) {
+      const identity = await fileIdentity(resolve(baseDir, builtFile));
+      if (identity !== undefined) {
+        builtIdentities.add(identity);
+      }
+    }
+    logger.debug(`Resolved ${builtIdentities.size} of ${builtFiles.size} built files on disk`);
+
     const filesToDelete: string[] = [];
 
     for (const file of existingFiles) {
-      const relativePath = relative(process.cwd(), file);
+      const relativePath = relative(baseDir, file);
       logger.verbose(`Checking file: "${relativePath}"`);
 
-      if (!builtFiles.has(relativePath)) {
+      const identity = await fileIdentity(file);
+      if (identity === undefined || !builtIdentities.has(identity)) {
         filesToDelete.push(file);
         logger.verbose(`Marked for deletion: "${relativePath}"`);
       } else {
@@ -47,7 +61,7 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
 
     let deletedCount = 0;
     for (const file of filesToDelete) {
-      const relativePath = relative(process.cwd(), file);
+      const relativePath = relative(baseDir, file);
 
       logger.info(`Deleting: "${relativePath}"`);
       if (options.destructive) {
@@ -64,7 +78,7 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
     }
 
     if (options.features[Feature.RemoveEmptyDirs]) {
-      await removeEmptyDirs(outDir, options);
+      await removeEmptyDirs(resolvedOutDir, options);
     }
   } catch (error) {
     logger.error('Error during cleanup:', error);
