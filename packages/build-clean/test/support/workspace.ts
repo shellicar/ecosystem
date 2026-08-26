@@ -1,3 +1,4 @@
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import type { BuildOptions } from 'esbuild';
@@ -56,6 +57,16 @@ export const listOutput = async (outDir: string): Promise<string[]> => {
     // empty one.
     return [];
   }
+};
+
+// Whether two names differing only by case are the same file here. Linux says
+// no, macOS and Windows say yes, and that is the whole difference the
+// case-mismatch behaviour turns on.
+export const filesystemIsCaseInsensitive = (): boolean => {
+  const probeDir = join('test', '.tmp', 'case-probe');
+  mkdirSync(probeDir, { recursive: true });
+  writeFileSync(join(probeDir, 'probe.txt'), 'probe\n');
+  return existsSync(join(probeDir, 'PROBE.TXT'));
 };
 
 export type CapturingLogger = ILogger & { lines: string[] };
