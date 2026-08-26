@@ -1,9 +1,10 @@
 import { writeFileSync } from 'node:fs';
-import { join, posix } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Adapter, Builder } from '@sveltejs/kit';
 import { type BuildOptions, build } from 'esbuild';
 import { defaults } from './defaults';
+import { toImportSpecifier } from './toImportSpecifier';
 
 export interface AzureFunctionsAdapterOptions {
   esbuildOptions?: BuildOptions;
@@ -29,7 +30,7 @@ export const createAdapter = (options: AzureFunctionsAdapterOptions = {}): Adapt
 
       const distFiles = fileURLToPath(new URL('../dist', import.meta.url));
 
-      const relativePath = posix.relative(tmp, join(builder.getServerDirectory()));
+      const relativePath = toImportSpecifier(tmp, join(builder.getServerDirectory()));
 
       builder.log.minor('Generating serverless function...');
       builder.copy(distFiles, tmp, {
