@@ -106,27 +106,30 @@ This plugin cleans after the build completes, removing only unused files while k
 interface Options {
   /** Show detailed debug information */
   debug?: boolean
-  
+
   /** Show verbose file-by-file processing */
   verbose?: boolean
-  
+
   /** Actually delete files (default: false for safety) */
   destructive?: boolean
+
+  /** Optional features. RemoveEmptyDirs is on by default */
+  features?: Partial<Record<Feature, boolean>>
+
+  /** Custom logger. When provided, debug and verbose are ignored */
+  logger?: ILogger
 }
 ```
 
 ## Other Build Tools
 
-The plugin supports other tools via [unplugin](https://github.com/unjs/unplugin):
+Cleaning runs from esbuild's build hook, so it works with esbuild directly and with
+anything that builds through esbuild, such as tsup.
 
-```ts
-// vite.config.ts
-import cleanPlugin from '@shellicar/build-clean/vite'
-
-export default defineConfig({
-  plugins: [cleanPlugin({ destructive: true })]
-})
-```
+The package also publishes `/vite`, `/rollup`, `/webpack`, `/rspack`, `/farm`,
+`/rolldown`, `/nuxt` and `/astro` entry points through
+[unplugin](https://github.com/unjs/unplugin). These register no cleanup hook, so they
+currently do nothing. Use the esbuild plugin.
 
 ## Credits & Inspiration
 

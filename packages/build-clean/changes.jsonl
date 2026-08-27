@@ -46,3 +46,6 @@
 {"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
 {"description":"Updated esbuild peer dependency from ^0.27 to ^0.28","category":"changed"}
 {"type":"release","version":"1.3.6","date":"2026-06-14","tag":"build-clean@1.3.6"}
+{"description":"Fixed the plugin deleting freshly built output on Windows and on case-insensitive filesystems","category":"fixed"}
+{"description":"Fixed the plugin cleaning the wrong directory when esbuild's working directory is not the process working directory","category":"fixed"}
+{"description":"Corrected the documentation: cleaning runs on the esbuild path only, and the other bundler entry points register no cleanup hook","category":"changed"}

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- Corrected the documentation: cleaning runs on the esbuild path only, and the other bundler entry points register no cleanup hook
+
+### Fixed
+
+- Fixed the plugin deleting freshly built output on Windows and on case-insensitive filesystems
+- Fixed the plugin cleaning the wrong directory when esbuild's working directory is not the process working directory
+
 ## [1.3.6] - 2026-06-14
 
 ### Changed
