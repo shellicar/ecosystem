@@ -5,6 +5,7 @@ import { virtualModuleId } from '../../src/core/consts';
 import { resolveVirtualId } from '../../src/core/resolveVirtualId';
 import { handleHotUpdate } from '../../src/core/vite/viteHotUpdate';
 import { InvalidFeatureCombinationError } from '../../src/errors/InvalidFeatureCombinationError';
+import { toPosix } from '../toPosix';
 import { expectToThrowErrorWithFields } from './expectToThrowErrorWithFields';
 import { makeViteRun } from './makeViteRun';
 
@@ -113,7 +114,7 @@ describe('vite watch/hmr features', () => {
         const { ctx, runBuild } = makeViteRun(features);
         await runBuild();
 
-        const actual = ctx.addWatchFile.mock.calls.map(([p]) => p);
+        const actual = toPosix(ctx.addWatchFile.mock.calls.map(([p]) => p));
         const expected = ['test/mutation.graphql', 'test/query.graphql', 'test/schema.spec.graphql', 'test/sub/schema.graphql'];
 
         expect(actual).toEqual(expected);
@@ -153,7 +154,7 @@ describe('vite watch/hmr features', () => {
         const { ctx, runBuild } = makeViteRun(features);
         await runBuild();
 
-        const actual = ctx.addWatchFile.mock.calls.map(([p]) => p);
+        const actual = toPosix(ctx.addWatchFile.mock.calls.map(([p]) => p));
         const expected = ['test/mutation.graphql', 'test/query.graphql', 'test/schema.spec.graphql', 'test/sub/schema.graphql'];
 
         expect(actual).toEqual(expected);
