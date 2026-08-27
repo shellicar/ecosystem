@@ -30,7 +30,7 @@ export const createAdapter = (options: AzureFunctionsAdapterOptions = {}): Adapt
 
       const distFiles = fileURLToPath(new URL('../dist', import.meta.url));
 
-      const relativePath = toImportSpecifier(tmp, join(builder.getServerDirectory()));
+      const relativePath = toImportSpecifier(tmp, builder.getServerDirectory());
 
       builder.log.minor('Generating serverless function...');
       builder.copy(distFiles, tmp, {
