@@ -113,6 +113,9 @@ interface Options {
   /** Actually delete files (default: false for safety) */
   destructive?: boolean
 
+  /** Turn a refusal to clean into a build failure (default: false) */
+  strict?: boolean
+
   /** Optional features. RemoveEmptyDirs is on by default */
   features?: Partial<Record<Feature, boolean>>
 
@@ -120,6 +123,21 @@ interface Options {
   logger?: ILogger
 }
 ```
+
+## What gets removed
+
+Files in the output directory are matched against the build's own outputs by asking the
+filesystem whether they are the same file, rather than by comparing paths. Anything the
+build did not produce is removed.
+
+A symlink pointing at a build output is removed, because the build did not create it. A
+hard link to a build output is kept: a hard link is not a reference to a file, it is the
+file, so there is nothing to distinguish it from the name the build wrote.
+
+When none of the build's outputs can be found in the output directory, or the directory
+cannot be read, nothing is removed and the reason is logged. That is deliberately not a
+build failure, so an upgrade cannot start breaking builds. Set `strict: true` if you
+want it to fail instead.
 
 ## Other Build Tools
 

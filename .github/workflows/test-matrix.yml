@@ -8,10 +8,6 @@ name: Test matrix
 # checks.yml deliberately stays ubuntu-only. GitVersion, biome and the
 # changelog-drift check are platform-irrelevant, and the drift check's
 # `git diff --exit-code` would trip on line endings under Windows.
-#
-# The diagnostic steps run before the suite so their output is present whether
-# the suite passes or fails. They can come out once the platform behaviour is
-# settled.
 on:
   workflow_call:
 
@@ -35,35 +31,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup
       - run: pnpm i --frozen-lockfile
-
-      - name: Runner diagnostics
-        shell: bash
-        env:
-          RUNNER_OS_NAME: ${{ runner.os }}
-          MATRIX_OS: ${{ matrix.os }}
-        run: |
-          echo "runner.os : $RUNNER_OS_NAME"
-          echo "matrix.os : $MATRIX_OS"
-          echo "pnpm      : $(pnpm --version)"
-          node -e 'const p = require("node:path"); console.log("node      :", process.version); console.log("platform  :", process.platform); console.log("arch      :", process.arch); console.log("path.sep  :", JSON.stringify(p.sep)); console.log("cwd       :", process.cwd());'
-
-      - name: Filesystem case-sensitivity probe
-        shell: bash
-        run: |
-          probe_dir="$(mktemp -d)"
-          printf 'lower\n' > "$probe_dir/casetest.txt"
-          if [ -f "$probe_dir/CASETEST.TXT" ]; then
-            echo "filesystem: case-INsensitive"
-          else
-            echo "filesystem: case-sensitive"
-          fi
-
-      - name: esbuild metafile path probe
-        # Observes esbuild alone, with the clean plugin not loaded, so its output
-        # is evidence about the metafile rather than about our matching code.
-        shell: bash
-        working-directory: packages/build-clean
-        run: node scripts/diagnose-paths.mjs
 
       - run: pnpm run --if-present build --only
       - run: pnpm run --if-present test --only

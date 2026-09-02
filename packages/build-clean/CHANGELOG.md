@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added a strict option that turns a refusal to clean into a build failure
+
 ### Changed
 
 - Corrected the documentation: cleaning runs on the esbuild path only, and the other bundler entry points register no cleanup hook
@@ -15,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed the plugin deleting freshly built output on Windows and on case-insensitive filesystems
 - Fixed the plugin cleaning the wrong directory when esbuild's working directory is not the process working directory
+- Nothing is deleted when none of the build's outputs can be found, or the output directory cannot be read, rather than deleting everything in it
+- Refusing to clean a directory outside the build, including one on another drive or a network share on Windows
+- A symlink pointing at a build output is now removed; a hard link to one is kept
+- Refusal messages name the output directory as it was configured, not its resolved path
 
 ## [1.3.6] - 2026-06-14
 

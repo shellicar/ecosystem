@@ -9,5 +9,3 @@ coverage/
 CLAUDE.local.md
 *.log
 *.bak
-packages/build-clean/test/.tmp/
-packages/build-clean/test/.diagnostics/

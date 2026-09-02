@@ -1,5 +1,5 @@
 import { writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { build } from 'esbuild';
 import { describe, expect, it, onTestFailed } from 'vitest';
 import cleanPlugin from '../src/esbuild';
@@ -23,13 +23,7 @@ describe('relative outdir under a different absWorkingDir', () => {
     onTestFailed(() => console.error(logger.lines.join('\n')));
     await writeFile(join(workspace.outDir, 'stale.js'), '// left over from an earlier build\n');
 
-    await build({
-      ...buildOptions(workspace),
-      absWorkingDir: resolve(workspace.root),
-      entryPoints: [resolve(workspace.srcDir, 'main.ts'), resolve(workspace.srcDir, 'nested', 'helper.ts')],
-      outdir: 'dist',
-      plugins: [cleanPlugin({ destructive: false, logger })],
-    });
+    await build({ ...buildOptions(workspace), plugins: [cleanPlugin({ destructive: false, logger })] });
 
     const expected = ['dist/stale.js'];
     const actual = wouldDelete(logger.lines);

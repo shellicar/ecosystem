@@ -7,18 +7,33 @@ import { removeEmptyDirs } from './removeEmptyDirs';
 import type { ResolvedOptions } from './types';
 import { validateOutDir } from './validateOutDir';
 
+// Nothing is deleted when the plugin cannot trust what it is looking at. The
+// refusal is loud but does not fail the build unless the caller asked for that,
+// because a plugin that starts breaking builds on upgrade is its own incident.
+const refuse = (reason: string, options: ResolvedOptions, cause?: unknown): void => {
+  const message = `[build-cleaner] Refusing to clean. ${reason}`;
+  options.logger.error(message, cause);
+  if (options.strict) {
+    throw new Error(message, { cause });
+  }
+};
+
 // baseDir is esbuild's working directory, which is what its metafile paths are
 // relative to. It is not always the process working directory.
 export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, baseDir: string, options: ResolvedOptions): Promise<void> {
   const { logger } = options;
-  const resolvedOutDir = resolve(baseDir, outDir);
-  validateOutDir(resolvedOutDir, baseDir, logger);
+  const resolvedOutDir = validateOutDir(outDir, baseDir, logger);
 
   try {
     logger.debug(`Starting cleanup of directory: "${resolvedOutDir}"`);
     logger.debug(`Built files count: ${builtFiles.size}`);
 
-    const existingFiles = await getAllFiles(resolvedOutDir, logger);
+    let existingFiles: string[];
+    try {
+      existingFiles = await getAllFiles(resolvedOutDir, logger);
+    } catch (error) {
+      return refuse(`Could not read the output directory: "${resolvedOutDir}"`, options, error);
+    }
     logger.debug(`Existing files count: ${existingFiles.length}`);
 
     if (existingFiles.length === 0 && builtFiles.size > 0) {
@@ -36,6 +51,13 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
       }
     }
     logger.debug(`Resolved ${builtIdentities.size} of ${builtFiles.size} built files on disk`);
+
+    // Every output the build reported is missing from where it should be, so
+    // this directory is not the one that was built into. Deleting what does not
+    // match would take all of it.
+    if (builtIdentities.size === 0) {
+      return refuse(`No built file was found under "${resolvedOutDir}", of the ${builtFiles.size} the build reported`, options);
+    }
 
     const filesToDelete: string[] = [];
 

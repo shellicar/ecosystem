@@ -1,18 +1,21 @@
 import { relative, resolve } from 'node:path';
 import type { ILogger } from '../types';
+import { isOutsideBase } from './isOutsideBase';
 
-// baseDir is esbuild's working directory. The project to protect is the one the
-// build is rooted at, which is not always the process working directory.
-export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger) => {
-  const resolvedOutDir = resolve(outDir);
+// outDir is the value the caller configured, kept in that form so the refusals
+// name what they would go and change. baseDir is esbuild's working directory:
+// the project to protect is the one the build is rooted at, which is not always
+// the process working directory. Returns the resolved directory so one place
+// decides what was validated and what gets cleaned.
+export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger): string => {
+  const resolvedOutDir = resolve(baseDir, outDir);
   const relativePath = relative(baseDir, resolvedOutDir);
   const normalizedPath = outDir.replace(/\\/g, '/');
-  const isAbsolutePath = resolve(outDir) !== resolve(baseDir, outDir);
   const isSameAsCurrentDir = resolvedOutDir === baseDir;
   const isParentOfCurrentDirUnix = baseDir.startsWith(`${resolvedOutDir}/`);
   const isParentOfCurrentDirWindows = baseDir.startsWith(`${resolvedOutDir}\\`);
   const isParentOfCurrentDir = isParentOfCurrentDirUnix || isParentOfCurrentDirWindows;
-  const goesUpDirectory = relativePath.startsWith('..');
+  const isOutside = isOutsideBase(baseDir, resolvedOutDir);
 
   logger.verbose('Path validation:');
   logger.verbose(`  Input: "${outDir}"`);
@@ -20,12 +23,11 @@ export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger)
   logger.verbose(`  Resolved output directory: "${resolvedOutDir}"`);
   logger.verbose(`  Relative path from base directory: "${relativePath}"`);
   logger.verbose(`  Normalized path: "${normalizedPath}"`);
-  logger.verbose(`  Is absolute path outside project: ${isAbsolutePath}`);
-  logger.verbose(`  Is same as current directory: ${isSameAsCurrentDir}`);
+  logger.verbose(`  Is same as base directory: ${isSameAsCurrentDir}`);
   logger.verbose(`  Is parent of base directory (Unix): ${isParentOfCurrentDirUnix}`);
   logger.verbose(`  Is parent of base directory (Windows): ${isParentOfCurrentDirWindows}`);
   logger.verbose(`  Is parent of base directory: ${isParentOfCurrentDir}`);
-  logger.verbose(`  Goes up directory levels: ${goesUpDirectory}`);
+  logger.verbose(`  Is outside the base directory: ${isOutside}`);
 
   // Check if the resolved path is the same as the base directory
   if (isSameAsCurrentDir) {
@@ -37,14 +39,9 @@ export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger)
     throw new Error(`[build-cleaner] Refusing to clean parent directory: "${outDir}". This would delete the current project.`);
   }
 
-  // Check if the relative path goes up (.., ../.., etc.)
-  if (goesUpDirectory) {
+  // Outside the project, whether by climbing out or by having no route at all
+  if (isOutside) {
     throw new Error(`[build-cleaner] Refusing to clean directory outside project: "${outDir}". Use a subdirectory like "dist" or "build".`);
-  }
-
-  // Check if it's an absolute path outside the project
-  if (isAbsolutePath) {
-    throw new Error(`[build-cleaner] Refusing to clean absolute path outside project: "${outDir}". Use a relative subdirectory.`);
   }
 
   // Prevent cleaning common source directories (even as subdirectories)
@@ -56,4 +53,6 @@ export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger)
   }
 
   logger.debug(`Validated output directory: "${outDir}" -> "${resolvedOutDir}"`);
+
+  return resolvedOutDir;
 };

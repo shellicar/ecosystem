@@ -49,3 +49,8 @@
 {"description":"Fixed the plugin deleting freshly built output on Windows and on case-insensitive filesystems","category":"fixed"}
 {"description":"Fixed the plugin cleaning the wrong directory when esbuild's working directory is not the process working directory","category":"fixed"}
 {"description":"Corrected the documentation: cleaning runs on the esbuild path only, and the other bundler entry points register no cleanup hook","category":"changed"}
+{"description":"Nothing is deleted when none of the build's outputs can be found, or the output directory cannot be read, rather than deleting everything in it","category":"fixed"}
+{"description":"Refusing to clean a directory outside the build, including one on another drive or a network share on Windows","category":"fixed"}
+{"description":"A symlink pointing at a build output is now removed; a hard link to one is kept","category":"fixed"}
+{"description":"Refusal messages name the output directory as it was configured, not its resolved path","category":"fixed"}
+{"description":"Added a strict option that turns a refusal to clean into a build failure","category":"added"}

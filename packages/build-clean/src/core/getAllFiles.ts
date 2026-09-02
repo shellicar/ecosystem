@@ -2,6 +2,8 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ILogger } from '../types';
 
+const isNotFound = (error: unknown): boolean => typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
+
 export async function getAllFiles(dir: string, logger: ILogger): Promise<string[]> {
   const files: string[] = [];
 
@@ -22,8 +24,13 @@ export async function getAllFiles(dir: string, logger: ILogger): Promise<string[
       }
     }
   } catch (error) {
-    // Directory might not exist yet
-    logger.debug(`Could not read directory "${dir}":`, error);
+    // A directory that is not there yet is the ordinary first-build case and
+    // means no files. Anything else means the directory cannot be read, which is
+    // not the same thing and must not be reported as an empty one.
+    if (!isNotFound(error)) {
+      throw error;
+    }
+    logger.debug(`Directory does not exist yet: "${dir}"`);
   }
 
   logger.verbose(`Total files found in "${dir}": ${files.length}`);

@@ -1,25 +1,28 @@
-import { resolve } from 'node:path';
 import { build } from 'esbuild';
 import { describe, expect, it, onTestFailed } from 'vitest';
 import cleanPlugin from '../src/esbuild';
 import { buildOptions, createCapturingLogger, createWorkspace, listOutput } from './support/workspace';
 
-// esbuild keys the metafile relative to absWorkingDir; the plugin computes its
-// side relative to process.cwd(). Everything here is absolute and inside the
-// temp workspace, so the deletion this provokes cannot reach a real directory.
+// esbuild keys the metafile relative to absWorkingDir; the plugin used to
+// compute its side relative to process.cwd(). Every workspace here is rooted
+// outside the repository, so the two are never the same and this path is
+// exercised by every test in the suite.
 describe('absWorkingDir', () => {
-  it('keeps the files esbuild just built when absWorkingDir is not the process cwd', async () => {
+  it('is not the process working directory, or the rest of this proves nothing', async () => {
+    const workspace = await createWorkspace('abs-working-dir-differs');
+
+    const expected = false;
+    const actual = workspace.root === process.cwd();
+
+    expect(actual).toBe(expected);
+  });
+
+  it('keeps the files esbuild just built', async () => {
     const workspace = await createWorkspace('abs-working-dir');
     const logger = createCapturingLogger();
     onTestFailed(() => console.error(logger.lines.join('\n')));
 
-    await build({
-      ...buildOptions(workspace),
-      absWorkingDir: resolve(workspace.root),
-      entryPoints: [resolve(workspace.srcDir, 'main.ts'), resolve(workspace.srcDir, 'nested', 'helper.ts')],
-      outdir: resolve(workspace.outDir),
-      plugins: [cleanPlugin({ destructive: true, logger })],
-    });
+    await build({ ...buildOptions(workspace), plugins: [cleanPlugin({ destructive: true, logger })] });
 
     const expected = ['main.js', 'nested/helper.js'];
     const actual = await listOutput(workspace.outDir);
