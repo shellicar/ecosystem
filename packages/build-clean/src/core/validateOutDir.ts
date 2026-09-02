@@ -1,4 +1,8 @@
 import { relative, resolve } from 'node:path';
+import { OutputDirectoryContainsBaseError } from '../errors/OutputDirectoryContainsBaseError';
+import { OutputDirectoryIsBaseError } from '../errors/OutputDirectoryIsBaseError';
+import { OutputDirectoryIsSourceError } from '../errors/OutputDirectoryIsSourceError';
+import { OutputDirectoryOutsideBaseError } from '../errors/OutputDirectoryOutsideBaseError';
 import type { ILogger } from '../types';
 import { isOutsideBase } from './isOutsideBase';
 
@@ -31,17 +35,17 @@ export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger)
 
   // Check if the resolved path is the same as the base directory
   if (isSameAsCurrentDir) {
-    throw new Error(`[build-cleaner] Refusing to clean current directory: "${outDir}". Use a subdirectory like "dist" or "build".`);
+    throw new OutputDirectoryIsBaseError(outDir);
   }
 
   // Check if the resolved path is a parent of the base directory
   if (isParentOfCurrentDir) {
-    throw new Error(`[build-cleaner] Refusing to clean parent directory: "${outDir}". This would delete the current project.`);
+    throw new OutputDirectoryContainsBaseError(outDir);
   }
 
   // Outside the project, whether by climbing out or by having no route at all
   if (isOutside) {
-    throw new Error(`[build-cleaner] Refusing to clean directory outside project: "${outDir}". Use a subdirectory like "dist" or "build".`);
+    throw new OutputDirectoryOutsideBaseError(outDir);
   }
 
   // Prevent cleaning common source directories (even as subdirectories)
@@ -49,7 +53,7 @@ export const validateOutDir = (outDir: string, baseDir: string, logger: ILogger)
   const isDangerousPath = dangerousPaths.some((dangerous) => normalizedPath === dangerous || normalizedPath.endsWith(`/${dangerous}`));
 
   if (isDangerousPath) {
-    throw new Error(`[build-cleaner] Refusing to clean source directory: "${outDir}". Use a build output directory like "dist" or "build".`);
+    throw new OutputDirectoryIsSourceError(outDir);
   }
 
   logger.debug(`Validated output directory: "${outDir}" -> "${resolvedOutDir}"`);

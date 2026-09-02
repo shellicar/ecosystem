@@ -56,3 +56,4 @@
 {"description":"Added a strict option that turns a refusal to clean into a build failure","category":"added"}
 {"description":"Hard links to build outputs are no longer removed","category":"changed"}
 {"description":"Corrected the readme: cleaning runs on the esbuild path only","category":"changed"}
+{"description":"Added an exported error type for each failure the plugin raises, so they can be caught by type rather than by message","category":"added"}

@@ -1,5 +1,6 @@
 import { relative, resolve } from 'node:path';
 import { Feature } from '../enums';
+import { CleanRefusedError } from '../errors/CleanRefusedError';
 import { deleteFile } from './deleteFile';
 import { fileIdentity } from './fileIdentity';
 import { getAllFiles } from './getAllFiles';
@@ -10,23 +11,19 @@ import { validateOutDir } from './validateOutDir';
 // Nothing is deleted when the plugin cannot trust what it is looking at. The
 // refusal is loud but does not fail the build unless the caller asked for that,
 // because a plugin that starts breaking builds on upgrade is its own incident.
-// Thrown only by refuse, so the catch below can let it through without logging
-// a refusal that has already been reported.
-class RefusalError extends Error {}
-
 const refuse = (reason: string, options: ResolvedOptions, cause?: unknown): void => {
-  const message = `[build-cleaner] Refusing to clean. ${reason}`;
+  const refusal = new CleanRefusedError(reason, { cause });
 
   // Passing an absent cause still counts as an argument, and the logger spreads
   // its arguments, so the word undefined would reach the user.
   if (cause === undefined) {
-    options.logger.error(message);
+    options.logger.error(refusal.message);
   } else {
-    options.logger.error(message, cause);
+    options.logger.error(refusal.message, cause);
   }
 
   if (options.strict) {
-    throw new RefusalError(message, { cause });
+    throw refusal;
   }
 };
 
@@ -120,7 +117,7 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
       await removeEmptyDirs(resolvedOutDir, options);
     }
   } catch (error) {
-    if (error instanceof RefusalError) {
+    if (error instanceof CleanRefusedError) {
       throw error;
     }
     logger.error('Error during cleanup:', error);

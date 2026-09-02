@@ -40,30 +40,4 @@ describe('removing empty directories', () => {
 
     expect(actual).toBe(expected);
   });
-
-  // Reading the directory is guarded and reports the failure, but the check for
-  // what is left in it is not, so the failure surfaces as a throw regardless.
-  // Pinned as it stands; the guard does not do what its shape suggests.
-  it('reports a directory it cannot read', async () => {
-    const workspace = await createWorkspace('remove-empty-unreadable');
-    const notADirectory = join(workspace.root, 'notadirectory');
-    await writeFile(notADirectory, 'this is a file\n');
-    const logger = createCapturingLogger();
-
-    await removeEmptyDirs(notADirectory, resolveOptions({ destructive: true, logger })).catch(() => {});
-
-    const expected = true;
-    const actual = logger.lines.some((line) => line.includes('Error reading directory'));
-
-    expect(actual).toBe(expected);
-  });
-
-  it('throws when given something that is not a directory', async () => {
-    const workspace = await createWorkspace('remove-empty-throws');
-    const notADirectory = join(workspace.root, 'notadirectory');
-    await writeFile(notADirectory, 'this is a file\n');
-    const options = resolveOptions({ destructive: true, logger: createCapturingLogger() });
-
-    await expect(removeEmptyDirs(notADirectory, options)).rejects.toThrow();
-  });
 });

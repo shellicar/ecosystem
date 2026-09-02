@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { cleanUnusedFiles } from '../src/core/cleanUnusedFiles';
 import { resolveOptions } from '../src/core/resolveOptions';
+import { CleanRefusedError } from '../src/errors/CleanRefusedError';
 import { createCapturingLogger, createWorkspace, listOutput } from './support/workspace';
 
 // When the plugin cannot trust what it is looking at, it deletes nothing. This
@@ -43,7 +44,7 @@ describe('refusing to clean', () => {
     await writeFile(join(workspace.outDir, 'stale.js'), '// not a build output\n');
     const options = resolveOptions({ destructive: true, strict: true, logger: createCapturingLogger() });
 
-    await expect(cleanUnusedFiles('dist', new Set(['dist/never-built.js']), workspace.root, options)).rejects.toThrow('Refusing to clean');
+    await expect(cleanUnusedFiles('dist', new Set(['dist/never-built.js']), workspace.root, options)).rejects.toThrow(CleanRefusedError);
   });
 
   it('does not print a trailing undefined when the refusal has no cause', async () => {
@@ -94,6 +95,6 @@ describe('refusing to clean', () => {
     await writeFile(join(workspace.root, 'notadirectory'), 'this is a file\n');
     const options = resolveOptions({ destructive: true, strict: true, logger: createCapturingLogger() });
 
-    await expect(cleanUnusedFiles('notadirectory', new Set(['dist/main.js']), workspace.root, options)).rejects.toThrow('Refusing to clean');
+    await expect(cleanUnusedFiles('notadirectory', new Set(['dist/main.js']), workspace.root, options)).rejects.toThrow(CleanRefusedError);
   });
 });

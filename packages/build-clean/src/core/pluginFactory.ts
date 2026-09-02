@@ -1,4 +1,6 @@
 import type { UnpluginFactory, UnpluginOptions } from 'unplugin';
+import { MissingMetafileError } from '../errors/MissingMetafileError';
+import { MissingOutputDirectoryError } from '../errors/MissingOutputDirectoryError';
 import type { Options } from '../types';
 import { cleanUnusedFiles } from './cleanUnusedFiles';
 import { resolveOptions } from './resolveOptions';
@@ -27,13 +29,13 @@ export const pluginFactory: UnpluginFactory<Options | undefined> = (initialOptio
 
           const outdir = build.initialOptions.outdir;
           if (!outdir) {
-            throw new Error('[build-cleaner] No output directory specified in build options');
+            throw new MissingOutputDirectoryError();
           }
 
           // The build succeeded, so this means something removed the metafile
           // option that setup turned on.
           if (!result.metafile) {
-            throw new Error('[build-cleaner] No metafile available - ensure metafile is enabled');
+            throw new MissingMetafileError();
           }
 
           const builtFiles = new Set(Object.keys(result.metafile.outputs));

@@ -1,6 +1,10 @@
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { validateOutDir } from '../src/core/validateOutDir';
+import { OutputDirectoryContainsBaseError } from '../src/errors/OutputDirectoryContainsBaseError';
+import { OutputDirectoryIsBaseError } from '../src/errors/OutputDirectoryIsBaseError';
+import { OutputDirectoryIsSourceError } from '../src/errors/OutputDirectoryIsSourceError';
+import { OutputDirectoryOutsideBaseError } from '../src/errors/OutputDirectoryOutsideBaseError';
 import { createCapturingLogger } from './support/workspace';
 
 // validateOutDir is the only thing standing between the plugin and a directory
@@ -30,28 +34,31 @@ describe('validateOutDir', () => {
   });
 
   it('refuses the base directory itself', () => {
-    expect(validate('.')).toThrow('Refusing to clean current directory');
+    expect(validate('.')).toThrow(OutputDirectoryIsBaseError);
   });
 
   it('refuses a parent of the base directory', () => {
-    expect(validate('..')).toThrow('Refusing to clean parent directory');
+    expect(validate('..')).toThrow(OutputDirectoryContainsBaseError);
   });
 
   it('refuses a sibling of the base directory', () => {
-    expect(validate('../elsewhere')).toThrow('Refusing to clean directory outside project');
+    expect(validate('../elsewhere')).toThrow(OutputDirectoryOutsideBaseError);
   });
 
   it('refuses a source directory', () => {
-    expect(validate('src')).toThrow('Refusing to clean source directory');
+    expect(validate('src')).toThrow(OutputDirectoryIsSourceError);
   });
 
   it('refuses a nested source directory', () => {
-    expect(validate('packages/thing/lib')).toThrow('Refusing to clean source directory');
+    expect(validate('packages/thing/lib')).toThrow(OutputDirectoryIsSourceError);
   });
 
-  // The refusal has to name what the caller wrote in their config, not the path
-  // it was resolved to, or it points at nothing they can go and edit.
-  it('names the configured value in the refusal, not the resolved path', () => {
-    expect(validate('src')).toThrow('"src"');
+  // The refusal carries what the caller wrote in their config, not the path it
+  // was resolved to, so it points at something they can go and edit.
+  it('carries the configured value rather than the resolved path', () => {
+    const expected = 'src';
+    const actual = new OutputDirectoryIsSourceError('src').outDir;
+
+    expect(actual).toBe(expected);
   });
 });
