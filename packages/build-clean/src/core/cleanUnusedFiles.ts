@@ -10,11 +10,23 @@ import { validateOutDir } from './validateOutDir';
 // Nothing is deleted when the plugin cannot trust what it is looking at. The
 // refusal is loud but does not fail the build unless the caller asked for that,
 // because a plugin that starts breaking builds on upgrade is its own incident.
+// Thrown only by refuse, so the catch below can let it through without logging
+// a refusal that has already been reported.
+class RefusalError extends Error {}
+
 const refuse = (reason: string, options: ResolvedOptions, cause?: unknown): void => {
   const message = `[build-cleaner] Refusing to clean. ${reason}`;
-  options.logger.error(message, cause);
+
+  // Passing an absent cause still counts as an argument, and the logger spreads
+  // its arguments, so the word undefined would reach the user.
+  if (cause === undefined) {
+    options.logger.error(message);
+  } else {
+    options.logger.error(message, cause);
+  }
+
   if (options.strict) {
-    throw new Error(message, { cause });
+    throw new RefusalError(message, { cause });
   }
 };
 
@@ -56,7 +68,8 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
     // this directory is not the one that was built into. Deleting what does not
     // match would take all of it.
     if (builtIdentities.size === 0) {
-      return refuse(`No built file was found under "${resolvedOutDir}", of the ${builtFiles.size} the build reported`, options);
+      const reason = builtFiles.size === 0 ? 'The build reported no output files' : `None of the ${builtFiles.size} files the build reported were found under "${resolvedOutDir}"`;
+      return refuse(reason, options);
     }
 
     const filesToDelete: string[] = [];
@@ -103,6 +116,9 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
       await removeEmptyDirs(resolvedOutDir, options);
     }
   } catch (error) {
+    if (error instanceof RefusalError) {
+      throw error;
+    }
     logger.error('Error during cleanup:', error);
     throw error;
   }

@@ -17,11 +17,21 @@ export const pluginFactory: UnpluginFactory<Options | undefined> = (initialOptio
         build.onEnd(async (result) => {
           logger.debug('Build completed, starting cleanup process');
 
+          // A build that failed wrote nothing, so there is nothing to clean and
+          // nothing useful to say. Its own errors are what the user needs to
+          // read, and an error from here would sit on top of them.
+          if (result.errors.length > 0) {
+            logger.debug(`Build failed with ${result.errors.length} error(s), skipping cleanup`);
+            return;
+          }
+
           const outdir = build.initialOptions.outdir;
           if (!outdir) {
             throw new Error('[build-cleaner] No output directory specified in build options');
           }
 
+          // The build succeeded, so this means something removed the metafile
+          // option that setup turned on.
           if (!result.metafile) {
             throw new Error('[build-cleaner] No metafile available - ensure metafile is enabled');
           }

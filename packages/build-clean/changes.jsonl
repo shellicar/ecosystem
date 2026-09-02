@@ -46,11 +46,13 @@
 {"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
 {"description":"Updated esbuild peer dependency from ^0.27 to ^0.28","category":"changed"}
 {"type":"release","version":"1.3.6","date":"2026-06-14","tag":"build-clean@1.3.6"}
-{"description":"Fixed the plugin deleting freshly built output on Windows and on case-insensitive filesystems","category":"fixed"}
-{"description":"Fixed the plugin cleaning the wrong directory when esbuild's working directory is not the process working directory","category":"fixed"}
-{"description":"Corrected the documentation: cleaning runs on the esbuild path only, and the other bundler entry points register no cleanup hook","category":"changed"}
-{"description":"Nothing is deleted when none of the build's outputs can be found, or the output directory cannot be read, rather than deleting everything in it","category":"fixed"}
-{"description":"Refusing to clean a directory outside the build, including one on another drive or a network share on Windows","category":"fixed"}
-{"description":"A symlink pointing at a build output is now removed; a hard link to one is kept","category":"fixed"}
-{"description":"Refusal messages name the output directory as it was configured, not its resolved path","category":"fixed"}
+{"description":"Fixed built output being deleted on Windows and on case-insensitive filesystems","category":"fixed"}
+{"description":"Fixed the output directory being resolved against the process working directory rather than esbuild's","category":"fixed"}
+{"description":"Fixed every file being deleted when no build output is found in the output directory","category":"fixed"}
+{"description":"Fixed an unreadable output directory being treated as an empty one","category":"fixed"}
+{"description":"Fixed a directory outside the build being cleaned, including one on another drive or network share","category":"fixed"}
+{"description":"Fixed a symlink to a build output not being removed","category":"fixed"}
+{"description":"Fixed refusal messages naming the resolved path rather than the configured value","category":"fixed"}
 {"description":"Added a strict option that turns a refusal to clean into a build failure","category":"added"}
+{"description":"Hard links to build outputs are no longer removed","category":"changed"}
+{"description":"Corrected the readme: cleaning runs on the esbuild path only","category":"changed"}

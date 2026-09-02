@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed the generated function importing the server through an unresolvable path on Windows
+- Fixed an unresolvable server import in the generated function on Windows
 
 ## [1.0.7] - 2026-06-14
 

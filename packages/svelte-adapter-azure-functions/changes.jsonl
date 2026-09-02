@@ -56,4 +56,4 @@
 {"description":"Fixed GHSA-gv7w-rqvm-qjhr in esbuild","category":"security","metadata":{"ghsa":"GHSA-gv7w-rqvm-qjhr"}}
 {"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
 {"type":"release","version":"1.0.7","date":"2026-06-14","tag":"svelte-adapter-azure-functions@1.0.7"}
-{"description":"Fixed the generated function importing the server through an unresolvable path on Windows","category":"fixed"}
+{"description":"Fixed an unresolvable server import in the generated function on Windows","category":"fixed"}

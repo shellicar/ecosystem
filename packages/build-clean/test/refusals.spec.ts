@@ -30,6 +30,32 @@ describe('refusing to clean', () => {
     await expect(cleanUnusedFiles('dist', new Set(['dist/never-built.js']), workspace.root, options)).rejects.toThrow('Refusing to clean');
   });
 
+  it('does not print a trailing undefined when the refusal has no cause', async () => {
+    const workspace = await createWorkspace('refuse-no-cause-message');
+    await writeFile(join(workspace.outDir, 'stale.js'), '// not a build output\n');
+    const logger = createCapturingLogger();
+
+    await cleanUnusedFiles('dist', new Set(['dist/never-built.js']), workspace.root, resolveOptions({ destructive: true, logger }));
+
+    const expected = false;
+    const actual = logger.lines.some((line) => line.endsWith('undefined'));
+
+    expect(actual).toBe(expected);
+  });
+
+  it('logs the refusal once when strict turns it into a failure', async () => {
+    const workspace = await createWorkspace('refuse-strict-single-log');
+    await writeFile(join(workspace.outDir, 'stale.js'), '// not a build output\n');
+    const logger = createCapturingLogger();
+
+    await cleanUnusedFiles('dist', new Set(['dist/never-built.js']), workspace.root, resolveOptions({ destructive: true, strict: true, logger })).catch(() => {});
+
+    const expected = 1;
+    const actual = logger.lines.filter((line) => line.startsWith('[error]')).length;
+
+    expect(actual).toBe(expected);
+  });
+
   // A directory that is not there yet is the ordinary first build. A directory
   // that cannot be read is not the same thing, and must not be mistaken for an
   // empty one. A plain file standing where a directory should be produces that
