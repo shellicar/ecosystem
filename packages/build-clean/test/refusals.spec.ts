@@ -22,6 +22,22 @@ describe('refusing to clean', () => {
     expect(actual).toEqual(expected);
   });
 
+  // The boundary of the refusal. Zero matches only means the wrong directory
+  // when there was something to match: a build that produced nothing matches
+  // nothing by definition, and everything present is from an earlier build.
+  it('removes stale files when the build produced no outputs at all', async () => {
+    const workspace = await createWorkspace('no-outputs');
+    await writeFile(join(workspace.outDir, 'stale.js'), '// from an earlier build\n');
+    const options = resolveOptions({ destructive: true, logger: createCapturingLogger() });
+
+    await cleanUnusedFiles('dist', new Set<string>(), workspace.root, options);
+
+    const expected: string[] = [];
+    const actual = await listOutput(workspace.outDir);
+
+    expect(actual).toEqual(expected);
+  });
+
   it('fails the build when no built file is found and strict is on', async () => {
     const workspace = await createWorkspace('refuse-nothing-resolved-strict');
     await writeFile(join(workspace.outDir, 'stale.js'), '// not a build output\n');

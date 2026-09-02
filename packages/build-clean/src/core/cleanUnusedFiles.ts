@@ -67,9 +67,13 @@ export async function cleanUnusedFiles(outDir: string, builtFiles: Set<string>, 
     // Every output the build reported is missing from where it should be, so
     // this directory is not the one that was built into. Deleting what does not
     // match would take all of it.
-    if (builtIdentities.size === 0) {
-      const reason = builtFiles.size === 0 ? 'The build reported no output files' : `None of the ${builtFiles.size} files the build reported were found under "${resolvedOutDir}"`;
-      return refuse(reason, options);
+    //
+    // Only when there was something to find. A build that produced nothing
+    // matches nothing whatever directory it is pointed at, so zero matches says
+    // nothing about the directory, and everything present is from an earlier
+    // build and due to be removed.
+    if (builtFiles.size > 0 && builtIdentities.size === 0) {
+      return refuse(`None of the ${builtFiles.size} files the build reported were found under "${resolvedOutDir}"`, options);
     }
 
     const filesToDelete: string[] = [];
