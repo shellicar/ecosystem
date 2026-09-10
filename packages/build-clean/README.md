@@ -106,27 +106,48 @@ This plugin cleans after the build completes, removing only unused files while k
 interface Options {
   /** Show detailed debug information */
   debug?: boolean
-  
+
   /** Show verbose file-by-file processing */
   verbose?: boolean
-  
+
   /** Actually delete files (default: false for safety) */
   destructive?: boolean
+
+  /** Turn a refusal to clean into a build failure (default: false) */
+  strict?: boolean
+
+  /** Optional features. RemoveEmptyDirs is on by default */
+  features?: Partial<Record<Feature, boolean>>
+
+  /** Custom logger. When provided, debug and verbose are ignored */
+  logger?: ILogger
 }
 ```
 
+## What gets removed
+
+Files in the output directory are matched against the build's own outputs by asking the
+filesystem whether they are the same file, rather than by comparing paths. Anything the
+build did not produce is removed.
+
+A symlink pointing at a build output is removed, because the build did not create it. A
+hard link to a build output is kept: a hard link is not a reference to a file, it is the
+file, so there is nothing to distinguish it from the name the build wrote.
+
+When none of the build's outputs can be found in the output directory, or the directory
+cannot be read, nothing is removed and the reason is logged. That is deliberately not a
+build failure, so an upgrade cannot start breaking builds. Set `strict: true` if you
+want it to fail instead.
+
 ## Other Build Tools
 
-The plugin supports other tools via [unplugin](https://github.com/unjs/unplugin):
+Cleaning runs from esbuild's build hook, so it works with esbuild directly and with
+anything that builds through esbuild, such as tsup.
 
-```ts
-// vite.config.ts
-import cleanPlugin from '@shellicar/build-clean/vite'
-
-export default defineConfig({
-  plugins: [cleanPlugin({ destructive: true })]
-})
-```
+The package also publishes `/vite`, `/rollup`, `/webpack`, `/rspack`, `/farm`,
+`/rolldown`, `/nuxt` and `/astro` entry points through
+[unplugin](https://github.com/unjs/unplugin). These register no cleanup hook, so they
+currently do nothing. Use the esbuild plugin.
 
 ## Credits & Inspiration
 

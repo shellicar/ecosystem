@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Feature, type Options } from '../../src';
+import { toPosix } from '../toPosix';
 import { runEsbuildSetup } from './runEsbuildSetup';
 
 describe('esbuild watch feature', () => {
@@ -72,7 +73,7 @@ describe('esbuild watch feature', () => {
           with: {},
         });
 
-        const actual = result?.watchFiles;
+        const actual = toPosix(result?.watchFiles ?? []);
         const expected = ['test/mutation.graphql', 'test/query.graphql', 'test/schema.spec.graphql', 'test/sub/schema.graphql'];
 
         expect(actual).toEqual(expected);

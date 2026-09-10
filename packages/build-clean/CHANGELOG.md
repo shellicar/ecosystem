@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Added a strict option that turns a refusal to clean into a build failure
+- Added an exported error type for each failure the plugin raises, so they can be caught by type rather than by message
+
+### Changed
+
+- Hard links to build outputs are no longer removed
+- Corrected the readme: cleaning runs on the esbuild path only
+
+### Fixed
+
+- Fixed built output being deleted on Windows and on case-insensitive filesystems
+- Fixed the output directory being resolved against the process working directory rather than esbuild's
+- Fixed every file being deleted when no build output is found in the output directory
+- Fixed an unreadable output directory being treated as an empty one
+- Fixed a directory outside the build being cleaned, including one on another drive or network share
+- Fixed a symlink to a build output not being removed
+- Fixed refusal messages naming the resolved path rather than the configured value
+
 ## [1.3.6] - 2026-06-14
 
 ### Changed

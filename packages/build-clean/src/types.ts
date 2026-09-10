@@ -30,6 +30,13 @@ export interface Options {
   destructive?: boolean;
 
   /**
+   * Turn a refusal to clean into a build failure. When false the plugin logs the
+   * refusal and leaves the output directory alone.
+   * @default false
+   */
+  strict?: boolean;
+
+  /**
    * Feature flags for optional functionality
    */
   features?: Features;

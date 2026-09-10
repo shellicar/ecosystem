@@ -5,6 +5,7 @@ export const defaultOptions = {
   debug: false,
   verbose: false,
   destructive: false,
+  strict: false,
   features: {
     [Feature.RemoveEmptyDirs]: true,
   },
