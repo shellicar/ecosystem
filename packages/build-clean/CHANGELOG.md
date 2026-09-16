@@ -5,27 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.4.0] - 2026-09-16
 
 ### Added
 
-- Added a strict option that turns a refusal to clean into a build failure
-- Added an exported error type for each failure the plugin raises, so they can be caught by type rather than by message
+- A strict option that turns a refusal to clean into a build failure
+- An exported error type for each failure the plugin raises, so they can be caught by type rather than by message
 
 ### Changed
 
-- Hard links to build outputs are no longer removed
-- Corrected the readme: cleaning runs on the esbuild path only
+- Cleaning identifies files by asking the filesystem rather than by comparing paths, so a symlink to a build output is removed and a hard link to one is kept
+- Documented that cleaning only runs on the esbuild path: the vite, rollup, webpack, rspack, farm and rolldown entry points have never done anything
 
 ### Fixed
 
-- Fixed built output being deleted on Windows and on case-insensitive filesystems
-- Fixed the output directory being resolved against the process working directory rather than esbuild's
-- Fixed every file being deleted when no build output is found in the output directory
-- Fixed an unreadable output directory being treated as an empty one
-- Fixed a directory outside the build being cleaned, including one on another drive or network share
-- Fixed a symlink to a build output not being removed
-- Fixed refusal messages naming the resolved path rather than the configured value
+- Built output is no longer deleted on Windows, or on case-insensitive filesystems
+- The output directory is resolved against esbuild's working directory rather than the process one
+- Nothing is deleted when no build output is found in the output directory, or when the directory cannot be read
+- A directory outside the build is refused, including one on another drive or network share
+- Refusal messages name the output directory as it was configured, rather than its resolved path
 
 ## [1.3.6] - 2026-06-14
 
@@ -161,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[1.4.0]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.4.0
 [1.3.6]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.3.6
 [1.3.5]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.3.5
 [1.3.4]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.3.4
