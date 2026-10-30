@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
 
 ### Added
 
@@ -276,24 +276,24 @@ Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di-lite also
 [4.0.1]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.1
 [4.0.0]: https://github.com/shellicar/ecosystem/releases/tag/core-di@4.0.0
 [3.1.7]: https://github.com/shellicar/ecosystem/releases/tag/core-di@3.1.7
-[3.1.6]: https://github.com/shellicar/ecosystem/releases/tag/3.1.6
-[3.1.5]: https://github.com/shellicar/ecosystem/releases/tag/3.1.5
-[3.1.4]: https://github.com/shellicar/ecosystem/releases/tag/3.1.4
-[3.1.3]: https://github.com/shellicar/ecosystem/releases/tag/3.1.3
-[3.1.2]: https://github.com/shellicar/ecosystem/releases/tag/3.1.2
-[3.1.1]: https://github.com/shellicar/ecosystem/releases/tag/3.1.1
-[3.1.0]: https://github.com/shellicar/ecosystem/releases/tag/3.1.0
-[3.0.0]: https://github.com/shellicar/ecosystem/releases/tag/3.0.0
-[2.4.0]: https://github.com/shellicar/ecosystem/releases/tag/2.4.0
-[2.3.0]: https://github.com/shellicar/ecosystem/releases/tag/2.3.0
-[2.2.0]: https://github.com/shellicar/ecosystem/releases/tag/2.2.0
-[2.1.1]: https://github.com/shellicar/ecosystem/releases/tag/2.1.1
-[2.1.0]: https://github.com/shellicar/ecosystem/releases/tag/2.1.0
-[2.0.1]: https://github.com/shellicar/ecosystem/releases/tag/2.0.1
-[2.0.0]: https://github.com/shellicar/ecosystem/releases/tag/2.0.0
-[1.0.0]: https://github.com/shellicar/ecosystem/releases/tag/1.0.0
-[0.1.0]: https://github.com/shellicar/ecosystem/releases/tag/0.1.0
-[0.0.4]: https://github.com/shellicar/ecosystem/releases/tag/0.0.4
-[0.0.3]: https://github.com/shellicar/ecosystem/releases/tag/0.0.3
-[0.0.2]: https://github.com/shellicar/ecosystem/releases/tag/0.0.2
-[0.0.1]: https://github.com/shellicar/ecosystem/releases/tag/0.0.1
+[3.1.6]: https://github.com/shellicar/core-di/releases/tag/3.1.6
+[3.1.5]: https://github.com/shellicar/core-di/releases/tag/3.1.5
+[3.1.4]: https://github.com/shellicar/core-di/releases/tag/3.1.4
+[3.1.3]: https://github.com/shellicar/core-di/releases/tag/3.1.3
+[3.1.2]: https://github.com/shellicar/core-di/releases/tag/3.1.2
+[3.1.1]: https://github.com/shellicar/core-di/releases/tag/3.1.1
+[3.1.0]: https://github.com/shellicar/core-di/releases/tag/3.1.0
+[3.0.0]: https://github.com/shellicar/core-di/releases/tag/3.0.0
+[2.4.0]: https://github.com/shellicar/core-di/releases/tag/2.4.0
+[2.3.0]: https://github.com/shellicar/core-di/releases/tag/2.3.0
+[2.2.0]: https://github.com/shellicar/core-di/releases/tag/2.2.0
+[2.1.1]: https://github.com/shellicar/core-di/releases/tag/2.1.1
+[2.1.0]: https://github.com/shellicar/core-di/releases/tag/2.1.0
+[2.0.1]: https://github.com/shellicar/core-di/releases/tag/2.0.1
+[2.0.0]: https://github.com/shellicar/core-di/releases/tag/2.0.0
+[1.0.0]: https://github.com/shellicar/core-di/releases/tag/1.0.0
+[0.1.0]: https://github.com/shellicar/core-di/releases/tag/0.1.0
+[0.0.4]: https://github.com/shellicar/core-di/releases/tag/0.0.4
+[0.0.3]: https://github.com/shellicar/core-di/releases/tag/0.0.3
+[0.0.2]: https://github.com/shellicar/core-di/releases/tag/0.0.2
+[0.0.1]: https://github.com/shellicar/core-di/releases/tag/0.0.1

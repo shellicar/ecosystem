@@ -36,4 +36,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.3]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@1.0.3
 [1.0.2]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@1.0.2
 [1.0.1]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@1.0.1
-[1.0.0]: https://github.com/shellicar/ecosystem/releases/tag/1.0.0
+[1.0.0]: https://github.com/shellicar/graphql-codegen-treeshake/releases/tag/1.0.0

@@ -28,6 +28,12 @@ const ReleaseMarker = z
     version: z.string(),
     date: z.string(),
     tag: z.string().optional(),
+    // TODO(claude): undecided: how strictly `repo` is checked. For now it accepts only GitHub's owner characters (letters, digits, hyphens) and repository-name characters (also dots and underscores).
+    repo: z
+      .string()
+      .regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/)
+      .describe("The GitHub repository the release was published from, as owner/name (for example shellicar/core-di), when that isn't this repository. The release links to that repository's release for its tag; without it, the release links to this repository's.")
+      .optional(),
     // Release-level prose: rendered as a paragraph under the version heading,
     // for the release-wide story that individual change lines cannot carry.
     description: z.string().optional(),
