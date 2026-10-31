@@ -28,7 +28,6 @@ const ReleaseMarker = z
     version: z.string(),
     date: z.string(),
     tag: z.string().optional(),
-    // TODO(claude): undecided: how strictly `repo` is checked. For now it accepts only GitHub's owner characters (letters, digits, hyphens) and repository-name characters (also dots and underscores).
     repo: z
       .string()
       .regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/)
