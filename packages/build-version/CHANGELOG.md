@@ -30,8 +30,8 @@ Replaces the single `versionCalculator` override with an ordered `strategies` li
 
 ### Security
 
-- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 - Fixed GHSA-g7r4-m6w7-qqqr in esbuild ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr))
+- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 
 ## [1.3.9] - 2026-05-17
 
@@ -53,8 +53,8 @@ Replaces the single `versionCalculator` override with an ordered `strategies` li
 
 ### Changed
 
-- Updated vite peer dependency from ^6 to ^7
 - Updated dependencies to latest versions
+- Updated vite peer dependency from ^6 to ^7
 
 ### Security
 
@@ -76,27 +76,27 @@ Replaces the single `versionCalculator` override with an ordered `strategies` li
 ### Security
 
 - Fixed GHSA-38f7-945m-qr2g in effect ([GHSA-38f7-945m-qr2g](https://github.com/advisories/GHSA-38f7-945m-qr2g))
-- Fixed GHSA-c2c7-rcm5-vvqj in picomatch ([GHSA-c2c7-rcm5-vvqj](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj))
 - Fixed GHSA-3v7f-55p6-f55p in picomatch ([GHSA-3v7f-55p6-f55p](https://github.com/advisories/GHSA-3v7f-55p6-f55p))
 - Fixed GHSA-48c2-rrv3-qjmp in yaml ([GHSA-48c2-rrv3-qjmp](https://github.com/advisories/GHSA-48c2-rrv3-qjmp))
+- Fixed GHSA-c2c7-rcm5-vvqj in picomatch ([GHSA-c2c7-rcm5-vvqj](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj))
 - Fixed GHSA-f886-m6hf-6m8v in brace-expansion ([GHSA-f886-m6hf-6m8v](https://github.com/advisories/GHSA-f886-m6hf-6m8v))
 
 ## [1.3.4] - 2026-02-28
 
 ### Changed
 
-- Updated rollup to 4.59, @shellicar/build-clean to 1.2.3
 - Updated all dependencies to latest versions
+- Updated rollup to 4.59, @shellicar/build-clean to 1.2.3
 
 ### Security
 
-- Fixed GHSA-3ppc-4f35-3m26 in minimatch ([GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26))
-- Fixed GHSA-7r86-cg39-jmmj in minimatch ([GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj))
 - Fixed GHSA-23c5-xmqv-rm74 in minimatch ([GHSA-23c5-xmqv-rm74](https://github.com/advisories/GHSA-23c5-xmqv-rm74))
-- Fixed GHSA-mw96-cpmx-2vgc in rollup ([GHSA-mw96-cpmx-2vgc](https://github.com/advisories/GHSA-mw96-cpmx-2vgc))
-- Fixed GHSA-7gcc-r8m5-44qm in koa ([GHSA-7gcc-r8m5-44qm](https://github.com/advisories/GHSA-7gcc-r8m5-44qm))
-- Fixed GHSA-5c6j-r48x-rmvq in serialize-javascript ([GHSA-5c6j-r48x-rmvq](https://github.com/advisories/GHSA-5c6j-r48x-rmvq))
 - Fixed GHSA-2g4f-4pwh-qvx6 in ajv ([GHSA-2g4f-4pwh-qvx6](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6))
+- Fixed GHSA-3ppc-4f35-3m26 in minimatch ([GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26))
+- Fixed GHSA-5c6j-r48x-rmvq in serialize-javascript ([GHSA-5c6j-r48x-rmvq](https://github.com/advisories/GHSA-5c6j-r48x-rmvq))
+- Fixed GHSA-7gcc-r8m5-44qm in koa ([GHSA-7gcc-r8m5-44qm](https://github.com/advisories/GHSA-7gcc-r8m5-44qm))
+- Fixed GHSA-7r86-cg39-jmmj in minimatch ([GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj))
+- Fixed GHSA-mw96-cpmx-2vgc in rollup ([GHSA-mw96-cpmx-2vgc](https://github.com/advisories/GHSA-mw96-cpmx-2vgc))
 
 ## [1.3.3] - 2026-02-05
 
@@ -137,8 +137,8 @@ Replaces the single `versionCalculator` override with an ordered `strategies` li
 
 ### Added
 
-- `win32` support (dotnet-gitversion.exe)
 - `strict` option (raise error if gitversion fails, defaults to false)
+- `win32` support (dotnet-gitversion.exe)
 
 ## [1.0.1] - 2025-01-16
 
@@ -150,15 +150,15 @@ Replaces the single `versionCalculator` override with an ordered `strategies` li
 
 ### Changed
 
-- Use `packages` and `examples` monorepo structure
 - Explicitly export types.
+- Use `packages` and `examples` monorepo structure
 
 ## [0.2.1] - 2025-01-06
 
 ### Changed
 
-- Use virtual module for vite
 - Force plugin to run first with `enforce: 'pre'`
+- Use virtual module for vite
 
 ## [0.2.0] - 2025-01-05
 
