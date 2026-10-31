@@ -128,15 +128,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2025-01-02
 
-### Fixed
-
-- Added files to npm files
-
-## [0.1.0] - 2025-01-01
-
 ### Added
 
 - Initial release
+
+### Fixed
+
+- Added files to npm files
 
 [1.0.8]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.8
 [1.0.7]: https://github.com/shellicar/ecosystem/releases/tag/svelte-adapter-azure-functions@1.0.7
@@ -153,4 +151,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.2.1]: https://github.com/shellicar/svelte-adapter-azure-functions/releases/tag/0.2.1
 [0.2.0]: https://github.com/shellicar/svelte-adapter-azure-functions/releases/tag/0.2.0
 [0.1.1]: https://github.com/shellicar/svelte-adapter-azure-functions/releases/tag/0.1.1
-[0.1.0]: https://github.com/shellicar/ecosystem/releases/tag/0.1.0

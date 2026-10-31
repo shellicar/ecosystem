@@ -1,5 +1,4 @@
 {"description":"Initial release","category":"added"}
-{"type":"release","version":"0.1.0","date":"2025-01-01","tag":"0.1.0"}
 {"description":"Added files to npm files","category":"fixed"}
 {"type":"release","version":"0.1.1","date":"2025-01-02","tag":"0.1.1","repo":"shellicar/svelte-adapter-azure-functions"}
 {"description":"Added lighter README in package","category":"fixed"}

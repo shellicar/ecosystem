@@ -156,20 +156,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Forked from willmorgan/winston-azure-application-insights (originally bragma/winston-azure-application-insights)
+- Update to applicationinsights 3.x
+- Update to winston 3.x
+- Use typescript
 - Use @biomejs/biome for linting
 
 ### Fixed
 
 - Fix dependencies
-
-## [5.0.0] - 2024-09-22
-
-### Changed
-
-- Forked from willmorgan/winston-azure-application-insights (originally bragma/winston-azure-application-insights)
-- Update to applicationinsights 3.x
-- Update to winston 3.x
-- Use typescript
 
 [6.0.8]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.8
 [6.0.7]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@6.0.7
@@ -188,4 +183,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [5.0.3]: https://github.com/shellicar/winston-azure-application-insights/releases/tag/5.0.3
 [5.0.2]: https://github.com/shellicar/winston-azure-application-insights/releases/tag/5.0.2
 [5.0.1]: https://github.com/shellicar/winston-azure-application-insights/releases/tag/5.0.1
-[5.0.0]: https://github.com/shellicar/ecosystem/releases/tag/winston-azure-application-insights@5.0.0

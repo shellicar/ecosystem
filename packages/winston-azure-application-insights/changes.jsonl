@@ -2,7 +2,6 @@
 {"description":"Update to applicationinsights 3.x","category":"changed"}
 {"description":"Update to winston 3.x","category":"changed"}
 {"description":"Use typescript","category":"changed"}
-{"type":"release","version":"5.0.0","date":"2024-09-22"}
 {"description":"Fix dependencies","category":"fixed"}
 {"description":"Use @biomejs/biome for linting","category":"changed"}
 {"type":"release","version":"5.0.1","date":"2024-09-30","tag":"5.0.1","repo":"shellicar/winston-azure-application-insights"}
