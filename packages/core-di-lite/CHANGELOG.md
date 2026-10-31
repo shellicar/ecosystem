@@ -21,15 +21,15 @@ Rebuilt on `@shellicar/core-di-engine`, the shared engine that core-di also comp
 
 ### Added
 
-- Shared identity across faces: every identifier declared from one `register()` call resolves to the same instance, including when the instance comes from a factory.
 - `forward(source).to(target)` to redirect one identifier to another registration.
-- `validate()` reports wiring problems (missing registrations, cycles) from the static graph without constructing anything, for CI.
 - `resolveAll(identifier)` returns one instance per registration.
+- `validate()` reports wiring problems (missing registrations, cycles) from the static graph without constructing anything, for CI.
+- Shared identity across faces: every identifier declared from one `register()` call resolves to the same instance, including when the instance comes from a factory.
 
 ### Changed
 
-- **Breaking:** the registration API is now the same grammar as core-di: `register(Implementation).as(Identifier)`, `.asSelf()`, and `.using(factory)` or `.using([deps], factory)`. `register(identifier).to(implementation)` is gone.
 - **Breaking:** registering the same identifier twice no longer throws at registration. Multiple registrations are allowed; `resolve()` throws `MultipleRegistrationError` for an ambiguous identifier, and `resolveAll()` returns every registration.
+- **Breaking:** the registration API is now the same grammar as core-di: `register(Implementation).as(Identifier)`, `.asSelf()`, and `.using(factory)` or `.using([deps], factory)`. `register(identifier).to(implementation)` is gone.
 - Errors and `dependsOn` come from the shared engine, so `instanceof` checks and decorator metadata are compatible with core-di.
 
 ### Removed

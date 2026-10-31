@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 - Fixed GHSA-g7r4-m6w7-qqqr in esbuild ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr))
+- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 
 ## [1.4.6] - 2026-05-17
 
@@ -61,9 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Fixed GHSA-3ppc-4f35-3m26 in minimatch ([GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26))
 - Fixed GHSA-2g4f-4pwh-qvx6 in ajv ([GHSA-2g4f-4pwh-qvx6](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6))
 - Fixed GHSA-38c4-r59v-3vqw in markdown-it ([GHSA-38c4-r59v-3vqw](https://github.com/advisories/GHSA-38c4-r59v-3vqw))
+- Fixed GHSA-3ppc-4f35-3m26 in minimatch ([GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26))
 
 ## [1.4.1] - 2026-02-09
 
@@ -80,15 +80,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `errorPolicy` option to control how errors are handled during builds
 - Added `features` option to enable/disable specific plugin features
 - Added esbuild watch mode feature for automatic rebuilds (enabled by default)
 - Added Vite watch mode and HMR (Hot Module Replacement) feature (enabled by default)
-- Added `errorPolicy` option to control how errors are handled during builds
 
 ### Changed
 
-- Updated `unplugin` dependency from ^2.3.11 to ^3.0.0
 - Explicitly exported all public types that were previously only available as dependencies of other types
+- Updated `unplugin` dependency from ^2.3.11 to ^3.0.0
 
 ### Deprecated
 

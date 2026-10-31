@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 - Fixed GHSA-g7r4-m6w7-qqqr in esbuild ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr))
+- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 
 ## [1.0.6] - 2026-05-17
 
@@ -27,10 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Fixed GHSA-77vg-94rm-hx3p in devalue ([GHSA-77vg-94rm-hx3p](https://github.com/advisories/GHSA-77vg-94rm-hx3p))
-- Fixed GHSA-pr6f-5x2q-rwfp in svelte ([GHSA-pr6f-5x2q-rwfp](https://github.com/advisories/GHSA-pr6f-5x2q-rwfp))
-- Fixed GHSA-f3cj-j4f6-wq85 in svelte ([GHSA-f3cj-j4f6-wq85](https://github.com/advisories/GHSA-f3cj-j4f6-wq85))
-- Fixed GHSA-rcqx-6q8c-2c42 in svelte ([GHSA-rcqx-6q8c-2c42](https://github.com/advisories/GHSA-rcqx-6q8c-2c42))
 - Fixed GHSA-9rmh-mm8f-r9h6 in svelte ([GHSA-9rmh-mm8f-r9h6](https://github.com/advisories/GHSA-9rmh-mm8f-r9h6))
+- Fixed GHSA-f3cj-j4f6-wq85 in svelte ([GHSA-f3cj-j4f6-wq85](https://github.com/advisories/GHSA-f3cj-j4f6-wq85))
+- Fixed GHSA-pr6f-5x2q-rwfp in svelte ([GHSA-pr6f-5x2q-rwfp](https://github.com/advisories/GHSA-pr6f-5x2q-rwfp))
+- Fixed GHSA-rcqx-6q8c-2c42 in svelte ([GHSA-rcqx-6q8c-2c42](https://github.com/advisories/GHSA-rcqx-6q8c-2c42))
 
 ## [1.0.5] - 2026-05-08
 
@@ -56,27 +56,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Fix GHSA-23c5-xmqv-rm74 in minimatch ([GHSA-23c5-xmqv-rm74](https://github.com/advisories/GHSA-23c5-xmqv-rm74))
+- Fix GHSA-33hq-fvwr-56pm in @sveltejs/kit ([GHSA-33hq-fvwr-56pm](https://github.com/advisories/GHSA-33hq-fvwr-56pm))
+- Fix GHSA-3ppc-4f35-3m26 in minimatch ([GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26))
+- Fix GHSA-6738-r8g5-qwp3 in svelte ([GHSA-6738-r8g5-qwp3](https://github.com/advisories/GHSA-6738-r8g5-qwp3))
+- Fix GHSA-7h2j-956f-4vf2 in brace-expansion ([GHSA-7h2j-956f-4vf2](https://github.com/advisories/GHSA-7h2j-956f-4vf2))
+- Fix GHSA-7r86-cg39-jmmj in minimatch ([GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj))
+- Fix GHSA-88qp-p4qg-rqm6 in svelte ([GHSA-88qp-p4qg-rqm6](https://github.com/advisories/GHSA-88qp-p4qg-rqm6))
+- Fix GHSA-8qm3-746x-r74r in @sveltejs/kit ([GHSA-8qm3-746x-r74r](https://github.com/advisories/GHSA-8qm3-746x-r74r))
+- Fix GHSA-crpf-4hrx-3jrp in devalue ([GHSA-crpf-4hrx-3jrp](https://github.com/advisories/GHSA-crpf-4hrx-3jrp))
+- Fix GHSA-f7gr-6p89-r883 in svelte ([GHSA-f7gr-6p89-r883](https://github.com/advisories/GHSA-f7gr-6p89-r883))
+- Fix GHSA-fpg4-jhqr-589c in @sveltejs/kit ([GHSA-fpg4-jhqr-589c](https://github.com/advisories/GHSA-fpg4-jhqr-589c))
 - Fix GHSA-g2pg-6438-jwpf in devalue ([GHSA-g2pg-6438-jwpf](https://github.com/advisories/GHSA-g2pg-6438-jwpf))
-- Fix GHSA-vw5p-8cq8-m7mv in devalue ([GHSA-vw5p-8cq8-m7mv](https://github.com/advisories/GHSA-vw5p-8cq8-m7mv))
+- Fix GHSA-g9mf-h72j-4rw9 in undici ([GHSA-g9mf-h72j-4rw9](https://github.com/advisories/GHSA-g9mf-h72j-4rw9))
+- Fix GHSA-h7h7-mm68-gmrc in @sveltejs/kit ([GHSA-h7h7-mm68-gmrc](https://github.com/advisories/GHSA-h7h7-mm68-gmrc))
 - Fix GHSA-j2f3-wq62-6q46 in @sveltejs/kit ([GHSA-j2f3-wq62-6q46](https://github.com/advisories/GHSA-j2f3-wq62-6q46))
 - Fix GHSA-j62c-4x62-9r35 in @sveltejs/kit ([GHSA-j62c-4x62-9r35](https://github.com/advisories/GHSA-j62c-4x62-9r35))
-- Fix GHSA-7h2j-956f-4vf2 in brace-expansion ([GHSA-7h2j-956f-4vf2](https://github.com/advisories/GHSA-7h2j-956f-4vf2))
-- Fix GHSA-3ppc-4f35-3m26 in minimatch ([GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26))
-- Fix GHSA-7r86-cg39-jmmj in minimatch ([GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj))
-- Fix GHSA-23c5-xmqv-rm74 in minimatch ([GHSA-23c5-xmqv-rm74](https://github.com/advisories/GHSA-23c5-xmqv-rm74))
-- Fix GHSA-mw96-cpmx-2vgc in rollup ([GHSA-mw96-cpmx-2vgc](https://github.com/advisories/GHSA-mw96-cpmx-2vgc))
-- Fix GHSA-6738-r8g5-qwp3 in svelte ([GHSA-6738-r8g5-qwp3](https://github.com/advisories/GHSA-6738-r8g5-qwp3))
-- Fix GHSA-g9mf-h72j-4rw9 in undici ([GHSA-g9mf-h72j-4rw9](https://github.com/advisories/GHSA-g9mf-h72j-4rw9))
-- Fix GHSA-88qp-p4qg-rqm6 in svelte ([GHSA-88qp-p4qg-rqm6](https://github.com/advisories/GHSA-88qp-p4qg-rqm6))
-- Fix GHSA-vrhm-gvg7-fpcf in @sveltejs/kit ([GHSA-vrhm-gvg7-fpcf](https://github.com/advisories/GHSA-vrhm-gvg7-fpcf))
-- Fix GHSA-crpf-4hrx-3jrp in devalue ([GHSA-crpf-4hrx-3jrp](https://github.com/advisories/GHSA-crpf-4hrx-3jrp))
 - Fix GHSA-m56q-vw4c-c2cp in svelte ([GHSA-m56q-vw4c-c2cp](https://github.com/advisories/GHSA-m56q-vw4c-c2cp))
-- Fix GHSA-f7gr-6p89-r883 in svelte ([GHSA-f7gr-6p89-r883](https://github.com/advisories/GHSA-f7gr-6p89-r883))
-- Fix GHSA-h7h7-mm68-gmrc in @sveltejs/kit ([GHSA-h7h7-mm68-gmrc](https://github.com/advisories/GHSA-h7h7-mm68-gmrc))
+- Fix GHSA-mw96-cpmx-2vgc in rollup ([GHSA-mw96-cpmx-2vgc](https://github.com/advisories/GHSA-mw96-cpmx-2vgc))
 - Fix GHSA-phwv-c562-gvmh in svelte ([GHSA-phwv-c562-gvmh](https://github.com/advisories/GHSA-phwv-c562-gvmh))
-- Fix GHSA-33hq-fvwr-56pm in @sveltejs/kit ([GHSA-33hq-fvwr-56pm](https://github.com/advisories/GHSA-33hq-fvwr-56pm))
-- Fix GHSA-8qm3-746x-r74r in @sveltejs/kit ([GHSA-8qm3-746x-r74r](https://github.com/advisories/GHSA-8qm3-746x-r74r))
-- Fix GHSA-fpg4-jhqr-589c in @sveltejs/kit ([GHSA-fpg4-jhqr-589c](https://github.com/advisories/GHSA-fpg4-jhqr-589c))
+- Fix GHSA-vrhm-gvg7-fpcf in @sveltejs/kit ([GHSA-vrhm-gvg7-fpcf](https://github.com/advisories/GHSA-vrhm-gvg7-fpcf))
+- Fix GHSA-vw5p-8cq8-m7mv in devalue ([GHSA-vw5p-8cq8-m7mv](https://github.com/advisories/GHSA-vw5p-8cq8-m7mv))
 
 ## [1.0.2] - 2025-12-26
 

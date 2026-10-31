@@ -19,11 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Built output is no longer deleted on Windows, or on case-insensitive filesystems
-- The output directory is resolved against esbuild's working directory rather than the process one
-- Nothing is deleted when no build output is found in the output directory, or when the directory cannot be read
 - A directory outside the build is refused, including one on another drive or network share
+- Built output is no longer deleted on Windows, or on case-insensitive filesystems
+- Nothing is deleted when no build output is found in the output directory, or when the directory cannot be read
 - Refusal messages name the output directory as it was configured, rather than its resolved path
+- The output directory is resolved against esbuild's working directory rather than the process one
 
 ## [1.3.6] - 2026-06-14
 
@@ -33,8 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 - Fixed GHSA-g7r4-m6w7-qqqr in esbuild ([GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr))
+- Fixed GHSA-gv7w-rqvm-qjhr in esbuild ([GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr))
 
 ## [1.3.5] - 2026-05-17
 
@@ -56,8 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated vite peer dependency from ^6 to ^7
 - Updated dependencies to latest versions
+- Updated vite peer dependency from ^6 to ^7
 
 ### Security
 
@@ -112,8 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Fixed CVE-2025-68458 in webpack ([GHSA-8fgc-7cc6-rx7x](https://github.com/advisories/GHSA-8fgc-7cc6-rx7x))
 - Fixed CVE-2025-68157 in webpack ([GHSA-38r7-794h-5758](https://github.com/advisories/GHSA-38r7-794h-5758))
+- Fixed CVE-2025-68458 in webpack ([GHSA-8fgc-7cc6-rx7x](https://github.com/advisories/GHSA-8fgc-7cc6-rx7x))
 
 ## [1.2.1] - 2026-02-04
 
@@ -125,9 +125,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added features option to enable/disable specific plugin features
-- Added empty directory removal feature (enabled by default)
 - Added custom logger support via logger option
+- Added empty directory removal feature (enabled by default)
+- Added features option to enable/disable specific plugin features
 
 ## [1.1.3] - 2026-02-02
 
