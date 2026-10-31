@@ -2,26 +2,25 @@
 {"description":"Update to applicationinsights 3.x","category":"changed"}
 {"description":"Update to winston 3.x","category":"changed"}
 {"description":"Use typescript","category":"changed"}
-{"type":"release","version":"5.0.0","date":"2024-09-22"}
 {"description":"Fix dependencies","category":"fixed"}
 {"description":"Use @biomejs/biome for linting","category":"changed"}
-{"type":"release","version":"5.0.1","date":"2024-09-30","tag":"5.0.1"}
+{"type":"release","version":"5.0.1","date":"2024-09-30","tag":"5.0.1","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Add ITelemetryFilter to allow filtering traces and exceptions","category":"added"}
 {"description":"Simplify tsup config","category":"changed"}
 {"description":"Fix applicationinsights dependencies","category":"fixed"}
-{"type":"release","version":"5.0.2","date":"2024-09-30","tag":"5.0.2"}
+{"type":"release","version":"5.0.2","date":"2024-09-30","tag":"5.0.2","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Add more options for createWinstonLogger helper function","category":"added"}
-{"type":"release","version":"5.0.3","date":"2024-09-30","tag":"5.0.3"}
+{"type":"release","version":"5.0.3","date":"2024-09-30","tag":"5.0.3","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Expose defaultMeta for helper function","category":"changed"}
-{"type":"release","version":"5.0.4","date":"2024-09-30","tag":"5.0.4"}
+{"type":"release","version":"5.0.4","date":"2024-09-30","tag":"5.0.4","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Expose level for creating logger","category":"changed"}
-{"type":"release","version":"5.0.5","date":"2024-10-06","tag":"5.0.5"}
+{"type":"release","version":"5.0.5","date":"2024-10-06","tag":"5.0.5","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Update options and logging fields","category":"changed"}
-{"type":"release","version":"5.0.6","date":"2024-10-06","tag":"5.0.6"}
+{"type":"release","version":"5.0.6","date":"2024-10-06","tag":"5.0.6","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Fix incorrect App Insights severity","category":"fixed"}
-{"type":"release","version":"5.0.7","date":"2024-10-06","tag":"5.0.7"}
+{"type":"release","version":"5.0.7","date":"2024-10-06","tag":"5.0.7","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Updated all dependencies to latest versions","category":"changed"}
-{"type":"release","version":"5.1.0","date":"2025-08-03","tag":"5.1.0"}
+{"type":"release","version":"5.1.0","date":"2025-08-03","tag":"5.1.0","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Complete ground-up rewrite of the library with new architecture, API, and approach to logging","category":"changed"}
 {"description":"Factory functions for simpler setup","category":"added"}
 {"description":"Automatic Error object detection and extraction","category":"added"}
@@ -37,13 +36,13 @@
 {"description":"Improved Winston behaviour compatibility","category":"changed"}
 {"description":"Better error message handling","category":"changed"}
 {"description":"Enhanced property extraction logic","category":"changed"}
-{"type":"release","version":"6.0.0","date":"2025-09-19","tag":"6.0.0"}
+{"type":"release","version":"6.0.0","date":"2025-09-19","tag":"6.0.0","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Updated all dependencies to latest versions","category":"changed"}
-{"type":"release","version":"6.0.1","date":"2025-10-24","tag":"6.0.1"}
+{"type":"release","version":"6.0.1","date":"2025-10-24","tag":"6.0.1","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Concatenate all string parameters into Trace message","category":"changed"}
-{"type":"release","version":"6.0.2","date":"2025-10-24","tag":"6.0.2-preview.1"}
+{"type":"release","version":"6.0.2","date":"2025-10-24","tag":"6.0.2-preview.1","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Updated all dependencies to latest versions","category":"changed"}
-{"type":"release","version":"6.0.3","date":"2025-12-26","tag":"6.0.3"}
+{"type":"release","version":"6.0.3","date":"2025-12-26","tag":"6.0.3","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Fixed GHSA-7h2j-956f-4vf2 in brace-expansion","category":"security","metadata":{"ghsa":"GHSA-7h2j-956f-4vf2"}}
 {"description":"Fixed GHSA-3ppc-4f35-3m26 in minimatch","category":"security","metadata":{"ghsa":"GHSA-3ppc-4f35-3m26"}}
 {"description":"Fixed GHSA-7r86-cg39-jmmj in minimatch","category":"security","metadata":{"ghsa":"GHSA-7r86-cg39-jmmj"}}
@@ -52,7 +51,7 @@
 {"description":"Fixed GHSA-xxjr-mmjv-4gpg in lodash","category":"security","metadata":{"ghsa":"GHSA-xxjr-mmjv-4gpg"}}
 {"description":"Removed unused `applicationinsightsv34` alias","category":"changed"}
 {"description":"Updated development dependencies","category":"changed"}
-{"type":"release","version":"6.0.4","date":"2026-02-28","tag":"6.0.4"}
+{"type":"release","version":"6.0.4","date":"2026-02-28","tag":"6.0.4","repo":"shellicar/winston-azure-application-insights"}
 {"description":"Updated dependencies to latest versions","category":"changed"}
 {"type":"release","version":"6.0.5","date":"2026-04-15","tag":"winston-azure-application-insights@6.0.5"}
 {"description":"Fixed GHSA-xq3m-2v4x-88gg in protobufjs","category":"security","metadata":{"ghsa":"GHSA-xq3m-2v4x-88gg"}}

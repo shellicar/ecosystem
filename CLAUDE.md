@@ -40,6 +40,12 @@ if they drift, so after editing a `changes.jsonl`, regenerate all changelogs:
 pnpm --filter scripts run changelog
 ```
 
+Each release entry in `changes.jsonl` links to its tag's release in this repository. A
+release published before its package moved here was published from the package's own
+repository, where its tag lives, so its entry carries `repo` as `owner/name` (e.g.
+`"repo":"shellicar/core-di"`) and the CHANGELOG links to that repository's release
+instead. A release published from this repository leaves `repo` out.
+
 To cut a release: bump the package's version, regenerate its changelog, merge, then run
 
 ```bash

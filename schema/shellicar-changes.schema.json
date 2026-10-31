@@ -17,6 +17,11 @@
         "tag": {
           "type": "string"
         },
+        "repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+\\/[A-Za-z0-9._-]+$",
+          "description": "The GitHub repository the release was published from, as owner/name (for example shellicar/core-di), when that isn't this repository. The release links to that repository's release for its tag; without it, the release links to this repository's."
+        },
         "description": {
           "type": "string"
         },
