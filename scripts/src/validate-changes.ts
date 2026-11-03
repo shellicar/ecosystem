@@ -3,10 +3,24 @@ import { glob } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
+import semver from 'semver';
 
 // Validate changes.jsonl files against the @shellicar/changes JSON schema.
 // The schema is generated from this repo's changes.config.json, so the
 // allowed categories are baked into the schema and enforced by ajv.
+// Each release marker's version must also be valid semver and above the
+// version of the release marker before it in the same file.
+
+// A version written exactly as Semantic Versioning writes one. semver.parse also accepts a
+// leading `v` and surrounding spaces, which the comparison with the original rejects.
+function isSemver(version: string): boolean {
+  const parsed = semver.parse(version);
+  if (parsed == null) {
+    return false;
+  }
+  const written = parsed.build.length > 0 ? `${parsed.version}+${parsed.build.join('.')}` : parsed.version;
+  return written === version;
+}
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..', '..');
@@ -49,6 +63,7 @@ async function main() {
       continue;
     }
 
+    let previousVersion: string | undefined;
     const lines = content.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const raw = lines[i];
@@ -70,6 +85,19 @@ async function main() {
           line: i + 1,
           message: JSON.stringify(validate.errors, null, 2),
         });
+        continue;
+      }
+
+      const line = parsed as { type?: string; version?: string };
+      if (line.type === 'release' && typeof line.version === 'string') {
+        if (!isSemver(line.version)) {
+          failures.push({ file, line: i + 1, message: `release version ${line.version} is not a valid semver version` });
+          continue;
+        }
+        if (previousVersion != null && !semver.gt(line.version, previousVersion)) {
+          failures.push({ file, line: i + 1, message: `release version ${line.version} is not above the release before it (${previousVersion})` });
+        }
+        previousVersion = line.version;
       }
     }
   }
