@@ -35,6 +35,23 @@ describe('renderChangelog release links', () => {
   });
 });
 
+describe('renderChangelog unreleased', () => {
+  it('a package with nothing unreleased renders an empty Unreleased section', () => {
+    const expected = '## [Unreleased]\n\n## [4.0.0] - 2026-04-15';
+
+    const actual = renderChangelog(
+      [
+        { description: 'Initial release', category: 'added' },
+        { type: 'release', version: '4.0.0', date: '2026-04-15', tag: 'core-di@4.0.0' },
+      ],
+      'core-di',
+      categories,
+    );
+
+    expect(actual).toContain(expected);
+  });
+});
+
 describe('renderChangelog pre-releases', () => {
   const lines: (Entry | ReleaseMarker)[] = [
     { description: 'Initial release', category: 'added' },

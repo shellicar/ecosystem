@@ -67,8 +67,8 @@ export function renderChangelog(lines: (Entry | ReleaseMarker)[], shortName: str
 
   const parts: string[] = [`# Changelog${PREAMBLE}`];
 
+  parts.push('\n## [Unreleased]');
   if (unreleased.length > 0) {
-    parts.push('\n## [Unreleased]');
     parts.push(`\n${renderEntries(unreleased)}`);
   }
 
