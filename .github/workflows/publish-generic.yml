@@ -44,7 +44,7 @@ jobs:
         env:
           PACKAGE_DIR: ${{ inputs.package-dir }}
           VERSION: ${{ inputs.version }}
-        run: pnpm --filter scripts --silent exec tsx src/verify-changelog-cli.ts "$PACKAGE_DIR" "$VERSION"
+        run: pnpm --filter scripts --fail-if-no-match --silent exec tsx src/verify-changelog-cli.ts "$PACKAGE_DIR" "$VERSION"
 
       - uses: ./.github/actions/publish-package
         with:
