@@ -9,7 +9,6 @@ import { verifyChangelog } from './verify-changelog.js';
 // scripts/src -> scripts -> repo root
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// TODO(claude): undecided: whether the package directory and version come as positional arguments, flags like decide-cli.ts, or environment variables. Positional for now.
 const [packageDir, version] = process.argv.slice(2);
 if (!packageDir || !version) {
   console.error('usage: verify-changelog-cli.ts <package-dir> <version>');
