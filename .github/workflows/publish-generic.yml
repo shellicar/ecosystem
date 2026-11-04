@@ -41,10 +41,12 @@ jobs:
           path: ${{ inputs.package-dir }}/dist
 
       - name: Verify changelog
+        # --silent hides only pnpm's own messages. pnpm can always start node, and node's
+        # errors still print, including a failure to load tsx.
         env:
           PACKAGE_DIR: ${{ inputs.package-dir }}
           VERSION: ${{ inputs.version }}
-        run: pnpm --filter scripts --fail-if-no-match --silent exec tsx src/verify-changelog-cli.ts "$PACKAGE_DIR" "$VERSION"
+        run: pnpm --filter scripts --fail-if-no-match --silent exec node --import tsx src/verify-changelog-cli.ts "$PACKAGE_DIR" "$VERSION"
 
       - uses: ./.github/actions/publish-package
         with:
