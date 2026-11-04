@@ -43,6 +43,14 @@ export function renderChangelog(lines: (Entry | ReleaseMarker)[], shortName: str
     return `- ${text}`;
   }
 
+  // Within a category, entries are ordered by description, ignoring case. Comparing code points
+  // keeps the order the same in every locale.
+  function byDescription(a: Entry, b: Entry): number {
+    const da = a.description.toLowerCase();
+    const db = b.description.toLowerCase();
+    return da < db ? -1 : da > db ? 1 : 0;
+  }
+
   function renderEntries(entries: Entry[]): string {
     const byCategory: Record<string, Entry[]> = {};
     for (const entry of entries) {
@@ -53,14 +61,14 @@ export function renderChangelog(lines: (Entry | ReleaseMarker)[], shortName: str
     }
     return categoryOrder
       .filter((k) => byCategory[k]?.length)
-      .map((k) => `### ${categories[k]}\n\n${byCategory[k].map(renderLine).join('\n')}`)
+      .map((k) => `### ${categories[k]}\n\n${[...byCategory[k]].sort(byDescription).map(renderLine).join('\n')}`)
       .join('\n\n');
   }
 
   const parts: string[] = [`# Changelog${PREAMBLE}`];
 
+  parts.push('\n## [Unreleased]');
   if (unreleased.length > 0) {
-    parts.push('\n## [Unreleased]');
     parts.push(`\n${renderEntries(unreleased)}`);
   }
 
