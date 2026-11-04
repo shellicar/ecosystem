@@ -1,10 +1,11 @@
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const scriptsDir = join(import.meta.dirname, '..');
+const repoRoot = join(scriptsDir, '..');
 const cli = join(scriptsDir, 'src', 'verify-changelog-cli.ts');
 
 const changelog = `# Changelog
@@ -24,7 +25,7 @@ const changelog = `# Changelog
 - Initial release
 `;
 
-// Runs the script the way the publish step does, with node and the tsx loader.
+// Runs the script with node and the tsx loader from scripts/, as the publish step does.
 function run(...args: string[]) {
   const result = spawnSync(process.execPath, ['--import', 'tsx', cli, ...args], { cwd: scriptsDir, encoding: 'utf8' });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
@@ -52,6 +53,14 @@ describe('verify-changelog-cli', () => {
     const expected = { status: 0, stdout: '✅ Changelog OK\n', stderr: '' };
 
     const actual = run(withChangelog, '1.1.0');
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('finds the package directory relative to the repo root', () => {
+    const expected = { status: 0, stdout: '✅ Changelog OK\n', stderr: '' };
+
+    const actual = run(relative(repoRoot, withChangelog), '1.1.0');
 
     expect(actual).toEqual(expected);
   });
