@@ -18,7 +18,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
+    # Installs the pnpm that packageManager pins. Node comes from setup-node
+    # below, and each job runs its own install.
+    - uses: pnpm/setup@v3
+      with:
+        install: false
+        node-version-file: false
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
