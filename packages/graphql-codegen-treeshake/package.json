@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsup",
     "type-check": "tsc -p tsconfig.check.json",
-    "watch": "tsup --watch"
+    "watch": "tsup --watch",
+    "test": "vitest run"
   },
   "keywords": [
     "graphql-codegen",
@@ -65,5 +66,8 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.6"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

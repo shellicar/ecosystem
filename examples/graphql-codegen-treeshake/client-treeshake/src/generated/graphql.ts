@@ -5,7 +5,7 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
 export type CreateWizardInput = {
-  academyId?: unknown;
+  academyId?: any;
   age: number;
   name: string;
   rank: WizardRank;
@@ -19,62 +19,66 @@ export type PaginationInput = {
   last?: number | null | undefined;
 };
 
-export type SpellDifficulty =
-  | 'ADVANCED'
-  | 'CANTRIP'
-  | 'INTERMEDIATE'
-  | 'LEGENDARY'
-  | 'NOVICE';
+export enum SpellDifficulty {
+  Advanced = 'ADVANCED',
+  Cantrip = 'CANTRIP',
+  Intermediate = 'INTERMEDIATE',
+  Legendary = 'LEGENDARY',
+  Novice = 'NOVICE'
+}
 
-export type SpellSchool =
-  | 'FIRE'
-  | 'HEALING'
-  | 'ICE'
-  | 'ILLUSION'
-  | 'LIGHTNING'
-  | 'SHADOW'
-  | 'TRANSMUTATION';
+export enum SpellSchool {
+  Fire = 'FIRE',
+  Healing = 'HEALING',
+  Ice = 'ICE',
+  Illusion = 'ILLUSION',
+  Lightning = 'LIGHTNING',
+  Shadow = 'SHADOW',
+  Transmutation = 'TRANSMUTATION'
+}
 
 export type UpdateWizardInput = {
-  id: unknown;
+  id: any;
   name?: string | null | undefined;
   rank?: WizardRank | null | undefined;
   specialisation?: SpellSchool | null | undefined;
 };
 
-export type WandCore =
-  | 'BASILISK_FANG'
-  | 'DRAGON_HEARTSTRING'
-  | 'MERMAID_SCALE'
-  | 'PHOENIX_FEATHER'
-  | 'UNICORN_HAIR';
+export enum WandCore {
+  BasiliskFang = 'BASILISK_FANG',
+  DragonHeartstring = 'DRAGON_HEARTSTRING',
+  MermaidScale = 'MERMAID_SCALE',
+  PhoenixFeather = 'PHOENIX_FEATHER',
+  UnicornHair = 'UNICORN_HAIR'
+}
 
 export type WizardFilterInput = {
-  academyId?: unknown;
+  academyId?: any;
   nameContains?: string | null | undefined;
   rank?: WizardRank | null | undefined;
   specialisation?: SpellSchool | null | undefined;
 };
 
-export type WizardRank =
-  | 'ADEPT'
-  | 'APPRENTICE'
-  | 'ARCHMAGE'
-  | 'GRANDMASTER'
-  | 'JOURNEYMAN';
+export enum WizardRank {
+  Adept = 'ADEPT',
+  Apprentice = 'APPRENTICE',
+  Archmage = 'ARCHMAGE',
+  Grandmaster = 'GRANDMASTER',
+  Journeyman = 'JOURNEYMAN'
+}
 
-export type WandFieldsFragment = { id: unknown, wood: string, core: WandCore, lengthInches: number, flexibility: string };
+export type WandFieldsFragment = { id: any, wood: string, core: WandCore, lengthInches: number, flexibility: string };
 
-export type SpellFieldsFragment = { id: unknown, name: string, incantation: string | null, school: SpellSchool, difficulty: SpellDifficulty, description: string, damagePoints: number | null, healingPoints: number | null };
+export type SpellFieldsFragment = { id: any, name: string, incantation: string | null, school: SpellSchool, difficulty: SpellDifficulty, description: string, damagePoints: number | null, healingPoints: number | null };
 
-export type WizardFieldsFragment = { id: unknown, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: unknown, updatedAt: unknown, wand: { id: unknown, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null };
+export type WizardFieldsFragment = { id: any, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: any, updatedAt: any, wand: { id: any, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null };
 
 export type GetWizardQueryVariables = Exact<{
-  id: unknown;
+  id: any;
 }>;
 
 
-export type GetWizardQuery = { wizard: { id: unknown, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: unknown, updatedAt: unknown, spells: Array<{ id: unknown, name: string, incantation: string | null, school: SpellSchool, difficulty: SpellDifficulty, description: string, damagePoints: number | null, healingPoints: number | null }>, familiars: Array<{ id: unknown, name: string, species: string, magicAffinity: SpellSchool | null, bonded: boolean }>, academy: { id: unknown, name: string, foundedYear: number } | null, wand: { id: unknown, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } | null };
+export type GetWizardQuery = { wizard: { id: any, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: any, updatedAt: any, spells: Array<{ id: any, name: string, incantation: string | null, school: SpellSchool, difficulty: SpellDifficulty, description: string, damagePoints: number | null, healingPoints: number | null }>, familiars: Array<{ id: any, name: string, species: string, magicAffinity: SpellSchool | null, bonded: boolean }>, academy: { id: any, name: string, foundedYear: number } | null, wand: { id: any, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } | null };
 
 export type ListWizardsQueryVariables = Exact<{
   filter?: WizardFilterInput | null | undefined;
@@ -82,7 +86,7 @@ export type ListWizardsQueryVariables = Exact<{
 }>;
 
 
-export type ListWizardsQuery = { wizards: { totalCount: number, pageInfo: { hasNextPage: boolean, endCursor: string | null }, edges: Array<{ cursor: string, node: { id: unknown, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: unknown, updatedAt: unknown, wand: { id: unknown, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } }> } };
+export type ListWizardsQuery = { wizards: { totalCount: number, pageInfo: { hasNextPage: boolean, endCursor: string | null }, edges: Array<{ cursor: string, node: { id: any, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: any, updatedAt: any, wand: { id: any, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } }> } };
 
 export type GetSpellsQueryVariables = Exact<{
   school?: SpellSchool | null | undefined;
@@ -90,21 +94,21 @@ export type GetSpellsQueryVariables = Exact<{
 }>;
 
 
-export type GetSpellsQuery = { spells: { totalCount: number, edges: Array<{ node: { id: unknown, name: string, incantation: string | null, school: SpellSchool, difficulty: SpellDifficulty, description: string, damagePoints: number | null, healingPoints: number | null, discoveredBy: { id: unknown, name: string, rank: WizardRank } | null } }> } };
+export type GetSpellsQuery = { spells: { totalCount: number, edges: Array<{ node: { id: any, name: string, incantation: string | null, school: SpellSchool, difficulty: SpellDifficulty, description: string, damagePoints: number | null, healingPoints: number | null, discoveredBy: { id: any, name: string, rank: WizardRank } | null } }> } };
 
 export type CreateWizardMutationVariables = Exact<{
   input: CreateWizardInput;
 }>;
 
 
-export type CreateWizardMutation = { createWizard: { id: unknown, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: unknown, updatedAt: unknown, wand: { id: unknown, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } };
+export type CreateWizardMutation = { createWizard: { id: any, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: any, updatedAt: any, wand: { id: any, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } };
 
 export type UpdateWizardMutationVariables = Exact<{
   input: UpdateWizardInput;
 }>;
 
 
-export type UpdateWizardMutation = { updateWizard: { id: unknown, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: unknown, updatedAt: unknown, wand: { id: unknown, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } };
+export type UpdateWizardMutation = { updateWizard: { id: any, name: string, rank: WizardRank, age: number, specialisation: SpellSchool | null, createdAt: any, updatedAt: any, wand: { id: any, wood: string, core: WandCore, lengthInches: number, flexibility: string } | null } };
 
 export const SpellFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"SpellFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Spell"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"incantation"}},{"kind":"Field","name":{"kind":"Name","value":"school"}},{"kind":"Field","name":{"kind":"Name","value":"difficulty"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"damagePoints"}},{"kind":"Field","name":{"kind":"Name","value":"healingPoints"}}]}}]} as unknown as DocumentNode<SpellFieldsFragment, unknown>;
 export const WandFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WandFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Wand"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"wood"}},{"kind":"Field","name":{"kind":"Name","value":"core"}},{"kind":"Field","name":{"kind":"Name","value":"lengthInches"}},{"kind":"Field","name":{"kind":"Name","value":"flexibility"}}]}}]} as unknown as DocumentNode<WandFieldsFragment, unknown>;
