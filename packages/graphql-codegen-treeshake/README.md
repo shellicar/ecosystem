@@ -7,9 +7,9 @@
 
 ## Deprecated
 
-On GraphQL Codegen 6, `@graphql-codegen/client-preset` itself generates only the types your operations and fragments reach, so this preset no longer changes the output.
+On GraphQL Codegen 6, `@graphql-codegen/client-preset` itself generates only the types your operations and fragments reach, so this preset no longer changes the output. The change is described in [graphql-code-generator#10479](https://github.com/dotansimha/graphql-code-generator/issues/10479).
 
-- **2.0.0** runs on GraphQL Codegen 6 and passes straight through to `@graphql-codegen/client-preset` 6. Its output is identical to `preset: 'client'`.
+- **2.0.0** runs on GraphQL Codegen 6 and passes straight through to `@graphql-codegen/client-preset` 6. Its output is identical to `preset: 'client'`. It requires Node 22 or later.
 - **1.x** is the last version that filters schema types, and runs on GraphQL Codegen 5.
 
 ## Migrating
