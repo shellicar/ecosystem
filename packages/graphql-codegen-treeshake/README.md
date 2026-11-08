@@ -7,14 +7,25 @@
 
 ## Deprecated
 
-On GraphQL Codegen 6, `@graphql-codegen/client-preset` itself generates only the types your operations and fragments reach, so this preset no longer changes the output. The change is described in [graphql-code-generator#10479](https://github.com/dotansimha/graphql-code-generator/issues/10479).
+On GraphQL Codegen 6, `@graphql-codegen/client-preset` itself generates only the types your operations and fragments reach, so this preset no longer filters anything itself. The change is described in [graphql-code-generator#10479](https://github.com/dotansimha/graphql-code-generator/issues/10479).
 
-- **2.0.0** runs on GraphQL Codegen 6 and passes straight through to `@graphql-codegen/client-preset` 6. Its output is identical to `preset: 'client'`. It requires Node 22 or later.
+- **2.0.0** runs on GraphQL Codegen 6 and passes through to `@graphql-codegen/client-preset` 6, keeping the 1.x defaults below. It requires Node 22 or later.
 - **1.x** is the last version that filters schema types, and runs on GraphQL Codegen 5.
+
+## 1.x defaults kept in 2.0.0
+
+2.0.0 sets these `config` values, so enums and custom scalars generate as they did in 1.x. A value in your own `config` replaces them.
+
+| Setting | 2.0.0 default | client-preset 6 default | Effect |
+|---|---|---|---|
+| `enumType` | `'native'` | `'string-literal'` | Enums are TypeScript enums, e.g. `Gender.Male` |
+| `defaultScalarType` | `'any'` | `'unknown'` | Custom scalars are typed `any` |
+
+Other client-preset 6 changes reach 2.0.0 unchanged: schema object types and the `Scalars`/`Maybe` helpers are no longer generated, enums no operation uses are no longer generated, nullable result fields are no longer optional, `__typename` is no longer in result types, and persisted documents hash with sha256.
 
 ## Migrating
 
-Replace the preset with `'client'`; `presetConfig` and `config` stay as they are.
+Replace the preset with `'client'`, and add the two defaults above to `config` to keep the same output.
 
 ```ts
 // codegen.ts
@@ -28,6 +39,10 @@ const config: CodegenConfig = {
       preset: 'client',
       presetConfig: {
         fragmentMasking: false,
+      },
+      config: {
+        enumType: 'native',
+        defaultScalarType: 'any',
       },
     },
   },

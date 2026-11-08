@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Generated enums are string-literal unions instead of TypeScript enums, custom scalars are typed unknown instead of any, nullable result fields are no longer optional, and result types no longer include __typename (client-preset 6 defaults)
-- Moved to GraphQL Codegen 6 (@graphql-codegen/client-preset 6, @graphql-codegen/typescript 6). The preset now passes through to client-preset, so its output is identical to preset: 'client'
+- Generated enums stay TypeScript enums and custom scalars stay typed any, as in 1.x, through enumType: 'native' and defaultScalarType: 'any' defaults that your own config overrides
+- Moved to GraphQL Codegen 6 (@graphql-codegen/client-preset 6, @graphql-codegen/typescript 6). The preset now passes through to client-preset, which itself generates only the types your operations and fragments reach
+- Nullable result fields are no longer optional, and result types no longer include __typename (client-preset 6 defaults)
 - Persisted documents now default to sha256 hashes instead of sha1 (client-preset 6 default)
 - Requires Node 22 or later, as GraphQL Codegen 6 drops Node 20 and some of its dependencies are ESM-only
 
@@ -22,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Generated output no longer includes schema object and interface types, Query, Mutation and Subscription and their Args types, or the Scalars, Maybe, InputMaybe and Make* helpers. Input types, enums and operation and fragment result types remain
+- Generated output no longer includes schema object and interface types, Query, Mutation and Subscription and their Args types, enums no operation uses, or the Scalars, Maybe, InputMaybe and Make* helpers. Input types, the enums operations use and operation and fragment result types remain
 
 ### Security
 
