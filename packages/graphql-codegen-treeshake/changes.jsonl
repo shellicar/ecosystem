@@ -7,3 +7,11 @@
 {"type":"release","version":"1.0.2","date":"2026-05-08","tag":"graphql-codegen-treeshake@1.0.2"}
 {"description":"Updated patch dependencies","category":"changed"}
 {"type":"release","version":"1.0.3","date":"2026-05-17","tag":"graphql-codegen-treeshake@1.0.3"}
+{"description":"Moved to GraphQL Codegen 6 (@graphql-codegen/client-preset 6, @graphql-codegen/typescript 6). The preset now passes through to client-preset, so its output is identical to preset: 'client'","category":"changed","semver":"major"}
+{"description":"Generated output no longer includes schema object and interface types, Query, Mutation and Subscription and their Args types, or the Scalars, Maybe, InputMaybe and Make* helpers. Input types, enums and operation and fragment result types remain","category":"removed","semver":"major"}
+{"description":"Generated enums are string-literal unions instead of TypeScript enums, custom scalars are typed unknown instead of any, and result types no longer include __typename (client-preset 6 defaults)","category":"changed","semver":"major"}
+{"description":"Persisted documents now default to sha256 hashes instead of sha1 (client-preset 6 default)","category":"changed","semver":"major"}
+{"description":"Deprecated in favour of preset: 'client' from @graphql-codegen/client-preset, which on GraphQL Codegen 6 generates only the types your operations and fragments reach","category":"deprecated"}
+{"description":"Fixed GHSA-7mx3-vvmw-hjmv in @graphql-tools/utils","category":"security","metadata":{"ghsa":"GHSA-7mx3-vvmw-hjmv"}}
+{"description":"Fixed GHSA-c4qx-w738-7hr3 in @graphql-tools/utils","category":"security","metadata":{"ghsa":"GHSA-c4qx-w738-7hr3"}}
+{"type":"release","version":"2.0.0","date":"2026-11-08","tag":"graphql-codegen-treeshake@2.0.0"}

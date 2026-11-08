@@ -1,7 +1,7 @@
 {
   "name": "@shellicar/graphql-codegen-treeshake",
-  "version": "1.0.3",
-  "description": "A graphql-codegen preset that tree-shakes unused types from TypeScript output",
+  "version": "2.0.0",
+  "description": "Deprecated: on GraphQL Codegen 6, use preset: 'client' from @graphql-codegen/client-preset instead",
   "main": "./dist/cjs/index.cjs",
   "scripts": {
     "build": "tsup",
