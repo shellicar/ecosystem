@@ -1,25 +1,23 @@
 # @shellicar/graphql-codegen-treeshake
 
-> A graphql-codegen preset that tree-shakes unused types from TypeScript output
+> Deprecated: use `preset: 'client'` from `@graphql-codegen/client-preset` instead.
 
 [![npm package](https://img.shields.io/npm/v/@shellicar/graphql-codegen-treeshake.svg)](https://npmjs.com/package/@shellicar/graphql-codegen-treeshake)
 [![build status](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/shellicar/ecosystem/actions/workflows/ci.yml)
 
-## Features
+## Deprecated
 
-- Only generates TypeScript types reachable from your actual operations and fragments
-- Wraps `@graphql-codegen/client-preset` — drop-in replacement
-- Reduces generated output size by excluding unused schema types
+On GraphQL Codegen 6, `@graphql-codegen/client-preset` itself generates only the types your operations and fragments reach, so this preset no longer changes the output.
 
-## Installation & Quick Start
+- **2.0.0** runs on GraphQL Codegen 6 and passes straight through to `@graphql-codegen/client-preset` 6. Its output is identical to `preset: 'client'`.
+- **1.x** is the last version that filters schema types, and runs on GraphQL Codegen 5.
 
-```sh
-pnpm add -D @shellicar/graphql-codegen-treeshake
-```
+## Migrating
+
+Replace the preset with `'client'`; `presetConfig` and `config` stay as they are.
 
 ```ts
 // codegen.ts
-import { preset } from '@shellicar/graphql-codegen-treeshake';
 import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
@@ -27,7 +25,7 @@ const config: CodegenConfig = {
   documents: ['src/**/requests.ts'],
   generates: {
     'src/lib/graphql/': {
-      preset,
+      preset: 'client',
       presetConfig: {
         fragmentMasking: false,
       },
@@ -57,7 +55,7 @@ export default config;
 - [`@shellicar/build-clean`](https://github.com/shellicar/ecosystem/tree/main/packages/build-clean) - Build plugin that automatically cleans unused files from output directories.
 - [`@shellicar/build-version`](https://github.com/shellicar/ecosystem/tree/main/packages/build-version) - Build plugin that calculates and exposes version information through a virtual module import.
 - [`@shellicar/build-graphql`](https://github.com/shellicar/ecosystem/tree/main/packages/build-graphql) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
-- [`@shellicar/graphql-codegen-treeshake`](https://github.com/shellicar/ecosystem/tree/main/packages/graphql-codegen-treeshake) - A graphql-codegen preset that tree-shakes unused types from TypeScript output.
+- [`@shellicar/graphql-codegen-treeshake`](https://github.com/shellicar/ecosystem/tree/main/packages/graphql-codegen-treeshake) - Deprecated: on GraphQL Codegen 6, use `preset: 'client'` from `@graphql-codegen/client-preset` instead.
 
 ### Framework
 

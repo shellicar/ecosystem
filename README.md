@@ -15,7 +15,7 @@ Everything related to the @shellicar packages.
 - [`@shellicar/build-clean`](packages/build-clean/) - Build plugin that automatically cleans unused files from output directories.
 - [`@shellicar/build-graphql`](packages/build-graphql/) - Build plugin that loads GraphQL files and makes them available through a virtual module import.
 - [`@shellicar/build-version`](packages/build-version/) - Build plugin that calculates and exposes version information through a virtual module import.
-- [`@shellicar/graphql-codegen-treeshake`](packages/graphql-codegen-treeshake/) - A graphql-codegen preset that tree-shakes unused types from TypeScript output.
+- [`@shellicar/graphql-codegen-treeshake`](packages/graphql-codegen-treeshake/) - Deprecated: on GraphQL Codegen 6, use `preset: 'client'` from `@graphql-codegen/client-preset` instead.
 
 ### Framework
 

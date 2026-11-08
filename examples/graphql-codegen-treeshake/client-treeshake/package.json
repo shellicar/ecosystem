@@ -1,7 +1,7 @@
 {
   "name": "@shellicar-examples/client-treeshake",
   "version": "1.0.0",
-  "description": "Tree-shaking graphql-codegen example using @shellicar/graphql-codegen-treeshake preset — only generates types reachable from your documents",
+  "description": "Example using the @shellicar/graphql-codegen-treeshake preset, which on GraphQL Codegen 6 generates the same output as client-preset",
   "main": "index.js",
   "scripts": {
     "codegen": "graphql-codegen --config codegen.ts"
