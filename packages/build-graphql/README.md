@@ -5,7 +5,7 @@
 
 Build plugin that loads GraphQL files and makes them available through a virtual module import.
 
-- ⚡️ Supports Vite, Webpack, Rspack, Vue CLI, Rollup, esbuild and more, powered by [unplugin].
+- ⚡️ Supports Vite, Webpack, Rspack, Vue CLI, Rollup, Rolldown, esbuild and more, powered by [unplugin].
 
 ## Installation & Quick Start
 

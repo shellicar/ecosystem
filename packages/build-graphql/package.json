@@ -86,6 +86,16 @@
         "default": "./dist/cjs/rollup.cjs"
       }
     },
+    "./rolldown": {
+      "import": {
+        "types": "./dist/esm/rolldown.d.ts",
+        "default": "./dist/esm/rolldown.js"
+      },
+      "require": {
+        "types": "./dist/cjs/rolldown.d.cts",
+        "default": "./dist/cjs/rolldown.cjs"
+      }
+    },
     "./esbuild": {
       "import": {
         "types": "./dist/esm/esbuild.d.ts",
@@ -166,6 +176,9 @@
       ],
       "rollup": [
         "./dist/esm/rollup.d.ts"
+      ],
+      "rolldown": [
+        "./dist/esm/rolldown.d.ts"
       ],
       "esbuild": [
         "./dist/esm/esbuild.d.ts"

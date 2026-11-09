@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `globOptions` no longer accepts `debug`, which glob 14 removed
 
+### Fixed
+
+- Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`
+
 ### Security
 
 - Fixed GHSA-3g3m-2fjr-6pw4 in glob ([GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4))

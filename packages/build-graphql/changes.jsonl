@@ -61,6 +61,7 @@
 {"description":"An aborted `signal` in `globOptions` now stops the walk, where glob 13 rejected but kept reading directories","category":"changed"}
 {"description":"On Windows, patterns starting with a long UNC root like `//?/UNC/host/share/` now walk that share, the same as `//host/share/`","category":"changed"}
 {"description":"`globOptions` accepts `normalize`, added in glob 14, to normalize unicode in patterns and file names","category":"added"}
+{"description":"Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`","category":"fixed"}
 {"description":"Fixed GHSA-3g3m-2fjr-6pw4 in glob","category":"security","metadata":{"ghsa":"GHSA-3g3m-2fjr-6pw4"}}
 {"description":"Fixed GHSA-g3hv-75wg-m249 in minimatch","category":"security","metadata":{"ghsa":"GHSA-g3hv-75wg-m249"}}
 {"type":"release","version":"2.0.0","date":"2026-11-10","tag":"build-graphql@2.0.0"}
