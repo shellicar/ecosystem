@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Generated enums stay TypeScript enums and custom scalars stay typed any, as in 1.x, through enumType: 'native' and defaultScalarType: 'any' defaults that your own config overrides
 - Moved to GraphQL Codegen 6 (@graphql-codegen/client-preset 6, @graphql-codegen/typescript 6). The preset now passes through to client-preset, which itself generates only the types your operations and fragments reach
 - Nullable result fields are no longer optional, and result types no longer include __typename (client-preset 6 defaults)
-- Persisted documents now default to sha256 hashes instead of sha1 (client-preset 6 default)
+- Persisted documents now default to sha256 hashes instead of sha1, with IDs prefixed sha256: (client-preset 6 default)
 - Requires Node 22 or later, as GraphQL Codegen 6 drops Node 20 and some of its dependencies are ESM-only
 
 ### Deprecated

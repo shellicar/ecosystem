@@ -18,10 +18,10 @@ On GraphQL Codegen 6, `@graphql-codegen/client-preset` itself generates only the
 
 | Setting | 2.0.0 default | client-preset 6 default | Effect |
 |---|---|---|---|
-| `enumType` | `'native'` | `'string-literal'` | Enums are TypeScript enums, e.g. `Gender.Male` |
+| `enumType` | `'native'` | `'string-literal'` | Enums are TypeScript enums, e.g. `WizardRank.Adept` |
 | `defaultScalarType` | `'any'` | `'unknown'` | Custom scalars are typed `any` |
 
-Other client-preset 6 changes reach 2.0.0 unchanged: schema object types and the `Scalars`/`Maybe` helpers are no longer generated, enums no operation uses are no longer generated, nullable result fields are no longer optional, `__typename` is no longer in result types, and persisted documents hash with sha256.
+Other client-preset 6 changes reach 2.0.0 unchanged: schema object types and the `Scalars`/`Maybe` helpers are no longer generated, enums no operation uses are no longer generated, nullable result fields are no longer optional, `__typename` is no longer in result types, and persisted documents hash with sha256, with IDs prefixed `sha256:`.
 
 ## Migrating
 

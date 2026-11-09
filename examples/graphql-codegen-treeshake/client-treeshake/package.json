@@ -1,7 +1,7 @@
 {
   "name": "@shellicar-examples/client-treeshake",
   "version": "1.0.0",
-  "description": "Example using the @shellicar/graphql-codegen-treeshake preset, which on GraphQL Codegen 6 generates the same output as client-preset",
+  "description": "Example using the @shellicar/graphql-codegen-treeshake preset, which on GraphQL Codegen 6 passes through to client-preset with the preset's 1.x enum and scalar defaults",
   "main": "index.js",
   "scripts": {
     "codegen": "graphql-codegen --config codegen.ts"
