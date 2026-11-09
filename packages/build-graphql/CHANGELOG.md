@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`
+- Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`, with rolldown ^1 as an optional peer dependency
 
 ### Security
 
