@@ -128,7 +128,17 @@ See [examples](../../examples/build-graphql) for full working implementations.
 
 ## Options
 
-See [types.ts](./src/core/types.ts) for detailed options documentation.
+See [types.ts](./src/types.ts) for detailed options documentation.
+
+`globOptions` is passed to [glob](https://github.com/isaacs/node-glob). By default it ignores `**/node_modules/**`. Setting `globOptions.ignore` replaces that default rather than adding to it, so include `**/node_modules/**` in your own `ignore` to keep it, or set `ignore: []` to match files under `node_modules`.
+
+```ts
+graphqlPlugin({
+  globOptions: {
+    ignore: ['**/node_modules/**', '**/generated/**'],
+  },
+});
+```
 
 ## Credits
 

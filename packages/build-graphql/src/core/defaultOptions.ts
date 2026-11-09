@@ -4,7 +4,9 @@ import type { Options } from '../types';
 export const defaultOptions = {
   globPattern: '**/*.graphql',
   debug: false,
-  globOptions: {},
+  globOptions: {
+    ignore: '**/node_modules/**',
+  },
   features: {
     [Feature.EsbuildWatch]: true,
     [Feature.ViteWatch]: true,

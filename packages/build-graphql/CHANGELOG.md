@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed the default `**/node_modules/**` ignore never being applied: files under `node_modules` are now not matched unless `globOptions.ignore` is set, which replaces the default (set it to `[]` to match them)
 - Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`, with rolldown ^1 as an optional peer dependency
 
 ### Security
