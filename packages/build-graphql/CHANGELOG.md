@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `globOptions.ignore` is now readonly, as in glob 14, and also accepts a readonly string array
+- An aborted `signal` in `globOptions` now stops the walk, where glob 13 rejected but kept reading directories
 - File matching follows glob 14 and minimatch 11: some pattern edge cases match closer to Bash, `ignore` patterns starting with `/` start at the `root` option or the root of `cwd`, and `ignore` patterns follow `windowsPathsNoEscape`
+- On Windows, patterns starting with a long UNC root like `//?/UNC/host/share/` now walk that share, the same as `//host/share/`
 - Updated glob dependency from ^13.0.6 to ^14.0.4
 
 ### Removed

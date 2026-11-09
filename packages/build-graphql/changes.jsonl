@@ -58,6 +58,8 @@
 {"description":"`globOptions` no longer accepts `debug`, which glob 14 removed","category":"removed","semver":"major"}
 {"description":"`globOptions.ignore` is now readonly, as in glob 14, and also accepts a readonly string array","category":"changed","semver":"major"}
 {"description":"File matching follows glob 14 and minimatch 11: some pattern edge cases match closer to Bash, `ignore` patterns starting with `/` start at the `root` option or the root of `cwd`, and `ignore` patterns follow `windowsPathsNoEscape`","category":"changed","semver":"major"}
+{"description":"An aborted `signal` in `globOptions` now stops the walk, where glob 13 rejected but kept reading directories","category":"changed"}
+{"description":"On Windows, patterns starting with a long UNC root like `//?/UNC/host/share/` now walk that share, the same as `//host/share/`","category":"changed"}
 {"description":"`globOptions` accepts `normalize`, added in glob 14, to normalize unicode in patterns and file names","category":"added"}
 {"description":"Fixed GHSA-3g3m-2fjr-6pw4 in glob","category":"security","metadata":{"ghsa":"GHSA-3g3m-2fjr-6pw4"}}
 {"description":"Fixed GHSA-g3hv-75wg-m249 in minimatch","category":"security","metadata":{"ghsa":"GHSA-g3hv-75wg-m249"}}
