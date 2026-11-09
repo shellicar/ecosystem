@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `globOptions` no longer accepts `debug`, which glob 14 removed
+- The deprecated `globIgnore` option is removed: use `globOptions.ignore` instead
+- The deprecated `ignoreErrors` option is removed: use `errorPolicy` instead, where `ignoreErrors: true` is `errorPolicy: ErrorPolicy.Ignore`
 
 ### Fixed
 

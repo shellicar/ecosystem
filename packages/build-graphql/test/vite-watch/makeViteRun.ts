@@ -13,7 +13,6 @@ export const makeViteRun = (features: Features) => {
   const plugin = unplugin.vite({
     features,
     errorPolicy: ErrorPolicy.Ignore,
-    ignoreErrors: true,
   }) as Plugin;
 
   const ctx = {

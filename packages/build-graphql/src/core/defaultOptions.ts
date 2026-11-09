@@ -3,7 +3,6 @@ import type { Options } from '../types';
 
 export const defaultOptions = {
   globPattern: '**/*.graphql',
-  globIgnore: '**/node_modules/**',
   debug: false,
   globOptions: {},
   features: {
