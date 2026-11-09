@@ -66,5 +66,5 @@
 {"description":"Fixed GHSA-g3hv-75wg-m249 in minimatch","category":"security","metadata":{"ghsa":"GHSA-g3hv-75wg-m249"}}
 {"description":"The deprecated `globIgnore` option is removed: use `globOptions.ignore` instead","category":"removed","semver":"major"}
 {"description":"The deprecated `ignoreErrors` option is removed: use `errorPolicy` instead, where `ignoreErrors: true` is `errorPolicy: ErrorPolicy.Ignore`","category":"removed","semver":"major"}
-{"description":"Fixed the default `**/node_modules/**` ignore, which stopped being applied in 1.4.0: files under `node_modules` are now not matched unless `globOptions.ignore` is set, which replaces the default (set it to `[]` to match them)","category":"fixed","semver":"major"}
+{"description":"Fixed the default `**/node_modules/**` ignore not being applied: files under `node_modules` are now not matched unless `globOptions.ignore` is set, which replaces the default (set it to `[]` to match them)","category":"fixed","semver":"major"}
 {"type":"release","version":"2.0.0","date":"2026-11-10","tag":"build-graphql@2.0.0"}
