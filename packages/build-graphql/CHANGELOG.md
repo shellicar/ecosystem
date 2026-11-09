@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-10
+
+### Added
+
+- `globOptions` accepts `normalize`, added in glob 14, to normalize unicode in patterns and file names
+
+### Changed
+
+- `globOptions.ignore` is now readonly, as in glob 14, and also accepts a readonly string array
+- An aborted `signal` in `globOptions` now stops the walk, where glob 13 rejected but kept reading directories
+- File matching follows glob 14 and minimatch 11: some pattern edge cases match closer to Bash, `ignore` patterns starting with `/` start at the `root` option or the root of `cwd`, and `ignore` patterns follow `windowsPathsNoEscape`
+- On Windows, patterns starting with a long UNC root like `//?/UNC/host/share/` now walk that share, the same as `//host/share/`
+- Updated glob dependency from ^13.0.6 to ^14.0.4
+
+### Removed
+
+- `globOptions` no longer accepts `debug`, which glob 14 removed
+
+### Fixed
+
+- Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`, with rolldown ^1 as an optional peer dependency
+
+### Security
+
+- Fixed GHSA-3g3m-2fjr-6pw4 in glob ([GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4))
+- Fixed GHSA-g3hv-75wg-m249 in minimatch ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249))
+
 ## [1.4.7] - 2026-06-14
 
 ### Changed
@@ -161,6 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[2.0.0]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@2.0.0
 [1.4.7]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.7
 [1.4.6]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.6
 [1.4.5]: https://github.com/shellicar/ecosystem/releases/tag/build-graphql@1.4.5
