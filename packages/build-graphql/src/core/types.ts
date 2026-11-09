@@ -10,3 +10,9 @@ type MakeRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 export type ResolvedOptions = MakeRequired<Options, RequiredOptions> & {
   features: FullFeatures;
 };
+
+export type LogLevel = 'debug' | 'error';
+
+export type ILogger = {
+  [key in LogLevel]: (typeof console)[key];
+};

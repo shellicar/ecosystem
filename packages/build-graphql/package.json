@@ -136,16 +136,6 @@
         "default": "./dist/cjs/types.cjs"
       }
     },
-    "./graphql": {
-      "import": {
-        "types": "./dist/esm/core/graphql.d.ts",
-        "default": "./dist/esm/core/graphql.js"
-      },
-      "require": {
-        "types": "./dist/cjs/core/graphql.d.cts",
-        "default": "./dist/cjs/core/graphql.cjs"
-      }
-    },
     "./typedefs": {
       "import": {
         "types": "./dist/esm/core/typedefs.d.ts",
@@ -214,6 +204,7 @@
     "@farmfe/core": ">=1",
     "@nuxt/kit": "^4",
     "@nuxt/schema": "^4",
+    "@rspack/core": "^1 || ^2",
     "esbuild": "^0.28",
     "rolldown": "^1",
     "rollup": "^4",
@@ -228,6 +219,9 @@
       "optional": true
     },
     "@nuxt/schema": {
+      "optional": true
+    },
+    "@rspack/core": {
       "optional": true
     },
     "esbuild": {
@@ -265,5 +259,8 @@
   "dependencies": {
     "glob": "^14.0.4",
     "unplugin": "^3.0.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

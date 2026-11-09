@@ -1,5 +1,6 @@
 import { inspect } from 'node:util';
-import type { ILogger, LogLevel, Options } from '../types';
+import type { Options } from '../types';
+import type { ILogger, LogLevel } from './types';
 
 export const createLogger = (options: Options): ILogger => {
   const format = (message: unknown): unknown => (typeof message === 'object' ? inspect(message, { depth: null, colors: true }) : message);

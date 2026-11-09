@@ -2,7 +2,8 @@ import { ErrorPolicy } from '../enums';
 import { GraphQLLoadNoFilesError } from './../errors/GraphQLLoadNoFilesError';
 import { GraphQLLoadPartialImportError } from './../errors/GraphQLLoadPartialImportError';
 import { GraphQLLoadTypedefsMissingError } from './../errors/GraphQLLoadTypedefsMissingError';
-import type { GlobPattern, ILogger } from '../types';
+import type { GlobPattern } from '../types';
+import type { ILogger } from './types';
 import { virtualModuleId } from './consts';
 
 interface HandleErrorsOptions {

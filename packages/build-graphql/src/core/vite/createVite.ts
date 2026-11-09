@@ -1,8 +1,7 @@
 import type { UnpluginOptions } from 'unplugin';
 import { Feature } from '../../enums';
 import { InvalidFeatureCombinationError } from '../../errors/InvalidFeatureCombinationError';
-import type { ILogger } from '../../types';
-import type { ResolvedOptions } from '../types';
+import type { ILogger, ResolvedOptions } from '../types';
 import { handleHotUpdate } from './viteHotUpdate';
 
 export const createVite = (options: ResolvedOptions, logger: ILogger): UnpluginOptions['vite'] => {

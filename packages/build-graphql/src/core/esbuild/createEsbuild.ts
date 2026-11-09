@@ -1,8 +1,7 @@
 import type { PluginBuild } from 'esbuild';
 import type { UnpluginOptions } from 'unplugin';
 import { Feature } from '../../enums';
-import type { ILogger } from '../../types';
-import type { ResolvedOptions } from '../types';
+import type { ILogger, ResolvedOptions } from '../types';
 import { esbuildSetup } from './esbuildSetup';
 
 export const createEsbuild = (options: ResolvedOptions, logger: ILogger): UnpluginOptions['esbuild'] => {

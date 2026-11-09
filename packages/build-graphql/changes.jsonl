@@ -67,4 +67,9 @@
 {"description":"The deprecated `globIgnore` option is removed: use `globOptions.ignore` instead","category":"removed","semver":"major"}
 {"description":"The deprecated `ignoreErrors` option is removed: use `errorPolicy` instead, where `ignoreErrors: true` is `errorPolicy: ErrorPolicy.Ignore`","category":"removed","semver":"major"}
 {"description":"Fixed the default `**/node_modules/**` ignore not being applied: files under `node_modules` are now not matched unless `globOptions.ignore` is set, which replaces the default (set it to `[]` to match them)","category":"fixed","semver":"major"}
+{"description":"The `@shellicar/build-graphql/graphql` entry point is removed: it pointed at files no published version contained, so importing it always failed","category":"removed","semver":"major"}
+{"description":"The `GlobIgnore` type is no longer exported","category":"removed","semver":"major"}
+{"description":"The `ILogger` and `LogLevel` types are no longer exported from `@shellicar/build-graphql` or `@shellicar/build-graphql/types`","category":"removed","semver":"major"}
+{"description":"`@rspack/core` ^1 || ^2 is declared as an optional peer dependency, for the `@shellicar/build-graphql/rspack` plugin","category":"added"}
+{"description":"The supported Node versions are declared in `engines` as `^20.19.0 || >=22.12.0`, the range unplugin 3 requires","category":"added"}
 {"type":"release","version":"2.0.0","date":"2026-11-10","tag":"build-graphql@2.0.0"}
