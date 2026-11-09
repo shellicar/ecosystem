@@ -71,5 +71,6 @@
 {"description":"The `GlobIgnore` type is no longer exported","category":"removed","semver":"major"}
 {"description":"The `ILogger` and `LogLevel` types are no longer exported from `@shellicar/build-graphql` or `@shellicar/build-graphql/types`","category":"removed","semver":"major"}
 {"description":"`@rspack/core` ^1 || ^2 is declared as an optional peer dependency, for the `@shellicar/build-graphql/rspack` plugin","category":"added"}
+{"description":"Fixed the type declarations of `@shellicar/build-graphql/rspack`, which named `RspackPluginInstance` without importing it, so the plugin's return type failed to resolve","category":"fixed"}
 {"description":"The supported Node versions are declared in `engines` as `^20.19.0 || >=22.12.0`, the range unplugin 3 requires","category":"added"}
 {"type":"release","version":"2.0.0","date":"2026-11-10","tag":"build-graphql@2.0.0"}
