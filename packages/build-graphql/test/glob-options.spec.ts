@@ -31,6 +31,21 @@ describe('glob options resolution', () => {
     });
   });
 
+  describe('when globOptions.ignore is undefined', () => {
+    it('ignores node_modules', () => {
+      const result = resolveGlobOptions({
+        globOptions: {
+          ignore: undefined,
+        },
+      });
+
+      const actual = result.ignore;
+      const expected = '**/node_modules/**';
+
+      expect(actual).toBe(expected);
+    });
+  });
+
   describe('when globOptions.ignore is not provided', () => {
     it('ignores node_modules', () => {
       const result = resolveGlobOptions({
