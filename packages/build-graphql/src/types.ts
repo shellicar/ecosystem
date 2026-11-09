@@ -18,7 +18,8 @@ export interface Options {
   compareFn?: (a: string, b: string) => number;
 
   /**
-   * Glob options to pass to the glob library
+   * Glob options to pass to the glob library.
+   * `ignore` defaults to ignoring every `node_modules` folder; setting it replaces the default (use `[]` to turn it off).
    */
   globOptions?: GlobOptionsWithFileTypesUnset;
 
