@@ -11,7 +11,7 @@
   "devDependencies": {
     "@shellicar/build-clean": "workspace:^",
     "@shellicar/core-di": "workspace:^",
-    "@tsconfig/node20": "^20.1.9",
+    "@tsconfig/node20": "^20.1.10",
     "@types/node": "^25.8.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
