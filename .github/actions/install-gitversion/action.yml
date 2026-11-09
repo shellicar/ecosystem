@@ -24,7 +24,7 @@ runs:
       run: |
         mkdir -p "$HOME/.local/bin"
         # gh release download has no retry option, so a failed download is not retried.
-        gh release download "${{ inputs.version }}" --repo GitTools/GitVersion --pattern "gitversion-${{ inputs.platform }}-${{ inputs.version }}.tar.gz" --output /tmp/gitversion.tar.gz --clobber
+        gh release download "${{ inputs.version }}" --repo GitTools/GitVersion --pattern "gitversion-${{ inputs.platform }}-${{ inputs.version }}.tar.gz" --output /tmp/gitversion.tar.gz
         tar xzf /tmp/gitversion.tar.gz -C "$HOME/.local/bin" gitversion
         chmod +x "$HOME/.local/bin/gitversion"
         echo "$HOME/.local/bin" >> "$GITHUB_PATH"
