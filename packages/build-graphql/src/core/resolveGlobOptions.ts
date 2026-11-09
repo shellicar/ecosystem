@@ -1,9 +1,13 @@
 import type { GlobOptionsWithFileTypesUnset } from 'glob';
-import type { GlobIgnore } from '../types';
+import { defaultOptions } from './defaultOptions';
 
-export const resolveGlobOptions = (options: { globOptions?: GlobOptionsWithFileTypesUnset; globIgnore?: GlobIgnore }): GlobOptionsWithFileTypesUnset => {
+/**
+ * Passes the consumer's `globOptions` through, with the default `ignore` when theirs is undefined.
+ * A consumer's `ignore` replaces the default `ignore`; it is not merged with it.
+ */
+export const resolveGlobOptions = (options: { globOptions?: GlobOptionsWithFileTypesUnset }): GlobOptionsWithFileTypesUnset => {
   return {
-    ignore: options.globIgnore,
     ...options.globOptions,
+    ignore: options.globOptions?.ignore ?? defaultOptions.globOptions.ignore,
   } satisfies GlobOptionsWithFileTypesUnset;
 };

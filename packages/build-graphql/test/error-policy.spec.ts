@@ -4,13 +4,22 @@ import { ErrorPolicy } from '../src/enums';
 
 describe('error policy resolution', () => {
   describe('when errorPolicy is provided', () => {
-    it('uses ErrorPolicy.Abort even if ignoreErrors is true', () => {
+    it('uses ErrorPolicy.Abort when explicitly set', () => {
       const actual = resolveErrorPolicy({
         errorPolicy: ErrorPolicy.Abort,
-        ignoreErrors: true,
       });
 
       const expected = ErrorPolicy.Abort;
+
+      expect(actual).toBe(expected);
+    });
+
+    it('uses ErrorPolicy.Report when explicitly set', () => {
+      const actual = resolveErrorPolicy({
+        errorPolicy: ErrorPolicy.Report,
+      });
+
+      const expected = ErrorPolicy.Report;
 
       expect(actual).toBe(expected);
     });
@@ -27,38 +36,12 @@ describe('error policy resolution', () => {
   });
 
   describe('when errorPolicy is not provided', () => {
-    describe('and ignoreErrors is true', () => {
-      it('resolves to ErrorPolicy.Ignore', () => {
-        const actual = resolveErrorPolicy({
-          ignoreErrors: true,
-        });
+    it('defaults to ErrorPolicy.Abort', () => {
+      const actual = resolveErrorPolicy({});
 
-        const expected = ErrorPolicy.Ignore;
+      const expected = ErrorPolicy.Abort;
 
-        expect(actual).toBe(expected);
-      });
-    });
-
-    describe('and ignoreErrors is false', () => {
-      it('resolves to ErrorPolicy.Abort', () => {
-        const actual = resolveErrorPolicy({
-          ignoreErrors: false,
-        });
-
-        const expected = ErrorPolicy.Abort;
-
-        expect(actual).toBe(expected);
-      });
-    });
-
-    describe('and ignoreErrors is undefined', () => {
-      it('defaults to ErrorPolicy.Abort', () => {
-        const actual = resolveErrorPolicy({});
-
-        const expected = ErrorPolicy.Abort;
-
-        expect(actual).toBe(expected);
-      });
+      expect(actual).toBe(expected);
     });
   });
 });

@@ -18,21 +18,10 @@ export interface Options {
   compareFn?: (a: string, b: string) => number;
 
   /**
-   * Glob ignore pattern for graphql files
-   * @deprecated Use `globOptions.ignore` instead
-   */
-  globIgnore?: GlobIgnore;
-
-  /**
-   * Glob options to pass to the glob library
+   * Glob options to pass to the glob library.
+   * `ignore` defaults to ignoring every `node_modules` folder; setting it replaces the default (use `[]` to turn it off).
    */
   globOptions?: GlobOptionsWithFileTypesUnset;
-
-  /**
-   * Ignores errors, otherwise errors will be thrown if graphql files are not found/imported and the typedefs file is not found
-   * @deprecated Use `errorPolicy` instead. true => ErrorPolicy.Abort
-   */
-  ignoreErrors?: boolean;
 
   /**
    * What action to take when errors are detected.

@@ -7,9 +7,9 @@ import { resolveGlobOptions } from './resolveGlobOptions';
 import type { ResolvedOptions } from './types';
 
 export const resolveOptions = (rawInputOptions: Options): ResolvedOptions => {
-  const { errorPolicy, ignoreErrors, globOptions, globIgnore, ...inputOptions } = rawInputOptions;
-  const resolvedErrorPolicy: ErrorPolicy = resolveErrorPolicy({ errorPolicy, ignoreErrors });
-  const resolvedGlobOptions: GlobOptionsWithFileTypesUnset = resolveGlobOptions({ globOptions, globIgnore });
+  const { errorPolicy, globOptions, ...inputOptions } = rawInputOptions;
+  const resolvedErrorPolicy: ErrorPolicy = resolveErrorPolicy({ errorPolicy });
+  const resolvedGlobOptions: GlobOptionsWithFileTypesUnset = resolveGlobOptions({ globOptions });
   const options = {
     ...defaultOptions,
     ...inputOptions,

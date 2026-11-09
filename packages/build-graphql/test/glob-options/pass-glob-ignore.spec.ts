@@ -33,21 +33,12 @@ describe('glob ignore', () => {
     verifyFiles(output, expectedFiles);
   });
 
-  it('can ignore a single file', async () => {
-    const output = await buildWithOptions({
-      globPattern: 'test/**/*.graphql',
-      globIgnore: '**/mutation.graphql',
-    });
-
-    const expectedFiles = ['query.graphql', 'schema.spec.graphql', 'sub/schema.graphql'] satisfies TestFile[];
-    const excludedFiles = ['mutation.graphql'] satisfies TestFile[];
-    verifyFiles(output, expectedFiles, excludedFiles);
-  });
-
   it('can ignore multiple files with array', async () => {
     const output = await buildWithOptions({
       globPattern: 'test/**/*.graphql',
-      globIgnore: ['**/mutation.graphql', '**/schema.spec.graphql'],
+      globOptions: {
+        ignore: ['**/mutation.graphql', '**/schema.spec.graphql'],
+      },
     });
 
     const expectedFiles = ['query.graphql', 'sub/schema.graphql'] satisfies TestFile[];
@@ -65,20 +56,6 @@ describe('glob ignore', () => {
 
     const expectedFiles = ['query.graphql', 'schema.spec.graphql', 'sub/schema.graphql'] satisfies TestFile[];
     const excludedFiles = ['mutation.graphql'] satisfies TestFile[];
-    verifyFiles(output, expectedFiles, excludedFiles);
-  });
-
-  it('globOptions.ignore overrides globIgnore', async () => {
-    const output = await buildWithOptions({
-      globPattern: 'test/**/*.graphql',
-      globIgnore: '**/mutation.graphql',
-      globOptions: {
-        ignore: '**/schema.spec.graphql',
-      },
-    });
-
-    const expectedFiles = ['query.graphql', 'mutation.graphql', 'sub/schema.graphql'] satisfies TestFile[];
-    const excludedFiles = ['schema.spec.graphql'] satisfies TestFile[];
     verifyFiles(output, expectedFiles, excludedFiles);
   });
 
