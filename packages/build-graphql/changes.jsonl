@@ -54,3 +54,11 @@
 {"description":"Fixed GHSA-g7r4-m6w7-qqqr in esbuild","category":"security","metadata":{"ghsa":"GHSA-g7r4-m6w7-qqqr"}}
 {"description":"Updated esbuild peer dependency from ^0.27 to ^0.28","category":"changed"}
 {"type":"release","version":"1.4.7","date":"2026-06-14","tag":"build-graphql@1.4.7"}
+{"description":"Updated glob dependency from ^13.0.6 to ^14.0.4","category":"changed"}
+{"description":"`globOptions` no longer accepts `debug`, which glob 14 removed","category":"removed","semver":"major"}
+{"description":"`globOptions.ignore` is now readonly, as in glob 14, and also accepts a readonly string array","category":"changed","semver":"major"}
+{"description":"File matching follows glob 14 and minimatch 11: some pattern edge cases match closer to Bash, `ignore` patterns starting with `/` start at the `root` option or the root of `cwd`, and `ignore` patterns follow `windowsPathsNoEscape`","category":"changed","semver":"major"}
+{"description":"`globOptions` accepts `normalize`, added in glob 14, to normalize unicode in patterns and file names","category":"added"}
+{"description":"Fixed GHSA-3g3m-2fjr-6pw4 in glob","category":"security","metadata":{"ghsa":"GHSA-3g3m-2fjr-6pw4"}}
+{"description":"Fixed GHSA-g3hv-75wg-m249 in minimatch","category":"security","metadata":{"ghsa":"GHSA-g3hv-75wg-m249"}}
+{"type":"release","version":"2.0.0","date":"2026-11-10","tag":"build-graphql@2.0.0"}
