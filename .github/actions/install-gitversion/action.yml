@@ -23,7 +23,6 @@ runs:
         GH_TOKEN: ${{ github.token }}
       run: |
         mkdir -p "$HOME/.local/bin"
-        # TODO(claude): undecided: whether the download prints a line of its own; it prints nothing on success for now.
         gh release download "${{ inputs.version }}" --repo GitTools/GitVersion --pattern "gitversion-${{ inputs.platform }}-${{ inputs.version }}.tar.gz" --output /tmp/gitversion.tar.gz
         tar xzf /tmp/gitversion.tar.gz -C "$HOME/.local/bin" gitversion
         chmod +x "$HOME/.local/bin/gitversion"
