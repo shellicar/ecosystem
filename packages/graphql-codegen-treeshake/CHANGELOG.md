@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-08
+
+### Changed
+
+- Generated enums stay TypeScript enums and custom scalars stay typed any, as in 1.x, through enumType: 'native' and defaultScalarType: 'any' defaults that your own config overrides
+- Moved to GraphQL Codegen 6 (@graphql-codegen/client-preset 6, @graphql-codegen/typescript 6). The preset now passes through to client-preset, which itself generates only the types your operations and fragments reach
+- Nullable result fields are no longer optional, and result types no longer include __typename (client-preset 6 defaults)
+- Persisted documents now default to sha256 hashes instead of sha1, with IDs prefixed sha256: (client-preset 6 default)
+- Requires Node 22 or later, as GraphQL Codegen 6 drops Node 20 and some of its dependencies are ESM-only
+
+### Deprecated
+
+- Deprecated in favour of preset: 'client' from @graphql-codegen/client-preset, which on GraphQL Codegen 6 generates only the types your operations and fragments reach
+
+### Removed
+
+- Generated output no longer includes schema object and interface types, Query, Mutation and Subscription and their Args types, enums no operation uses, or the Scalars, Maybe, InputMaybe and Make* helpers. Input types, the enums operations use and operation and fragment result types remain
+
+### Security
+
+- Fixed GHSA-7mx3-vvmw-hjmv in @graphql-tools/utils ([GHSA-7mx3-vvmw-hjmv](https://github.com/advisories/GHSA-7mx3-vvmw-hjmv))
+- Fixed GHSA-c4qx-w738-7hr3 in @graphql-tools/utils ([GHSA-c4qx-w738-7hr3](https://github.com/advisories/GHSA-c4qx-w738-7hr3))
+
 ## [1.0.3] - 2026-05-17
 
 ### Changed
@@ -35,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[2.0.0]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@2.0.0
 [1.0.3]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@1.0.3
 [1.0.2]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@1.0.2
 [1.0.1]: https://github.com/shellicar/ecosystem/releases/tag/graphql-codegen-treeshake@1.0.1
