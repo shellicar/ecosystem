@@ -10,11 +10,11 @@ Build plugin that loads GraphQL files and makes them available through a virtual
 ## Installation & Quick Start
 
 ```sh
-npm i --save @shellicar/build-graphql
+npm i --save @shellicar/build-graphql graphql
 ```
 
 ```sh
-pnpm add @shellicar/build-graphql
+pnpm add @shellicar/build-graphql graphql
 ```
 
 ```ts

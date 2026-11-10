@@ -1,9 +1,8 @@
-import type { GlobOptions, GlobOptionsWithFileTypesUnset, glob } from 'glob';
+import type { GlobOptionsWithFileTypesUnset, glob } from 'glob';
 import type { DocumentNode } from 'graphql';
 import type { ErrorPolicy, Feature } from './enums';
 
 export type GlobPattern = Parameters<typeof glob>[0]; // string | string[]
-export type GlobIgnore = NonNullable<GlobOptions['ignore']>; // string | string[] | IgnoreLike
 
 export interface Options {
   /**
@@ -44,11 +43,5 @@ export interface Options {
    */
   mapDocumentNode?: (documentNode: DocumentNode) => DocumentNode;
 }
-
-export type LogLevel = 'debug' | 'error';
-
-export type ILogger = {
-  [key in LogLevel]: (typeof console)[key];
-};
 
 export type Features = Partial<Record<Feature, boolean>>;

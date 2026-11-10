@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `@rspack/core` ^1 || ^2 is declared as an optional peer dependency, for the `@shellicar/build-graphql/rspack` plugin
 - `globOptions` accepts `normalize`, added in glob 14, to normalize unicode in patterns and file names
+- `graphql` ^16 is a peer dependency and must be installed alongside the plugin: it is no longer bundled, so the plugin loads it from your own install to parse `.graphql` files, and its `DocumentNode` type is used by the plugin's options and the `@shellicar/build-graphql/typedefs` module
+- The supported Node versions are declared in `engines` as `^20.19.0 || >=22.12.0`, the range unplugin 3 requires
 
 ### Changed
 
@@ -19,11 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An aborted `signal` in `globOptions` now stops the walk, where glob 13 rejected but kept reading directories
 - File matching follows glob 14 and minimatch 11: some pattern edge cases match closer to Bash, `ignore` patterns starting with `/` start at the `root` option or the root of `cwd`, and `ignore` patterns follow `windowsPathsNoEscape`
 - On Windows, patterns starting with a long UNC root like `//?/UNC/host/share/` now walk that share, the same as `//host/share/`
+- The `vite` peer dependency range is widened from ^7 to ^7 || ^8
 - Updated glob dependency from ^13.0.6 to ^14.0.4
 
 ### Removed
 
 - `globOptions` no longer accepts `debug`, which glob 14 removed
+- The `@shellicar/build-graphql/graphql` entry point is removed: it pointed at files no published version contained, so importing it always failed
+- The `GlobIgnore` type is no longer exported
+- The `ILogger` and `LogLevel` types are no longer exported from `@shellicar/build-graphql` or `@shellicar/build-graphql/types`
 - The deprecated `globIgnore` option is removed: use `globOptions.ignore` instead
 - The deprecated `ignoreErrors` option is removed: use `errorPolicy` instead, where `ignoreErrors: true` is `errorPolicy: ErrorPolicy.Ignore`
 
@@ -31,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed the default `**/node_modules/**` ignore not being applied: files under `node_modules` are now not matched unless `globOptions.ignore` is set, which replaces the default (set it to `[]` to match them)
 - Fixed the rolldown plugin not being importable: it is now exported as `@shellicar/build-graphql/rolldown`, with rolldown ^1 as an optional peer dependency
+- Fixed the type declarations of `@shellicar/build-graphql/rspack`, which named `RspackPluginInstance` without importing it, so the plugin's return type failed to resolve
 
 ### Security
 

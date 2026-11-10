@@ -136,16 +136,6 @@
         "default": "./dist/cjs/types.cjs"
       }
     },
-    "./graphql": {
-      "import": {
-        "types": "./dist/esm/core/graphql.d.ts",
-        "default": "./dist/esm/core/graphql.js"
-      },
-      "require": {
-        "types": "./dist/cjs/core/graphql.d.cts",
-        "default": "./dist/cjs/core/graphql.cjs"
-      }
-    },
     "./typedefs": {
       "import": {
         "types": "./dist/esm/core/typedefs.d.ts",
@@ -214,10 +204,12 @@
     "@farmfe/core": ">=1",
     "@nuxt/kit": "^4",
     "@nuxt/schema": "^4",
+    "@rspack/core": "^1 || ^2",
     "esbuild": "^0.28",
+    "graphql": "^16",
     "rolldown": "^1",
     "rollup": "^4",
-    "vite": "^7",
+    "vite": "^7 || ^8",
     "webpack": "^4 || ^5"
   },
   "peerDependenciesMeta": {
@@ -228,6 +220,9 @@
       "optional": true
     },
     "@nuxt/schema": {
+      "optional": true
+    },
+    "@rspack/core": {
       "optional": true
     },
     "esbuild": {
@@ -250,6 +245,7 @@
     "@luckycatfactory/esbuild-graphql-loader": "^3.8.1",
     "@nuxt/kit": "^4.4.5",
     "@nuxt/schema": "^3.21.5",
+    "@rspack/core": "^2.3.1",
     "@shellicar/typescript-config": "workspace:^",
     "@types/node": "^25.8.0",
     "graphql": "^16.14.0",
@@ -265,5 +261,8 @@
   "dependencies": {
     "glob": "^14.0.4",
     "unplugin": "^3.0.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }
