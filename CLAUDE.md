@@ -7,6 +7,21 @@ Start — CI and release process only. Rest of the repo still needs writing up.
 A beta package makes no compatibility promise, so a change to one is never a
 breaking change. There is nothing to flag and no version-bump question to raise.
 
+## Security advisories in dependencies
+
+An advisory in a dependency affects our users only when they can't fix it themselves:
+
+- **Bundled into our `dist`:** they get the vulnerable code from us. It affects them;
+  release, and the `changes.jsonl` entry reads "Fixed GHSA-… in <package>".
+- **Installed, and our range blocks the fixed version:** they can't upgrade without an
+  override. It affects them; widen the range, release, and the entry reads
+  "<package> can now be upgraded to <version>, which fixes GHSA-…".
+- **Installed, and our range already allows the fixed version:** they upgrade it
+  themselves. It doesn't affect them through us; no release.
+
+This is for published packages. The repo's own tooling is fixed whenever an advisory
+affects it.
+
 ## CI pipeline
 
 `.github/workflows/ci.yml` is the one entrypoint, dispatching by event:
