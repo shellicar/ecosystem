@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `@rspack/core` ^1 || ^2 is declared as an optional peer dependency, for the `@shellicar/build-graphql/rspack` plugin
 - `globOptions` accepts `normalize`, added in glob 14, to normalize unicode in patterns and file names
-- `graphql` ^16 is declared as a peer dependency, since the plugin's options and the `@shellicar/build-graphql/typedefs` module use its `DocumentNode` type: install it alongside the plugin
+- `graphql` ^16 is a peer dependency and must be installed alongside the plugin: it is no longer bundled, so the plugin loads it from your own install to parse `.graphql` files, and its `DocumentNode` type is used by the plugin's options and the `@shellicar/build-graphql/typedefs` module
 - The supported Node versions are declared in `engines` as `^20.19.0 || >=22.12.0`, the range unplugin 3 requires
 
 ### Changed
