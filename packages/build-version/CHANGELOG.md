@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-10
+
+### Changed
+
+- The `@nuxt/kit` and `@nuxt/schema` peer dependency ranges are widened from ^3 to ^3 || ^4, so the Nuxt module can be used with Nuxt 4
+- The `rollup` peer dependency range is widened from ^3 to ^3 || ^4
+- The `vite` peer dependency range is widened from ^7 to ^7 || ^8
+
+### Security
+
+- Nuxt can now be upgraded to 4.6.0, which fixes GHSA-jjm6-p2m9-9w4x in nuxt ([GHSA-jjm6-p2m9-9w4x](https://github.com/advisories/GHSA-jjm6-p2m9-9w4x))
+- Nuxt can now be upgraded to 4.6.2, which fixes GHSA-vjh5-4x84-xrqp in nuxt ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp))
+- Nuxt can now be upgraded to 4.6.2, which fixes GHSA-xfq5-w38q-pc2x in nuxt ([GHSA-xfq5-w38q-pc2x](https://github.com/advisories/GHSA-xfq5-w38q-pc2x))
+
 ## [2.0.0] - 2026-07-21
 
 Replaces the single `versionCalculator` override with an ordered `strategies` list built from `Strategies` factories, and adds `packageName` so the git strategy resolves the right tag in a monorepo where several packages' tags can share a commit. See MIGRATION.md.
@@ -180,6 +194,7 @@ Replaces the single `versionCalculator` override with an ordered `strategies` li
 
 - Initial release.
 
+[2.1.0]: https://github.com/shellicar/ecosystem/releases/tag/build-version@2.1.0
 [2.0.0]: https://github.com/shellicar/ecosystem/releases/tag/build-version@2.0.0
 [1.3.10]: https://github.com/shellicar/ecosystem/releases/tag/build-version@1.3.10
 [1.3.9]: https://github.com/shellicar/ecosystem/releases/tag/build-version@1.3.9
