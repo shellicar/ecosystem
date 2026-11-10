@@ -195,8 +195,8 @@
     "@nuxt/schema": "^3 || ^4",
     "esbuild": "^0.28",
     "rolldown": ">=1.0.0-rc.1",
-    "rollup": "^3",
-    "vite": "^7",
+    "rollup": "^3 || ^4",
+    "vite": "^7 || ^8",
     "webpack": "^4 || ^5"
   },
   "peerDependenciesMeta": {
