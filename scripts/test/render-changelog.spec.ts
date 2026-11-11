@@ -77,6 +77,27 @@ describe('renderChangelog pre-releases', () => {
   });
 });
 
+describe('renderChangelog advisories', () => {
+  const security = { security: 'Security' };
+  const release: ReleaseMarker = { type: 'release', version: '2.0.1', date: '2026-11-11', tag: 'build-version@2.0.1' };
+
+  it('an entry with one advisory id links it', () => {
+    const expected = '- Uses glob 14 ([GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4))';
+
+    const actual = renderChangelog([{ description: 'Uses glob 14', category: 'security', metadata: { ghsa: 'GHSA-3g3m-2fjr-6pw4' } }, release], 'build-version', security).split('\n');
+
+    expect(actual).toContain(expected);
+  });
+
+  it('an entry with a list of advisory ids links each one', () => {
+    const expected = '- Works with Nuxt 4.6 ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp), [GHSA-jjm6-p2m9-9w4x](https://github.com/advisories/GHSA-jjm6-p2m9-9w4x))';
+
+    const actual = renderChangelog([{ description: 'Works with Nuxt 4.6', category: 'security', metadata: { ghsa: ['GHSA-vjh5-4x84-xrqp', 'GHSA-jjm6-p2m9-9w4x'] } }, release], 'build-version', security).split('\n');
+
+    expect(actual).toContain(expected);
+  });
+});
+
 describe('renderChangelog entry order', () => {
   const entries: Entry[] = [
     { description: 'construct eagerly with `.eager()`', category: 'added' },
