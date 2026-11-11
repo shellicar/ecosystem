@@ -13,9 +13,10 @@ An advisory in a dependency affects our users only when they can't fix it themse
 
 - **Bundled into our `dist`:** they get the vulnerable code from us. It affects them;
   release, and the `changes.jsonl` entry reads "Fixed GHSA-… in <package>".
-- **Installed, and our range blocks the fixed version:** they can't upgrade without an
-  override. It affects them; widen the range, release, and the entry reads
-  "<package> can now be upgraded to <version>, which fixes GHSA-…".
+- **Installed, and our range excludes the fixed version:** they can't get a valid install
+  with it. It affects them; widen the range, release, and the entry reads
+  "The peer range now accepts <package> <version>, which fixes GHSA-…" ("dependency
+  range" for a dependency).
 - **Installed, and our range already allows the fixed version:** they upgrade it
   themselves. It doesn't affect them through us; no release.
 
