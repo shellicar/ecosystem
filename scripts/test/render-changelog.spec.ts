@@ -96,6 +96,22 @@ describe('renderChangelog advisories', () => {
 
     expect(actual).toContain(expected);
   });
+
+  it('an entry with an empty list renders no advisory link', () => {
+    const expected = '- Works with Nuxt 4.6';
+
+    const actual = renderChangelog([{ description: 'Works with Nuxt 4.6', category: 'security', metadata: { ghsa: [] } }, release], 'build-version', security).split('\n');
+
+    expect(actual).toContain(expected);
+  });
+
+  it('an entry with a non-string id links only the advisory ids', () => {
+    const expected = '- Works with Nuxt 4.6 ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp))';
+
+    const actual = renderChangelog([{ description: 'Works with Nuxt 4.6', category: 'security', metadata: { ghsa: ['GHSA-vjh5-4x84-xrqp', 5] } }, release], 'build-version', security).split('\n');
+
+    expect(actual).toContain(expected);
+  });
 });
 
 describe('renderChangelog entry order', () => {

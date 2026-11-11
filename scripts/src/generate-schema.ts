@@ -12,13 +12,23 @@ if (categoryKeys.length === 0) {
   throw new Error('changes.config.json has no categories defined');
 }
 
+const GhsaId = z.string().regex(/^GHSA(-[23456789cfghjmpqrvwx]{4}){3}$/);
+
 const ChangeEntry = z
   .object({
     type: z.literal('change').optional(),
     description: z.string(),
     category: z.enum(categoryKeys as [string, ...string[]]),
     semver: z.enum(['major', 'minor', 'patch']).optional(),
-    metadata: z.record(z.string(), z.unknown()).optional(),
+    metadata: z
+      .object({
+        ghsa: z
+          .union([GhsaId, z.array(GhsaId).min(1)])
+          .describe('The advisory this change fixes, or a list of them when one change fixes several. The changelog links each id.')
+          .optional(),
+      })
+      .catchall(z.unknown())
+      .optional(),
   })
   .strict();
 
