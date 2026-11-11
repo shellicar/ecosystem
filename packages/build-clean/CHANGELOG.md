@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.5.0] - 2026-11-10
+## [1.4.1] - 2026-11-11
 
 ### Changed
 
@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Nuxt can now be upgraded to 4.6.0, which fixes GHSA-jjm6-p2m9-9w4x in nuxt ([GHSA-jjm6-p2m9-9w4x](https://github.com/advisories/GHSA-jjm6-p2m9-9w4x))
-- Nuxt can now be upgraded to 4.6.2, which fixes GHSA-vjh5-4x84-xrqp in nuxt ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp))
-- Nuxt can now be upgraded to 4.6.2, which fixes GHSA-xfq5-w38q-pc2x in nuxt ([GHSA-xfq5-w38q-pc2x](https://github.com/advisories/GHSA-xfq5-w38q-pc2x))
+- The peer range now accepts nuxt 4.6.0, which fixes GHSA-jjm6-p2m9-9w4x ([GHSA-jjm6-p2m9-9w4x](https://github.com/advisories/GHSA-jjm6-p2m9-9w4x))
+- The peer range now accepts nuxt 4.6.2, which fixes GHSA-vjh5-4x84-xrqp ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp))
+- The peer range now accepts nuxt 4.6.2, which fixes GHSA-xfq5-w38q-pc2x ([GHSA-xfq5-w38q-pc2x](https://github.com/advisories/GHSA-xfq5-w38q-pc2x))
 
 ## [1.4.0] - 2026-09-16
 
@@ -175,7 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[1.5.0]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.5.0
+[1.4.1]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.4.1
 [1.4.0]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.4.0
 [1.3.6]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.3.6
 [1.3.5]: https://github.com/shellicar/ecosystem/releases/tag/build-clean@1.3.5
