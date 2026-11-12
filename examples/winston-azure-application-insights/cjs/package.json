@@ -11,7 +11,7 @@
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.66.0",
     "@shellicar/winston-azure-application-insights": "workspace:^",
-    "@tsconfig/node20": "^20.1.9",
+    "@tsconfig/node20": "^20.1.10",
     "@types/node": "^25.8.0",
     "applicationinsightsv3": "npm:applicationinsights@^3.15.0",
     "tsup": "^8.5.1",
