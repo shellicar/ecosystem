@@ -36,9 +36,11 @@ export function renderChangelog(lines: (Entry | ReleaseMarker)[], shortName: str
     if (entry.metadata?.issue != null) {
       text += ` (#${entry.metadata.issue})`;
     }
-    if (typeof entry.metadata?.ghsa === 'string') {
-      const ghsa = entry.metadata.ghsa;
-      text += ` ([${ghsa}](https://github.com/advisories/${ghsa}))`;
+    // `ghsa` is one advisory id or a list of them, for a change that fixes several.
+    const ghsa = entry.metadata?.ghsa;
+    const advisories = typeof ghsa === 'string' ? [ghsa] : Array.isArray(ghsa) ? ghsa.filter((id): id is string => typeof id === 'string') : [];
+    if (advisories.length > 0) {
+      text += ` (${advisories.map((id) => `[${id}](https://github.com/advisories/${id})`).join(', ')})`;
     }
     return `- ${text}`;
   }

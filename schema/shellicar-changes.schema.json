@@ -71,8 +71,24 @@
         },
         "metadata": {
           "type": "object",
-          "propertyNames": {
-            "type": "string"
+          "properties": {
+            "ghsa": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^GHSA(-[23456789cfghjmpqrvwx]{4}){3}$"
+                },
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^GHSA(-[23456789cfghjmpqrvwx]{4}){3}$"
+                  }
+                }
+              ],
+              "description": "The advisory this change fixes, or a list of them when one change fixes several. The changelog links each id."
+            }
           },
           "additionalProperties": {}
         }
