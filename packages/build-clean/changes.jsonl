@@ -59,7 +59,5 @@
 {"description":"The `@nuxt/kit` and `@nuxt/schema` peer dependency ranges are widened from ^3 to ^3 || ^4, so the Nuxt module can be used with Nuxt 4","category":"changed"}
 {"description":"The `vite` peer dependency range is widened from ^7 to ^7 || ^8","category":"changed"}
 {"description":"The `rollup` peer dependency range is widened from ^3 to ^3 || ^4","category":"changed"}
-{"description":"The peer range now accepts nuxt 4.6.2, which fixes GHSA-vjh5-4x84-xrqp","category":"security","metadata":{"ghsa":"GHSA-vjh5-4x84-xrqp"}}
-{"description":"The peer range now accepts nuxt 4.6.2, which fixes GHSA-xfq5-w38q-pc2x","category":"security","metadata":{"ghsa":"GHSA-xfq5-w38q-pc2x"}}
-{"description":"The peer range now accepts nuxt 4.6.0, which fixes GHSA-jjm6-p2m9-9w4x","category":"security","metadata":{"ghsa":"GHSA-jjm6-p2m9-9w4x"}}
+{"description":"Works with Nuxt 4.6, which fixes three security advisories","category":"security","metadata":{"ghsa":["GHSA-vjh5-4x84-xrqp","GHSA-xfq5-w38q-pc2x","GHSA-jjm6-p2m9-9w4x"]}}
 {"type":"release","version":"1.4.1","date":"2026-11-11","tag":"build-clean@1.4.1"}
