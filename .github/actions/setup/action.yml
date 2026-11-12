@@ -35,6 +35,13 @@ runs:
           -e 's/^trustPolicyExcludePrune: true$/trustPolicyExcludePrune: false/' \
           pnpm-workspace.yaml > pnpm-workspace.yaml.tmp
         mv pnpm-workspace.yaml.tmp pnpm-workspace.yaml
+        for key in minimumReleaseAgeExcludePrune trustPolicyExcludePrune; do
+          if ! grep -Eq "^$key: false\$" pnpm-workspace.yaml; then
+            echo "::error file=pnpm-workspace.yaml::'$key: false' is missing from pnpm-workspace.yaml after the edit"
+            exit 1
+          fi
+        done
+        grep -E '^(minimumReleaseAgeExcludePrune|trustPolicyExcludePrune):' pnpm-workspace.yaml
 
     # Installs the pnpm that packageManager pins. Node comes from setup-node
     # below, and each job runs its own install.
