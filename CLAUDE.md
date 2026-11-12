@@ -11,13 +11,15 @@ breaking change. There is nothing to flag and no version-bump question to raise.
 
 An advisory in a dependency affects our users only when they can't fix it themselves:
 
-- **Bundled into our `dist`:** they get the vulnerable code from us. It affects them;
-  release, and the `changes.jsonl` entry reads "Fixed GHSA-… in <package>".
-- **Installed, and our range blocks the fixed version:** they can't upgrade without an
-  override. It affects them; widen the range, release, and the entry reads
-  "<package> can now be upgraded to <version>, which fixes GHSA-…".
+- **Bundled into our `dist`:** they get the vulnerable code from us. Fix it and release.
+- **Installed, and our range excludes the fixed version:** they can't get a valid install
+  with the fix. Widen the range and release.
 - **Installed, and our range already allows the fixed version:** they upgrade it
-  themselves. It doesn't affect them through us; no release.
+  themselves. It doesn't affect them through us, so it needs no release.
+
+A release for advisories gets one security entry per change in `changes.jsonl`, saying
+what we changed and that it fixes them, with every advisory id it fixes in
+`metadata.ghsa`. The wording follows the change, so there's no fixed form for it.
 
 This is for published packages. The repo's own tooling is fixed whenever an advisory
 affects it.
