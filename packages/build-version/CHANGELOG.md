@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Works with Nuxt 4.6, which fixes three security advisories ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp), [GHSA-xfq5-w38q-pc2x](https://github.com/advisories/GHSA-xfq5-w38q-pc2x), [GHSA-jjm6-p2m9-9w4x](https://github.com/advisories/GHSA-jjm6-p2m9-9w4x))
+- Works with Nuxt 4.6.2, which fixes three security advisories ([GHSA-vjh5-4x84-xrqp](https://github.com/advisories/GHSA-vjh5-4x84-xrqp), [GHSA-xfq5-w38q-pc2x](https://github.com/advisories/GHSA-xfq5-w38q-pc2x), [GHSA-jjm6-p2m9-9w4x](https://github.com/advisories/GHSA-jjm6-p2m9-9w4x))
 
 ## [2.0.0] - 2026-07-21
 
