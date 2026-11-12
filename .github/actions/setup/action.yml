@@ -18,6 +18,24 @@ inputs:
 runs:
   using: composite
   steps:
+    # Turns off exclude-list pruning in this checkout's pnpm-workspace.yaml. A stale
+    # exclusion would otherwise be pruned by the job's install, and the next pnpm
+    # run or exec would fail on the changed settings. turbo prune copies the file,
+    # so a pruned subtree inherits it.
+    - name: Turn off exclude-list pruning
+      shell: bash
+      run: |
+        for key in minimumReleaseAgeExcludePrune trustPolicyExcludePrune; do
+          if ! grep -Eq "^$key: (true|false)\$" pnpm-workspace.yaml; then
+            echo "::error file=pnpm-workspace.yaml::Expected a top-level '$key: true' or '$key: false' line in pnpm-workspace.yaml"
+            exit 1
+          fi
+        done
+        sed -e 's/^minimumReleaseAgeExcludePrune: true$/minimumReleaseAgeExcludePrune: false/' \
+          -e 's/^trustPolicyExcludePrune: true$/trustPolicyExcludePrune: false/' \
+          pnpm-workspace.yaml > pnpm-workspace.yaml.tmp
+        mv pnpm-workspace.yaml.tmp pnpm-workspace.yaml
+
     # Installs the pnpm that packageManager pins. Node comes from setup-node
     # below, and each job runs its own install.
     - uses: pnpm/setup@v3

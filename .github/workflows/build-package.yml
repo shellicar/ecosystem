@@ -79,14 +79,9 @@ jobs:
 
       - name: Install the pruned subtree
         working-directory: out
-        # Turns off exclude-list pruning, which would drop the entries for packages
-        # outside the subtree and fail the next pnpm exec on changed settings.
-        run: |
-          sed -i \
-            -e 's/^trustPolicyExcludePrune: true$/trustPolicyExcludePrune: false/' \
-            -e 's/^minimumReleaseAgeExcludePrune: true$/minimumReleaseAgeExcludePrune: false/' \
-            pnpm-workspace.yaml
-          pnpm i --frozen-lockfile
+        # Exclude-list pruning is already off here: the setup action turned it off
+        # in the root pnpm-workspace.yaml, which turbo prune copied.
+        run: pnpm i --frozen-lockfile
 
       - name: Build
         working-directory: out
