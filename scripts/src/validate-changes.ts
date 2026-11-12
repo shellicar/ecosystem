@@ -1,107 +1,22 @@
-import { readFileSync } from 'node:fs';
-import { glob } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Ajv from 'ajv';
-import semver from 'semver';
+import { validateChanges } from './changes-validation.js';
 
-// Validate changes.jsonl files against the @shellicar/changes JSON schema.
-// The schema is generated from this repo's changes.config.json, so the
-// allowed categories are baked into the schema and enforced by ajv.
-// Each release marker's version must also be valid semver and above the
-// version of the release marker before it in the same file.
+// Validate the changes.jsonl files named as arguments, or every one in the repo when none are named.
+// Exits 0 when they pass, 1 when any fails, and 2 when none are found.
 
-// A version written exactly as Semantic Versioning writes one. semver.parse also accepts a
-// leading `v` and surrounding spaces, which the comparison with the original rejects.
-function isSemver(version: string): boolean {
-  const parsed = semver.parse(version);
-  if (parsed == null) {
-    return false;
-  }
-  const written = parsed.build.length > 0 ? `${parsed.version}+${parsed.build.join('.')}` : parsed.version;
-  return written === version;
-}
-
-const scriptDir = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(scriptDir, '..', '..');
-
-const schemaPath = resolve(repoRoot, 'schema/shellicar-changes.schema.json');
-
-const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
-
-const ajv = new Ajv({ allErrors: true });
-const validate = ajv.compile(schema);
+// scripts/src -> scripts -> repo root
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 async function main() {
-  const argvFiles = process.argv.slice(2);
-  let files: string[];
-  if (argvFiles.length > 0) {
-    files = argvFiles;
-  } else {
-    files = [];
-    for await (const entry of glob('**/changes.jsonl', {
-      cwd: repoRoot,
-      exclude: (p) => p.includes('node_modules') || p.includes('.git') || p.includes('dist'),
-    })) {
-      files.push(resolve(repoRoot, entry));
-    }
-    if (files.length === 0) {
-      console.error('no changes.jsonl files found');
-      process.exit(2);
-    }
+  const result = await validateChanges(repoRoot, process.argv.slice(2));
+
+  if (result.kind === 'no-files') {
+    console.error('no changes.jsonl files found');
+    process.exit(2);
   }
 
-  type Failure = { file: string; line: number; message: string };
-  const failures: Failure[] = [];
-
-  for (const file of files) {
-    let content: string;
-    try {
-      content = readFileSync(file, 'utf-8');
-    } catch (err) {
-      failures.push({ file, line: 0, message: `cannot read file: ${(err as Error).message}` });
-      continue;
-    }
-
-    let previousVersion: string | undefined;
-    const lines = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      const raw = lines[i];
-      if (raw === undefined || raw.trim() === '') {
-        continue;
-      }
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch (err) {
-        failures.push({ file, line: i + 1, message: `invalid JSON: ${(err as Error).message}` });
-        continue;
-      }
-
-      if (!validate(parsed)) {
-        failures.push({
-          file,
-          line: i + 1,
-          message: JSON.stringify(validate.errors, null, 2),
-        });
-        continue;
-      }
-
-      const line = parsed as { type?: string; version?: string };
-      if (line.type === 'release' && typeof line.version === 'string') {
-        if (!isSemver(line.version)) {
-          failures.push({ file, line: i + 1, message: `release version ${line.version} is not a valid semver version` });
-          continue;
-        }
-        if (previousVersion != null && !semver.gt(line.version, previousVersion)) {
-          failures.push({ file, line: i + 1, message: `release version ${line.version} is not above the release before it (${previousVersion})` });
-        }
-        previousVersion = line.version;
-      }
-    }
-  }
-
+  const { failures } = result;
   if (failures.length > 0) {
     for (const f of failures) {
       console.error(`error validating ${f.file}:${f.line}`);

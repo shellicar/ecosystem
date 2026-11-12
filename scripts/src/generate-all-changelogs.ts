@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { glob } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findChangesFiles } from './find-changes-files.js';
 
 // Regenerate every package's CHANGELOG.md from its changes.jsonl.
 //
@@ -15,13 +15,7 @@ const repoRoot = resolve(scriptDir, '..', '..');
 const generator = resolve(scriptDir, 'generate-changelog.ts');
 
 async function main() {
-  const packageDirs: string[] = [];
-  for await (const entry of glob('**/changes.jsonl', {
-    cwd: repoRoot,
-    exclude: (p) => p.includes('node_modules') || p.includes('.git') || p.includes('dist'),
-  })) {
-    packageDirs.push(dirname(resolve(repoRoot, entry)));
-  }
+  const packageDirs = (await findChangesFiles(repoRoot)).map((file) => dirname(file));
 
   if (packageDirs.length === 0) {
     console.error('no changes.jsonl files found');
