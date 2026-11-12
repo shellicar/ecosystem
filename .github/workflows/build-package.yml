@@ -58,14 +58,17 @@ jobs:
             fs.appendFileSync(out, "artifact=dist-" + name.split("/").pop() + "\n");
           '
 
-      # verifyDepsBeforeRun: error makes `pnpm exec` fail without node_modules.
-      # TODO(claude): undecided: a full install here, before turbo prune, versus another way to run turbo.
-      - run: pnpm i --frozen-lockfile
-
       - name: Prune to the package subtree
         env:
           PACKAGE: ${{ inputs.package }}
-        run: pnpm exec turbo prune "$PACKAGE" --out-dir out
+        # Runs the turbo version the lockfile resolves, without installing the workspace.
+        run: |
+          TURBO_VERSION=$(sed -n 's/^  turbo@\([^:(]*\):$/\1/p' pnpm-lock.yaml | sort -u)
+          if [ "$(printf '%s\n' "$TURBO_VERSION" | grep -c .)" != 1 ]; then
+            echo "Expected one turbo version in pnpm-lock.yaml, found: $TURBO_VERSION"
+            exit 1
+          fi
+          pnpm dlx "turbo@$TURBO_VERSION" prune "$PACKAGE" --out-dir out
 
       - name: Restore git history into the pruned tree
         run: |
@@ -76,10 +79,8 @@ jobs:
 
       - name: Install the pruned subtree
         working-directory: out
-        # With pruning on, this install drops the exclude entries for packages outside
-        # the subtree, and verifyDepsBeforeRun then fails the next pnpm exec because
-        # the settings changed.
-        # TODO(claude): undecided: turning both prune settings off in the pruned copy.
+        # Turns off exclude-list pruning, which would drop the entries for packages
+        # outside the subtree and fail the next pnpm exec on changed settings.
         run: |
           sed -i \
             -e 's/^trustPolicyExcludePrune: true$/trustPolicyExcludePrune: false/' \
