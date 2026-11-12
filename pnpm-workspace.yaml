@@ -37,6 +37,7 @@ trustLockfile: false
 minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
+# CI's setup action switches both *ExcludePrune keys off and needs each as a plain `key: true|false` line.
 minimumReleaseAgeExcludePrune: true
 blockExoticSubdeps: true
 trustPolicy: no-downgrade
