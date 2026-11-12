@@ -58,6 +58,10 @@ jobs:
             fs.appendFileSync(out, "artifact=dist-" + name.split("/").pop() + "\n");
           '
 
+      # verifyDepsBeforeRun: error makes `pnpm exec` fail without node_modules.
+      # TODO(claude): undecided: a full install here, before turbo prune, versus another way to run turbo.
+      - run: pnpm i --frozen-lockfile
+
       - name: Prune to the package subtree
         env:
           PACKAGE: ${{ inputs.package }}
@@ -72,7 +76,16 @@ jobs:
 
       - name: Install the pruned subtree
         working-directory: out
-        run: pnpm i --frozen-lockfile
+        # With pruning on, this install drops the exclude entries for packages outside
+        # the subtree, and verifyDepsBeforeRun then fails the next pnpm exec because
+        # the settings changed.
+        # TODO(claude): undecided: turning both prune settings off in the pruned copy.
+        run: |
+          sed -i \
+            -e 's/^trustPolicyExcludePrune: true$/trustPolicyExcludePrune: false/' \
+            -e 's/^minimumReleaseAgeExcludePrune: true$/minimumReleaseAgeExcludePrune: false/' \
+            pnpm-workspace.yaml
+          pnpm i --frozen-lockfile
 
       - name: Build
         working-directory: out
