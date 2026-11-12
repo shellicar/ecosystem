@@ -3,13 +3,47 @@ packages:
   - scripts
   - examples/*/*
 
+# Running commands
+verifyDepsBeforeRun: error
+optimisticRepeatInstall: false
+
+# Install scripts
 ignoreScripts: true
+dangerouslyAllowAllBuilds: false
+
+# Agent skills shipped by dependencies are never linked
+skills:
+  dirs: []
+
+# Resolution
+autoInstallPeers: true
+excludeLinksFromLockfile: false
+injectWorkspacePackages: false
+linkWorkspacePackages: false
+dedupePeers: false
+dedupePeerDependents: true
+dedupeInjectedDeps: true
+autoDedupe: false
+resolutionMode: highest
+engineStrict: false
+
+lockfile:
+  integrityTarget: resource
+  includeResolutionSettings: true
+
+# Supply chain
+pnpmfile: []
+trustLockfile: false
 minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+# CI's setup action switches both *ExcludePrune keys off and needs each as a plain `key: true|false` line.
+minimumReleaseAgeExcludePrune: true
 blockExoticSubdeps: true
 trustPolicy: no-downgrade
+trustPolicyExcludePrune: true
 trustPolicyExclude:
   - chokidar@4.0.3
-  - rollup@3.30.0
   - 'semver@5.7.2 || 6.3.1'
   - ua-parser-js@1.0.41
 
@@ -37,17 +71,6 @@ packageExtensions:
       undici: '^6'
 
 minimumReleaseAgeExclude:
-  - vite@7.3.5
-  - '@opentelemetry/core@2.8.0'
   - http-proxy-middleware@3.0.7
   - undici@6.27.0
-  - http-proxy-middleware@3.0.6
   - js-yaml@3.15.0
-  - js-yaml@4.1.2
-  - ws@8.21.0
-  - protobufjs@8.4.3
-  - protobufjs@8.4.1
-  - protobufjs@7.6.1
-  - protobufjs@8.5.1
-  - protobufjs@7.6.3
-  - '@babel/core@7.29.1'

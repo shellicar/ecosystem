@@ -61,7 +61,15 @@ jobs:
       - name: Prune to the package subtree
         env:
           PACKAGE: ${{ inputs.package }}
-        run: pnpm exec turbo prune "$PACKAGE" --out-dir out
+        # Runs the turbo version the lockfile resolves, without installing the workspace.
+        run: |
+          TURBO_VERSION=$(pnpm list -w turbo --lockfile-only --depth 0 --json | jq -r '.[0].devDependencies.turbo.version // empty')
+          if [ -z "$TURBO_VERSION" ]; then
+            echo "::error file=pnpm-lock.yaml::Could not read the workspace root's resolved turbo version from pnpm-lock.yaml"
+            exit 1
+          fi
+          echo "turbo $TURBO_VERSION from pnpm-lock.yaml"
+          pnpm dlx "turbo@$TURBO_VERSION" prune "$PACKAGE" --out-dir out
 
       - name: Restore git history into the pruned tree
         run: |
@@ -72,6 +80,8 @@ jobs:
 
       - name: Install the pruned subtree
         working-directory: out
+        # Exclude-list pruning is already off here: the setup action turned it off
+        # in the root pnpm-workspace.yaml, which turbo prune copied.
         run: pnpm i --frozen-lockfile
 
       - name: Build
