@@ -46,6 +46,14 @@ describe('validateChangesContent', () => {
     expect(actual).toEqual(expected);
   });
 
+  it('fails a line the schema rejects', () => {
+    const expected = [expect.objectContaining({ file: 'changes.jsonl', line: 2 })];
+
+    const actual = validateChangesContent('changes.jsonl', [entry, '{"description":"Fixed something","category":"nope"}', ''].join('\n'));
+
+    expect(actual).toEqual(expected);
+  });
+
   it('fails a release marker whose version is not valid semver', () => {
     const expected = [{ file: 'changes.jsonl', line: 2, message: 'release version 1.0 is not a valid semver version' }];
 

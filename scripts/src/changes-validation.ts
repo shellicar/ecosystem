@@ -16,7 +16,6 @@ export type Failure = { file: string; line: number; message: string };
 export type ValidationResult = { kind: 'no-files' } | { kind: 'checked'; failures: Failure[] };
 
 // scripts/src -> scripts -> repo root
-// TODO(claude): undecided: whether the schema is a parameter or always this repo's. Always this repo's for now, read when the module loads.
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const schemaPath = resolve(repoRoot, 'schema/shellicar-changes.schema.json');
 

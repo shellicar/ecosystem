@@ -11,6 +11,12 @@ describe('isExcludedPath', () => {
     expect(actual).toBe(true);
   });
 
+  it('excludes a Windows path with a dist folder', () => {
+    const actual = isExcludedPath('packages\\a\\dist\\changes.jsonl');
+
+    expect(actual).toBe(true);
+  });
+
   it.each(['packages/build-dist-tag/changes.jsonl', 'packages/my-node_modules-tool/changes.jsonl', '.github/changes.jsonl', 'packages/a.git/changes.jsonl', 'packages/distribution/changes.jsonl'])('keeps %s', (path) => {
     const actual = isExcludedPath(path);
 
