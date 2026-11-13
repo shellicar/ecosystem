@@ -1,7 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { verifyChangelog } from './verify-changelog.js';
+import { verifyPackageChangelog } from './package-changelog.js';
 
 // Verify a package's CHANGELOG.md against the version being published.
 // Exits 0 when it passes, 1 when it fails, and 64 when the arguments are wrong.
@@ -15,13 +14,7 @@ if (!packageDir || !version) {
   process.exit(64);
 }
 
-const changelogPath = resolve(repoRoot, packageDir, 'CHANGELOG.md');
-if (!existsSync(changelogPath)) {
-  console.error(`❌ No CHANGELOG.md found in ${packageDir}`);
-  process.exit(1);
-}
-
-const result = verifyChangelog(readFileSync(changelogPath, 'utf8'), version);
+const result = verifyPackageChangelog(repoRoot, packageDir, version);
 if (!result.ok) {
   console.error(`❌ ${result.message}`);
   process.exit(1);
